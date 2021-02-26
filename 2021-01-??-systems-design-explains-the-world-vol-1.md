@@ -1,6 +1,7 @@
-# (POST) Systems design explains the world: volume 1
+# Systems design explains the world: volume 1
 
 - **url** = https://apenwarr.ca/log/20201227
+- **type** = post
 - **auteur** = Avery PENNARUN, dev canadien, [ancien de chez Google et Microsoft](https://www.usenix.org/conference/srecon18europe/speaker-or-organizer/avery-pennarun-google), actuellement co-fondateur et CEO de https://tailscale.com/ , boîte qui fait des VPN
 - **date de publication** = 2020-12-27
 
