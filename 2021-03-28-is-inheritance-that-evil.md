@@ -2,7 +2,7 @@
 
 - **url** = https://thevaluable.dev/guide-inheritance-oop/
 - **type** = post
-- **auteur** = Matthieu CNEUDE, dev français assez actif https://matthieucneude.com/[site perso], https://twitter.com/Cneude_Matthieu[twitter], https://github.com/Phantas0s[github], https://thevaluable.dev/page/about/[son blog] = thevaluable.dev
+- **auteur** = Matthieu CNEUDE, dev français assez actif [site perso](https://matthieucneude.com/), [twitter](https://twitter.com/Cneude_Matthieu), [github](https://github.com/Phantas0s), [son blog](https://thevaluable.dev/page/about/)
 - **date de publication** = 2021-03-27
 - **source** = https://thevaluable.dev/
 
@@ -10,8 +10,8 @@
 - Avis critique de l'héritage et du lieu commun "il ne faut jamais utiliser l'héritage, il vaut mieux utiliser la composition".
 - Intéressante remise en contexte historique.
 - Montre notamment quelques défauts de la composition, c'est d'ailleurs l'un des messages de l'article : _la composition n'est pas une silver bullet_.
-- Selon lui, c'est parce qu'on a oublié que "hériter c'est coupler" qu'on utilise mal l'héritage. Mais si on l'utilise à bon escient (par exemple là où le couplage est pertinent), alors l'héritage est "acceptable".
-- Propose des conseils pour utiliser l'héritage correctement, par exemple à utiliser pour les classes "mécaniques" (qui varient peu), ou suggère de voir une hiérarchie d'héritage comme un tout cohérent, et c'est cet ensemble cohérent qui est encapsulé.
+- Selon lui, c'est parce qu'on a oublié que "hériter c'est coupler" qu'on utilise mal l'héritage. Mais si on l'utilise à bon escient (par exemple là où le couplage est pertinent), alors l'héritage est tout à fait acceptable.
+- Propose des conseils pour utiliser l'héritage correctement, par exemple à utiliser pour les classes "mécaniques" (qui varient peu), ou suggère de considérer une hiérarchie d'héritage comme un tout cohérent, et c'est cet ensemble cohérent qui est encapsulé.
 - Deux décisions importantes : 1. cohesion : qu'est-ce qui devrait être ensemble et qu'est-ce qui ne devrait pas ? 2. Quand est-il judicieux d'utiliser ce qu'il appelle _interface constructs_ (héritage d'interface) ?
 
 
@@ -140,7 +140,7 @@ Selon lui, l'héritage est acceptable pour les classes "mécaniques", car elles 
 
 > the hierarchy itself is encapsulated from its outside.
 
-Intéressant point de vue : il faut voir une hiérarchie d'héritage comme un tout cohérent. C'est cet ensemble cohérent qui est encapsulé
+Intéressant point de vue : il faut considérer une hiérarchie d'héritage comme un tout cohérent. C'est cet ensemble cohérent qui est encapsulé
 
 > Your system can become hard to maintain if you mix two of the Three Power Gems of Inheritance in the same soup:
 > Inheritance of implementation.
