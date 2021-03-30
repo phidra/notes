@@ -6,7 +6,7 @@
 - **date de publication** = 2021-03-27
 - **source** = https://thevaluable.dev/
 
-**Tl;DR** :
+**TL;DR** :
 - Avis critique de l'héritage et du lieu commun "il ne faut jamais utiliser l'héritage, il vaut mieux utiliser la composition".
 - Intéressante remise en contexte historique.
 - Montre notamment quelques défauts de la composition, c'est d'ailleurs l'un des messages de l'article : _la composition n'est pas une silver bullet_.
