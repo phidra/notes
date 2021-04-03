@@ -81,7 +81,7 @@ Conséquences d'une bonne cohésion :
 > You don’t need to reason about your whole codebase while working on a functionality, you only need to reason in the boundaries of your module.
 > When you have a bug, you know in what module to search.
 
-## Coupling
+## Coupling
 
 > Coupling as an abstract concept - the degree of interdependence between modules - may be operationalized as the probability that in coding, debugging, or modifying one module, a programmer will have to take into account something about another modules.
 
