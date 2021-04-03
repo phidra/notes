@@ -96,7 +96,7 @@ C'est l'un des problèmes qu'on essaye d'adresser
 > - If everything which belongs together are together, changing the module won’t affect other module.
 > - If changing something in module A affects module B, it means that this something from module A should be in module B.
 
-Le troisième point est exprimé de façon un peu trop simpliste à mon goût : dans beaucoup de cas, si on essaye de résoudre notre couplage en déplaçant ce _something_ de A à B comme suggéré, on se rend alors compte qu'un changement dans B va affecter A (on n'a pas supprimé le couplage, peut-être parce qu'il fallait en fait sortir ce qui lie A à B dans un troisième module C, peut-être pour d'autres raisons...).
+Le troisième point est exprimé de façon un peu trop simpliste à mon goût : dans beaucoup de cas, si on essaye de résoudre notre couplage en déplaçant ce _something_ de A à B comme suggéré, on se rend alors compte qu'un changement dans B va affecter A (on n'a alors pas supprimé le couplage). Peut-être parce qu'il fallait en fait sortir ce qui lie A à B dans un troisième module C, peut-être pour d'autres raisons...
 
 ## Conseils sur cohesion/coupling
 
