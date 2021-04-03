@@ -23,40 +23,40 @@
 
 Position du problème = le SRP est ambigü :
 
-> What’s a responsibility?
-> [...]
-> What will change? I wasn’t sure, but every single method looked like they could have one reason to change. All these responsibilities in the same class!
-> [...]
-> I fragmented my Shipment class, creating many more classes with one method each: everything was light, teared apart, shredded.
-> [...]
-> A class should have only one reason to change.
-> [...]
-> everybody had its own personal definition of a “responsibility”, or a “reason to change”
-> [...]
+> What’s a responsibility? [...]
+> 
+> What will change? I wasn’t sure, but every single method looked like they could have one reason to change. All these responsibilities in the same class! [...]
+> 
+> I fragmented my Shipment class, creating many more classes with one method each: everything was light, teared apart, shredded. [...]
+> 
+> A class should have only one reason to change. [...]
+> 
+> everybody had its own personal definition of a “responsibility”, or a “reason to change” [...]
+> 
 > This principle has many rules the definition itself doesn’t really state.
 
 ## Notion de module
 
 Le coeur de l'article, c'est d'abord d'expliquer que le SRP est lié à la notion de module :
 
-> The principles we’ll see now could be applied despite the paradigm. OOP, functional, procedural, it doesn’t matter.
-> [...]
-> a module is a bounded, contiguous group of statements having a single name by which it can be referred to as a unit.
-> [...]
+> The principles we’ll see now could be applied despite the paradigm. OOP, functional, procedural, it doesn’t matter. [...]
+> 
+> a module is a bounded, contiguous group of statements having a single name by which it can be referred to as a unit. [...]
+> 
 > If the definition looks obscure to you, a module is simply a named block with some code in it. It could be a function, a class, a namespace, a package, a micro-service, even a file.
 
 ## Module decomposition
 
 Puis, de décomposition en modules, dont il explique l'intérêt en détail :
 
-> The principle of decomposition, also called factoring, goes way beyond computing. It touches the essence itself of our work: problem solving.
-> [...]
+> The principle of decomposition, also called factoring, goes way beyond computing. It touches the essence itself of our work: problem solving. [...]
+> 
 > Now, you’ve created more problems, but they feel already more manageable
 
 Il rappelle qu'il n'y a pas "une bonne décomposition", mais que celle dépend fortement du contexte :
 
-> At every step, you’ll make some decisions, depending on your goals. These decisions will be very different if you want to create a breakout clone or a full RPG in 3D. The context will heavily drive your decisions.
-> [...]
+> At every step, you’ll make some decisions, depending on your goals. These decisions will be very different if you want to create a breakout clone or a full RPG in 3D. The context will heavily drive your decisions. [...]
+> 
 > Therefore, like we decompose our problems, we need to decompose our code in different parts.
 
 Il en arrive à la question de "comment bien découper" :
@@ -71,8 +71,8 @@ Sa réponse : cohésion et coupling :
 
 Ah, tiens, un intéressant (et parlant !) parallèle avec la vie réelle :
 
-> you do that all the time in real life (depending how messy you are). You put the knives with the knives, the fork with the forks
-> [...]
+> you do that all the time in real life (depending how messy you are). You put the knives with the knives, the fork with the forks[...]
+> 
 > The benefits?
 > You don’t need to reason about your whole codebase while working on a functionality, you only need to reason in the boundaries of your module.
 > When you have a bug, you know in what module to search.
@@ -96,12 +96,12 @@ Le troisième point est exprimé de façon un peu trop simpliste à mon goût : 
 
 ## Conseils sur cohesion/coupling
 
-> How do we achieve high cohesion and low coupling between our modules?”.
-> [...]
-> To achieve less coupling, each module should know the minimum about each other.
-> [...]
-> Now, how do we hide information between our modules? Using abstractions with well-defined interfaces.
-> [...]
+> How do we achieve high cohesion and low coupling between our modules?”. [...]
+>
+> To achieve less coupling, each module should know the minimum about each other. [...]
+>
+> Now, how do we hide information between our modules? Using abstractions with well-defined interfaces. [...]
+>
 > For example, public methods and properties of a class are its interface; if everything is public, nothing is hidden. A micro-service has an interface too: its API.
 
 
