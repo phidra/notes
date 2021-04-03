@@ -49,13 +49,13 @@ Le coeur de l'article, c'est d'abord d'expliquer que le SRP est lié à la notio
 
 ## Module decomposition
 
-Puis, de décomposition en modules, dont il explique l'intérêt en détail :
+Puis, à la notion de décomposition en modules, dont il explique l'intérêt en détail :
 
 > The principle of decomposition, also called factoring, goes way beyond computing. It touches the essence itself of our work: problem solving. [...]
 > 
 > Now, you’ve created more problems, but they feel already more manageable
 
-Il rappelle qu'il n'y a pas "une bonne décomposition", mais que celle dépend fortement du contexte :
+Il rappelle qu'il n'y a pas une unique bonne décomposition, mais que celle-ci dépend fortement du contexte :
 
 > At every step, you’ll make some decisions, depending on your goals. These decisions will be very different if you want to create a breakout clone or a full RPG in 3D. The context will heavily drive your decisions. [...]
 > 
@@ -65,7 +65,7 @@ Il en arrive à la question de "comment bien découper" :
 
 > This brings us to an obvious question: how do we do that?
 
-Sa réponse : cohésion et coupling :
+Sa réponse : c'est lié aux notions de cohésion et coupling.
 
 ## Cohesion
 
@@ -74,7 +74,9 @@ Sa réponse : cohésion et coupling :
 Ah, tiens, un intéressant (et parlant !) parallèle avec la vie réelle :
 
 > you do that all the time in real life (depending how messy you are). You put the knives with the knives, the fork with the forks[...]
-> 
+
+Conséquences d'une bonne cohésion :
+
 > The benefits?
 > You don’t need to reason about your whole codebase while working on a functionality, you only need to reason in the boundaries of your module.
 > When you have a bug, you know in what module to search.
