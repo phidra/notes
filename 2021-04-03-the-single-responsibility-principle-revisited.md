@@ -140,7 +140,7 @@ Par ailleurs :
 > - The outcomes the software should have.
 > - The technology used, and the reason you use them.
 
-Je trouve intéressante son envie, déjà exprimée dans d'autres articles de revenir à "à quoi sert le code qu'on écrit".
+Je trouve intéressante son envie, déjà exprimée dans d'autres articles de revenir à du concret : "à quoi sert le code qu'on écrit".
 
 Il suggère des questions à se poser pour aider à choisir sa décomposition en modules :
 
@@ -159,7 +159,7 @@ C'est d'ailleurs **exactement** ce qu'il dit ici, et on est bien d'accord sur ce
 
 > Try to make sense of it, code your solutions, and come back to it later when you’ll have more knowledge about the context, to improve your design.
 
-(mais le souci, c'est qu'à cause des contraintes de temps et de pression, on ne prend pas toujours le temps de revenir modifier cette première implémentation maintenant qu'on a mieux compris le problème)
+(et le vrai souci, c'est qu'à cause des contraintes de temps et de pression, on ne prend pas toujours le temps de revenir modifier cette première implémentation maintenant qu'on a mieux compris le problème...)
 
 > This is what this article is about: we need to be precise when we state the problem, or we won’t understand how to solve it.
 
