@@ -21,7 +21,9 @@
 
 ## Position du problème
 
-Position du problème = le SRP est ambigü :
+Position du problème = le SRP est ambigü.
+
+Il donne son propre exemple, où, jeune codeur PHP, il a voulu appliquer à la lettre le SRP, en découpant à l'extrême son application, où chaque classe n'avait qu'une seule méthode.
 
 > What’s a responsibility? [...]
 > 
