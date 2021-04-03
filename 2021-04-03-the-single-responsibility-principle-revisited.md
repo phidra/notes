@@ -112,7 +112,7 @@ Le point clé : cohesion et coupling sont liés à la notion de **information hi
 
 > If you really did a good job, you could even use part of your codebase on a different one. This is difficult to achieve, and it shouldn’t be a priority; just a nice bonus.
 
-C'est secondaire, mais ce point de vue intéressant : la réutilisabilité est importante surtout en tant que critère, mais n'est pas une fin en soi.
+C'est secondaire, mais ce point de vue est intéressant : la réutilisabilité est importante surtout en tant que critère, mais n'est pas une fin en soi.
 
 ## critique du SRP
 
@@ -129,16 +129,16 @@ Il donne d'ailleurs plus loin un avis beaucoup plus nuancé que "SRP violation" 
 
 > Coupling and cohesion are scales, not booleans. That’s why we speak about “high” and “low” cohesion, “high” and “low” coupling.
 
-Et il donne une autre guideline que j'aime beaucoup, et qui fait le lien avec son exemple en php du début de l'article :
+Et il donne une autre guideline que j'aime beaucoup, et qui fait bien le lien avec son exemple en php du début de l'article :
 
 > If you need to retain something from this article, it’s the following: the goal is not to be 100% decoupled and 100% cohesive, it’s doing our best to avoid unnecessary coupling and making our modules as cohesive as possible.
 
 Par ailleurs :
 
 > Your decisions will depend on the context. By order of importance:
-> The business model and the problem domain of your company.
-> The outcomes the software should have.
-> The technology used, and the reason you use them.
+> - The business model and the problem domain of your company.
+> - The outcomes the software should have.
+> - The technology used, and the reason you use them.
 
 Je trouve intéressante son envie, déjà exprimée dans d'autres articles de revenir à "à quoi sert le code qu'on écrit".
 
