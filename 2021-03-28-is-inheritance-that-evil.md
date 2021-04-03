@@ -3,7 +3,7 @@
 - **url** = https://thevaluable.dev/guide-inheritance-oop/
 - **type** = post
 - **auteur** = Matthieu CNEUDE, dev français assez actif [site perso](https://matthieucneude.com/), [twitter](https://twitter.com/Cneude_Matthieu), [github](https://github.com/Phantas0s), [son blog](https://thevaluable.dev/page/about/)
-- **date de publication** = 2021-03-27
+- **date de publication** = 2020-03-27
 - **source** = https://thevaluable.dev/
 
 **TL;DR** :

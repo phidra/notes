@@ -7,12 +7,15 @@
 - **source** = https://thevaluable.dev/
 
 **TL;DR** :
-- très intéressant point de vue sur le SRP, et sur le fait que ce soit érigé en sacro-sainte formule "tu violes le SRP", sans qu'on comprenne/définisse clairement ce qu'il y a derrière
+- très intéressant point de vue sur le SRP, et sur le fait qu'il soit érigé en sacro-sainte formule "tu violes le SRP", sans qu'on ne comprenne/définisse clairement ce qu'il y a derrière
 - un point important est que "violer le SRP" regroupe des notions complexes : décomposition des modules, cohesion, couplage
 - son propre TL;DR à la fin est très bien :
 > The Single Responsibility Principle is ambiguous and lack preciseness.
+> 
 > We should decompose the problems we’re trying to solve, even before coding.
+> 
 > Coupling and cohesion are not booleans. We can’t achieve total cohesion with no coupling, but we should try to maximize the first while minimizing the second.
+> 
 > We should organize our code depending on the decomposition of the problem, with well-defined interfaces respectful of the cohesion and coupling we want between our modules.
 - il donne quelques conseils concrets (cf. plus bas) pour essayer de mieux gérer la décomposition de ses modules
 
