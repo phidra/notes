@@ -80,12 +80,12 @@ C'est important : overrider la méthode `count` (pour lui faire compter des obje
 
 `is` vs `has` vs `use`
 
-> It doesn’t matter if it’s called aggregation, composition, or delegation. At the end, it boils down to the same simple mechanism: injecting an object into another one.
-> [...]
-> One thing is certain: this book gave to beginners the perfect pretext to show how smart they are by instantly changing a healthy codebase into a legacy mess full of Singleton and Abstract Factories.
-> [...]
-> Inheritance and object composition thus work together.
-> [...]
+> It doesn’t matter if it’s called aggregation, composition, or delegation. At the end, it boils down to the same simple mechanism: injecting an object into another one. [...]
+> 
+> One thing is certain: this book gave to beginners the perfect pretext to show how smart they are by instantly changing a healthy codebase into a legacy mess full of Singleton and Abstract Factories. [...]
+> 
+> Inheritance and object composition thus work together. [...]
+> 
 > According to this book, we should favor composition not because inheritance is evil, but because nobody uses it correctly. Well, hopefully we understand it better now.
 
 Pas clair...
@@ -124,16 +124,16 @@ Intéressant : selon lui, c'est parce qu'on a oublié que "hériter c'est couple
 
 Ce point est important : le LSP n'est pas automatiquement respecté !
 
-> Never use inheritance for classes which are related to the business domain.
-> Sometimes use inheritance for reusing implementation of classes bringing some mechanics.
-> If you use subtypes, always try to respect the original strictness of LSP as much as possible.
-> If you use the interface constructs for subtyping, keep in mind that the implementation of the interface can still break everything.
+> - Never use inheritance for classes which are related to the business domain.
+> - Sometimes use inheritance for reusing implementation of classes bringing some mechanics.
+> - If you use subtypes, always try to respect the original strictness of LSP as much as possible.
+> - If you use the interface constructs for subtyping, keep in mind that the implementation of the interface can still break everything.
 
 Ces rules of thumb sont intéressantes.
 
 > You ask Davina: “what do you mean by mechanics”?
-> “These classes are everything which are not domain objects. For example, our classes to parse files represent some mechanisms: they don’t represent anything from our business, they’re just general constructs to parse some files.
-> [...]
+> “These classes are everything which are not domain objects. For example, our classes to parse files represent some mechanisms: they don’t represent anything from our business, they’re just general constructs to parse some files. [...]
+> 
 > For example, it’s not very likely that the world will come up tomorrow with a different definition of stacks. That’s why the object Stack won’t need many changes overtime.
 
 Selon lui, l'héritage est acceptable pour les classes "mécaniques", car elles ne vont pas beaucoup changer.
@@ -143,13 +143,15 @@ Selon lui, l'héritage est acceptable pour les classes "mécaniques", car elles 
 Intéressant point de vue : il faut considérer une hiérarchie d'héritage comme un tout cohérent. C'est cet ensemble cohérent qui est encapsulé
 
 > Your system can become hard to maintain if you mix two of the Three Power Gems of Inheritance in the same soup:
-> Inheritance of implementation.
-> Substituting superclasses with their subclasses (subtyping if it follows some rules).
-> Multilevel inheritance.
-> [...]
+> - Inheritance of implementation.
+> - Substituting superclasses with their subclasses (subtyping if it follows some rules).
+> - Multilevel inheritance.
+
+----
+
 > Most of the time, composition seems to be the best alternative to inheritance of implementation.
-> Everything is tightly coupled in an inheritance hierarchy, but this blurb of classes is still encapsulated from the outside.
-> [...]
+> Everything is tightly coupled in an inheritance hierarchy, but this blurb of classes is still encapsulated from the outside. [...]
+> 
 > Inheritance can be useful for the part of your system which won’t change too much (mechanical part).
 
 ----
