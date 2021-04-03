@@ -108,10 +108,11 @@ Le troisième point est exprimé de façon un peu trop simpliste à mon goût : 
 >
 > For example, public methods and properties of a class are its interface; if everything is public, nothing is hidden. A micro-service has an interface too: its API.
 
+Le point clé : cohesion et coupling sont liés à la notion de **information hiding**
 
 > If you really did a good job, you could even use part of your codebase on a different one. This is difficult to achieve, and it shouldn’t be a priority; just a nice bonus.
 
-Point de vue intéressant : la réutilisabilité est importante surtout en tant que critère, mais n'est pas une fin en soi.
+C'est secondaire, mais ce point de vue intéressant : la réutilisabilité est importante surtout en tant que critère, mais n'est pas une fin en soi.
 
 ## critique du SRP
 
