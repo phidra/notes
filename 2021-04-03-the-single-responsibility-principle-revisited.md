@@ -145,13 +145,13 @@ Je trouve intéressante son envie, déjà exprimée dans d'autres articles de re
 Il suggère des questions à se poser pour aider à choisir sa décomposition en modules :
 
 > Asking these questions might be a good starting point:
-> Here’s the problem we’re trying to solve with this software. How should we decompose this problem? What are the sub-problems?
-> What kind of relationships these problems have? Is this problem depending on the solution of this one?
-> After decomposing the problem, what design decisions can we make to support this decomposition? What interface should have our modules?
-> What new challenges do we face while designing? While coding? Is it possible to represent the solution of the problems using an abstraction in a cohesive way?
-> What could make this module more cohesive? How to call it, to show this cohesion?
-> I see some coupling between two modules. Is this coupling necessary? Why?
-> This part is difficult to understand. Should we isolate it in its own class or function?
+> - Here’s the problem we’re trying to solve with this software. How should we decompose this problem? What are the sub-problems?
+> - What kind of relationships these problems have? Is this problem depending on the solution of this one?
+> - After decomposing the problem, what design decisions can we make to support this decomposition? What interface should have our modules?
+> - What new challenges do we face while designing? While coding? Is it possible to represent the solution of the problems using an abstraction in a cohesive way?
+> - What could make this module more cohesive? How to call it, to show this cohesion?
+> - I see some coupling between two modules. Is this coupling necessary? Why?
+> - This part is difficult to understand. Should we isolate it in its own class or function?
 
 Je note que ça dépend fortement de la compréhension qu'on a de notre problème -> je fais le lien avec un sentiment que j'ai déjà = quand tu défriches un problème, c'est pas forcément très pertinent de réfléchir d'entrée de jeu à une super archi top-moumoute : mieux vaut peut-être faire une première implémentation qui aidera à mieux comprendre le problème, avant de trouver la bonne archi.
 
