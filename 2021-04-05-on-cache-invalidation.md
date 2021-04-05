@@ -7,7 +7,7 @@
 - **source** = https://yihui.org/
 
 
-**TL;DR** : son point de vue sur l'invalidation de cache. Surtout utile pour un exemple concret :
+**TL;DR** : son point de vue sur l'invalidation de cache. Son post est surtout intéressant pour son exemple concret :
 - sa stratégie de caching de ce qui semble être du code = md5 du contenu ; peut paraître bonne au premier abord, mais en fait pas toujours adaptée
 - cache parfois regénéré à tort : (e.g. va regénérer le cache même pour un changement du contenu qui n'est en fait pas significatif, comme un ajout de commentaire de code)
 - cache parfois non-regénéré à tort : (e.g. ne va pas regénérer le cache si un fichier externe utilisé par le code est modifié)
