@@ -11,6 +11,8 @@
 - bon résumé des avantages/inconvénients de AOT-compilation et interprétation (résumés à la fin des présentes notes)
 - une side-note de cet article m'aide à mieux comprendre en quoi un binaire donné est dépendant de l'OS
 
+## intro
+
 > For example, PHP is very often interpreted in real life projects, that’s why we put it in the “interpreted programming language” category. But if you’re Facebook and you write a compiler for PHP, you have now a “compiled programming language”.
 
 Explications sur comment les CPU exécutent les programmes :
