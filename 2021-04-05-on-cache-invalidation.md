@@ -39,15 +39,15 @@ Dans son exemple, la stratégie de caching repose sur le hash du contenu :
 
 > The key of a code chunk is pretty much an MD5 hash (via digest::digest()) of the chunk options and the chunk content (code). Whenever you modify chunk options or the code, the hash will change, and the cache will be invalidated.
 
-Problème n°1 = parfois, cette stratégie regénère le cache trop souvent :
+**Problème n°1** = parfois, cette stratégie regénère le cache trop souvent :
 
 > Some thought it was too sensitive, and some thought it was dumb. For example, when you add a space in an R comment in your code chunk, should knitr invalidate the cache? Modifying a comment certainly won’t affect the computing at all (but the text output may change if you show the code in the output via echo = TRUE)
 
-Problème n°2 = parfois, cette stratégie ne regénère pas le cache assez souvent :
+**Problème n°2** = parfois, cette stratégie ne regénère pas le cache assez souvent :
 
 > Then an example to explain why people thought knitr’s caching was dumb: if you read an external CSV file in a code chunk, knitr does not know whether you have modified the data file. If you happen to have updated the data file, knitr won’t re-read it by default if you didn’t modify chunk options or the code.
 
-En résumé :
+**En résumé :**
 
 > The tricky thing is, it is hard to find the balance. Either direction can offend users.
 
