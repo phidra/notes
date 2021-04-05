@@ -64,7 +64,7 @@ Au passage, plusieurs langages peuvent produire le même bytecode :
 
 > If you write a compiler to translate another programming language into JVM bytecode, you can even run your programs on the JVM without writing a line of Java.
 
-NdM : c'est une approche retenue par beaucoup de langages, par exemple scala, kotlin, clojure. Et j'apprends à cette occasion que ces langages permettent tous également de produire du javascript.
+NdM : c'est une approche retenue par beaucoup de langages, par exemple scala, kotlin, clojure. Et j'apprends à cette occasion que tous ces langages permettent également de produire du javascript plutôt que du bytecode pour la JVM.
 
 Définition de la JIT :
 
