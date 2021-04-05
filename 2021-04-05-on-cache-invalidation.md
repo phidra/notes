@@ -11,7 +11,7 @@
 - sa stratégie de caching de ce qui semble être du code = md5 du contenu ; peut paraître bonne au premier abord, mais en fait pas toujours adaptée
 - cache parfois regénéré à tort : (e.g. va regénérer le cache même pour un changement du contenu qui n'est en fait pas significatif, comme un ajout de commentaire de code)
 - cache parfois non-regénéré à tort : (e.g. ne va pas regénérer le cache si un fichier externe utilisé par le code est modifié)
-- selon lui, en plus du coût en storage, le fait d'utiliser un cache vient avec le coût de "devoir comprendre comment fonctionne le cache pour être sûr de l'invalider quand on le souhaite"
+- en plus du coût en storage, le fait d'utiliser un cache vient donc avec le coût de "devoir comprendre comment fonctionne le cache pour être sûr de l'invalider quand on le souhaite"
 
 Quote célèbre, de Phil Karlson (apparemment [dans le cadre du dev netscape](https://skeptics.stackexchange.com/questions/19836/has-phil-karlton-ever-said-there-are-only-two-hard-things-in-computer-science)) :
 
