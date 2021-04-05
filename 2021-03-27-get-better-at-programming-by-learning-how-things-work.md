@@ -1,8 +1,8 @@
 # Get better at programming by learning how things work
 
 - **url** = https://jvns.ca/blog/learn-how-things-work/
-- **type** = blogpost
-- **auteur** = [Julia EVANS](https://jvns.ca/about/) aka b0rk, une bloggeuse dont j'apprécie beaucoup le travail
+- **type** = post
+- **auteur** = [Julia EVANS](https://jvns.ca/about/) aka [b0rk](https://twitter.com/b0rk), une bloggeuse dont j'apprécie beaucoup le travail
 - **date de publication** = 2021-03-24
 - **source** = le [blog de Julia EVANS](https://jvns.ca/)
 
