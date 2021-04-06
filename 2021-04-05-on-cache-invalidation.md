@@ -5,7 +5,7 @@
 - **auteur** = Yihui Xie, dev bilingue (chinois+américain) dont [le centre d'intérêt semble être les stats / R](https://yihui.org/).
 - **date de publication** = 2018-06-22
 - **source** = https://yihui.org/
-- **tags** = language-agnostic ; topic>caching
+- **tags** = language>agnostic ; topic>caching
 
 
 **TL;DR** : son point de vue sur l'invalidation de cache. Son post est surtout intéressant pour son exemple concret :

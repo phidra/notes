@@ -5,7 +5,7 @@
 - **auteur** = [Julia EVANS](https://jvns.ca/about/) aka [b0rk](https://twitter.com/b0rk), une bloggeuse dont j'apprécie beaucoup le travail
 - **date de publication** = 2021-04-03
 - **source** = le [blog de Julia EVANS](https://jvns.ca/)
-- **tags** = language-agnostic ; tool ; concrete-usage ; topic>strace
+- **tags** = language>agnostic ; tool ; concrete-usage ; topic>strace
 
 **TL;DR** : une liste de chouettes problèmes concrets que `strace` peut nous aider à résoudre :
 

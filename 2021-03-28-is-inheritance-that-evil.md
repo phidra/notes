@@ -5,7 +5,7 @@
 - **auteur** = Matthieu CNEUDE, dev français assez actif [site perso](https://matthieucneude.com/), [twitter](https://twitter.com/Cneude_Matthieu), [github](https://github.com/Phantas0s), [son blog](https://thevaluable.dev/page/about/)
 - **date de publication** = 2020-03-27
 - **source** = https://thevaluable.dev/
-- **tags** = language-agnostic ; base-concept ; architecture ; topic>inheritance
+- **tags** = language>agnostic ; base-concept ; architecture ; topic>inheritance
 
 **TL;DR** :
 - Avis critique de l'héritage et du lieu commun "il ne faut jamais utiliser l'héritage, il vaut mieux utiliser la composition".
