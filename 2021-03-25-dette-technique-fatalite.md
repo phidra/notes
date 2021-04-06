@@ -25,7 +25,7 @@
     - erreur à ne pas faire n°1 = continuer comme avant en supposant qu'on arrivera mieux à éviter la dette (il faut **ajouter** quelque chose à l'équipe pour changer de paradigme)
     - erreur à ne pas faire n°2 = supposer qu'on a une bonne vision de ses lacunes (effet Dunning-Kruger = on ne sait pas ce qu'on ne sait pas, et il faut en être conscient)
 
-## introduction
+## Introduction
 
 00:30 les entreprises refont tous les deux ans leur système.
 
