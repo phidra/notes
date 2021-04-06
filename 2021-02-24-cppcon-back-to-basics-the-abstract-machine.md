@@ -5,6 +5,7 @@
 - **auteur** = [Bob STEAGALL](https://github.com/BobSteagall), membre du comité C++
 - **date de publication** = 2020-09-22
 - **source** = [la chaîne youtube de la CppCon](https://www.youtube.com/channel/UCMlGfpWw-RUdWX_JbLCukXg)
+- **tags** = language>cpp ; topic>virtual-machine
 
 
 **TL;DR** : talk sur les similitudes et différences entre la différence entre _abstract machine_ (dans le modèle mental du développeur, c'est ce qui fait tourner le code qu'on écrit) et _physical machine_ (qui exécute réellement le programme).

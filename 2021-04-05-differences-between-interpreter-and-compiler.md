@@ -5,6 +5,7 @@
 - **auteur** = Matthieu CNEUDE, dev français assez actif [site perso](https://matthieucneude.com/), [twitter](https://twitter.com/Cneude_Matthieu), [github](https://github.com/Phantas0s), [son blog](https://thevaluable.dev/page/about/)
 - **date de publication** = 2021-10-27
 - **source** = https://thevaluable.dev/
+- **tags** = language-agnostic ; base-concept ; programming-languages ; topic>compiler ; topic>interpreter
 
 **TL;DR** : rappel des différences entre langage compilé et langage interprété
 - *If you need to remember only one thing from this article, it’s this one: every programming language can be interpreted or compiled.*

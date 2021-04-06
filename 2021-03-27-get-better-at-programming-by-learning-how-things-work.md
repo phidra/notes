@@ -5,6 +5,7 @@
 - **auteur** = [Julia EVANS](https://jvns.ca/about/) aka [b0rk](https://twitter.com/b0rk), une bloggeuse dont j'apprécie beaucoup le travail
 - **date de publication** = 2021-03-24
 - **source** = le [blog de Julia EVANS](https://jvns.ca/)
+- **tags** = language-agnostic ; essay ; topic>learning
 
 
 **TL;DR** : elle présente son point de vue sur l'apprentissage, en expliquant sa façon d'apprendre. Je me retrouve beaucoup dans ce post, et notamment sur :

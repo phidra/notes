@@ -65,9 +65,9 @@ Exemple :
 # Back to Basics: The Abstract Machine - Bob Steagall - CppCon 2020
 ```
 
-## convention = tags
+## convention = méta-infos
 
-Le second contenu du fichier est une liste à puces contenant les tags de la note.
+Le second contenu du fichier est une liste à puces contenant les méta-infos de la note.
 
 Exemple :
 
@@ -79,16 +79,19 @@ Exemple :
 - **source** = [la chaîne youtube de la CppCon](https://www.youtube.com/channel/UCMlGfpWw-RUdWX_JbLCukXg)
 ```
 
-Les tags obligatoires sont ceux donnés en exemple ci-dessus :
+Les méta-infos obligatoires sont ceux donnés en exemple ci-dessus :
 - `url`
 - `type`
 - `auteur`
 - `date de publication`
 - `source`
+- `tags`
 
 Précisions :
-- il doit y avoir soit un tag `auteur`, soit un tag `auteurs`, jamais les deux, et jamais aucun
-- il n'y a volontairement PAS de tag `titre`, pour éviter de dupliquer l'information, qui est déjà dans le titre de niveau 1 du fichier
+- il doit y avoir soit une clé `auteur`, soit une clé `auteurs`, jamais les deux, et jamais aucun
+- il n'y a volontairement PAS de clé `titre`, pour éviter de dupliquer l'information, qui est déjà dans le titre de niveau 1 du fichier
+- il n'y a volontairement PAS de clé `date de lecture`, celle-ci étant dans le titre du fichier
+- les `tags` sont séparés par des points-virgules (éventuellement entourés d'espace) : ` ; `
 
 ## mention "NdM"
 

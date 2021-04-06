@@ -5,6 +5,7 @@
 - **auteur** = Matthieu CNEUDE, dev français assez actif [site perso](https://matthieucneude.com/), [twitter](https://twitter.com/Cneude_Matthieu), [github](https://github.com/Phantas0s), [son blog](https://thevaluable.dev/page/about/)
 - **date de publication** = 2021-09-27
 - **source** = https://thevaluable.dev/
+- **tags** = language-agnostic ; base-concept ; architecture ; topic>SRP
 
 **TL;DR** :
 - très intéressant point de vue sur le SRP, et sur le fait qu'il soit érigé en sacro-sainte formule "tu violes le SRP", sans qu'on ne comprenne/définisse clairement ce qu'il y a derrière

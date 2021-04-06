@@ -5,6 +5,7 @@
 - **auteur** = Mickaël WEGERICH, consultant OCTO [sa page medium](https://mickalwegerich.medium.com/)
 - **date de publication** = 2021-03-15
 - **source** = [page youtube de la DuckConf](https://www.youtube.com/channel/UCrzp80KZG1K_icINE6D36OA) = la conf octo, orientée archi
+- **tags** = language-agnostic ; architecture ; essay ; topic>technical-debt
 
 **TL;DR** : intéressante revue de diverses sources de dette technique
 - le talk se concentre sciemment sur la dette technique involontaire (ce que j'apprécie particulièrement)

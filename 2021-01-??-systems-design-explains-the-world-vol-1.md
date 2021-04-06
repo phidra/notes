@@ -4,6 +4,7 @@
 - **type** = post
 - **auteur** = Avery PENNARUN, dev canadien, [ancien de chez Google et Microsoft](https://www.usenix.org/conference/srecon18europe/speaker-or-organizer/avery-pennarun-google), actuellement co-fondateur et CEO de https://tailscale.com/ , boîte qui fait des VPN
 - **date de publication** = 2020-12-27
+- **tags** = language-agnostic ; topic>system-design ; essay
 
 
 **TL;DR** : article intéressant sur le system-design.
