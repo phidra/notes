@@ -1,7 +1,7 @@
 # La dette technique, est-ce une fatalité ?
 
 - **url** = [vidéo youtube](https://www.youtube.com/watch?v=C2COBA4EFrM), [compte-rendu du talk par Octo](https://blog.octo.com/la-dette-technique-est-ce-une-fatalite-compte-rendu-du-talk-de-mickael-wegerich-a-la-duck-conf-2021/)
-- **type** = vidéo + compte-rendu
+- **type** = vidéo + post
 - **auteur** = Mickaël WEGERICH, consultant OCTO [sa page medium](https://mickalwegerich.medium.com/)
 - **date de publication** = 2021-03-15
 - **source** = [page youtube de la DuckConf](https://www.youtube.com/channel/UCrzp80KZG1K_icINE6D36OA) = la conf octo, orientée archi
