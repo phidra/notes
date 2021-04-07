@@ -5,6 +5,7 @@
 - **auteurs** = Christian HOLLER (Security Engineer), Alexis BEINGESSNER (dev rust), Kris WRIGHT (crash reporting peer), tous trois chez mozilla
 - **date de publication** = 2021-04-06
 - **source** = https://hacks.mozilla.org/, le blog tech de mozilla
+- **tags** = language>cpp ; language>rust ; topic>memory-safety ; topic>thread-sanitizer ; rex ; security
 
 **TL;DR** : mozilla a utilisé ThreadSanitizer sur le projet firefox, voici leur retour d'expérience :
 - la partie difficile était plutôt la partie humaine :
