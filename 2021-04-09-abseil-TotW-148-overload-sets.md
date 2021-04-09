@@ -58,7 +58,7 @@ Dernier point abordé = constructeurs :
 
 > The most important overload sets for types are often their set of constructors, especially the copy and move constructors. Copy and move, done right, form an overload set in all senses of the term: the reader should not need to know which of those overloads is chosen, because the semantics of the newly-constructed object should be the same in either case (assuming both constructors exist).
 
-La rule of thumb à retenir, même si je trouve la forme opposée intuitive "les fonctions overloadées doivent représenter la même superfonction" :
+La rule of thumb à retenir, même si je trouve que la forme opposée (= les fonctions overloadées doivent représenter la même superfonction) est plus intuitive :
 
 > don’t produce overloads where anyone might need to know which function was chosen
 
