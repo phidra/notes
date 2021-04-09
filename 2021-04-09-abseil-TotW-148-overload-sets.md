@@ -5,6 +5,7 @@
 - **auteur** = [Titus WINTERS](https://www.linkedin.com/in/tituswinters), Senior Staff Software Engineer chez Google, fondateur d'Abseil, membre du comité C++
 - **date de publication** = 2018-05-03 (updated 2020-04-06)
 - **source** = [Abseil's C++ Tip of the Week](https://abseil.io/tips/)
+- **tags** = language>cpp ; topic>overload-sets ; best-practices
 
 **TL;DR** : les bonnes pratiques autour de l'overloading :
 - il ne faut overloader des fonctions que si toutes les fonctions de l'overload-set se comportent de façon homogène
@@ -21,6 +22,8 @@ void open(Gate& g);
 void open(const char* name, const char* mode ="r");
 ```
 
+## Notes vrac
+
 > Use overloaded functions (including constructors) only if a reader looking at a call site can get a good idea of what is happening without having to first figure out exactly which overload is being called.”
 >
 > If the documented behavior of the members of an overload set varies, then a user implicitly has to know which function is actually being called.
@@ -29,7 +32,7 @@ En gros, deux fonctions d'un même overload-set doivent avoir le même comportem
 
 Le **contre-exemple** parfait est celui copié-collé ci-dessus dans le TL;DR.
 
-Et au passage, la bonne façon d'éviter ce genre d'overloading est le namespace :
+Et au passage, la bonne façon d'éviter ce genre d'overloading malencontreux est le namespace :
 
 > Hopefully, namespace differences suffice to disambiguate functions like these from actually forming an overload set.
 
