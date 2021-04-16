@@ -1,6 +1,6 @@
 # De bronze à légendaire, comment réussir vos IA de bot
 
-- **url** = [url](https://www.youtube.com/watch?v=8kBQMQyLHME)
+- **url** = https://www.youtube.com/watch?v=8kBQMQyLHME
 - **type** = vidéo
 - **auteur** = [Grégory RIBÉRON](https://github.com/Manwe56/competitive-programming), dev java/C++ à Murex, qui fait beaucoup de competitive programming, en a gagné certaines.
 - **date de publication** = 2017-04-17
