@@ -15,7 +15,7 @@
     1. Notif = callback (e.g. button, non blocking IO, fp, dataflow programming). Ephemeral, in memory (not on disk)
     2. Persistent record (e.g. timeseries). Ils ne triggent rien : ils sont juste DISPONIBLES pour querying et analyse.
     3. 07:00 Both = "stream processing". E.g. message brokers, database stream queries.  Typically, not long-time storage.
-- 0:00 distinction= windowing : Grouper les évents (e.g. par jour de la semaine, ou bien sliding Windows)  ou non
+- 10:00 distinction= windowing : Grouper les évents (e.g. par jour de la semaine, ou bien sliding Windows)  ou non
 - 4:00 twitter clone exemple.
     * Objectif = afficher les tweets des comptes qu'un user follow
     * Implémenter une Query SQL est compliqué.
