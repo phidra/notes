@@ -53,6 +53,10 @@ Les keypoints :
 Un peu plus bas dans la doc, il y a une sous-section sur l'attribut `__path__` ([lien vers la sous-section](https://docs.python.org/3/reference/import.html#module-path)) ; la présence de cet attribut est la **seule** chose qui fait qu'un module est un package : un package est un module ayant un attribut `__path__`.
 
 > By definition, if a module has a __path__ attribute, it is a package.
+>
+> A package’s __path__ attribute is used during imports of its subpackages. Within the import machinery, it functions much the same as sys.path, i.e. providing a list of locations to search for modules during import.
+
+J'ai fait [une POC sur le sujet](https://github.com/phidra/pocs/tree/a7ea77968f38e14abb76754362f2fdb36b3e8e08/python/import/import08_turning_module_into_package), qui montre qu'un module peut être transformé en package simplement en lui ajoutant dynamiquemet un attribut `__path__`.
 
 ## namespace packages
 
