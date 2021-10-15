@@ -40,3 +40,5 @@ ceci est clair : utiliser ABC veut dire jouer avec `isinstance` / `issubclass`
 > Interfaces are a declarative entity, they do not set any boundaries; simply asserts that the class implements and its object provides the interface.
 
 Du coup, je ne vois pas l'intérêt, surtout par rapport aux protocols... Peut-être parce qu'il me manque la partie `adapter` ?
+
+**EDIT** : [l'article que je lis juste derrière](./2021-10-15-decyphering-explaining-why-interfaces-are-great.md) est déjà plus clair sur les avantages des zope.interfaces
