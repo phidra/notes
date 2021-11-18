@@ -27,6 +27,8 @@ Historiquement, les interactions avec les ordinateurs se faisaient :
 
 Terminologie : **teleprinter** (en français : téléscripteur ou téléimprimeur) est le terme officiel, **teletype** en est devenu synonyme par [antonomase](https://fr.wikipedia.org/wiki/Antonomase), suite au succès du [Teletype Model 33](https://en.wikipedia.org/wiki/Teletype_Model_33), sorti en 1963.
 
+[L'article suivant](./2021-11-18-forgotten-world-of-dumb-terminals.md) en a une définition que je trouve intéressante = teletype = _mechanical typewriter_ = machines à écrire automatiques.
+
 Les teletype prédatent les ordinateurs ! L'utilisation des teletype en tant que I/O pour communiquer avec un ordinateur n'est qu'un de leurs usages (un autre étant le [Télex](https://fr.wikipedia.org/wiki/T%C3%A9lex) = réseau de communication entre téléscripteurs, mis en place à partir des années 1930 et encore en service au début du XXIe siècle [...] Orange clôture ses derniers abonnements français le 31 janvier 2017.).
 
 > Whatever you type on one typewriter gets automatically printed out on the other.
