@@ -29,7 +29,7 @@ The distinctive feature of FP style, in general, is the wide use of functions wh
 - **Lambda function** is the anonymous function.
 - **Closure** is the function that can capture some variables from the context it was declared in, without letting the garbage collector erase the data which can be used in this function for as long as the application has the reference to the function itself.
 
-(NdM : même en l'absence de garbage-collector, les closures permettent un accès à des données hors-scope)
+(NdM : même en l'absence de garbage-collector, les closures permettent un accès à des données qui auraient sinon été hors-scope)
 
 ## List comprehensions
 
