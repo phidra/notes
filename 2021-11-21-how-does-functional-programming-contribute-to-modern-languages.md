@@ -9,6 +9,17 @@
 
 **TL;DR** : intéressant article sur ce que la programmation fonctionnelle a apporté aux autres langages de programmation. En d'autres termes, l'article est un listing des features caractéristiques des langages fonctionnels. Ces notes sont assez brutes.
 
+* [How Does Functional Programming Contribute to Modern Languages ?](#how-does-functional-programming-contribute-to-modern-languages-)
+   * [First-class functions](#first-class-functions)
+   * [List comprehensions](#list-comprehensions)
+   * [Algebraic data types](#algebraic-data-types)
+   * [Pattern Matching](#pattern-matching)
+   * [Lazy evaluations](#lazy-evaluations)
+   * [Continuations](#continuations)
+   * [Futures and promises](#futures-and-promises)
+   * [Monadic interfaces](#monadic-interfaces)
+   * [Async](#async)
+
 ## First-class functions 
 
 The distinctive feature of FP style, in general, is the wide use of functions which become one of the main development tools.
