@@ -387,8 +387,7 @@ Ces concepts sont tous liés à la notion de distance, mais ne s'appliquent pas 
 
 - distance = s'applique à une PAIRE de vertex
 - eccentricity = s'applique à un SEUL vertex
-- diameter = s'applique à tout le GRAPHE
-- radius = s'applique à tout le GRAPHE
+- diameter/radius = s'applique à tout le GRAPHE
 
 Notations : `cen(g)` , `dia(g)`, `rad(g)`, ...
 
