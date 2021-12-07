@@ -358,27 +358,100 @@ Autre exemple illustrant la différence entre maximal et maximum = les composant
 
 ## Graph Theory: 51. Eccentricity, Radius & Diameter
 
-STILL TO DO
+
+**Distance between u and v** = length of shortest path between `u` and `v`.
+
+Le graphe muni de la distance est un espace métrique : la distance entre deux nœuds est une distance [au sens mathématique du terme](https://fr.wikipedia.org/wiki/Distance_(math%C3%A9matiques)), et elle vérifie donc les 3 propriétés habituelles d'une distance :
+
+- symétrie : `d(u,v) = d(v,u)`
+- séparation : `d(u,v) = 0  ⇔  u = v`
+- inégalité triangulaire : `d(u,v) ≤ d(u,w) + d(w,v)`
+
+**Eccentricity (excentricité) d'un vertex u** = max des distances entre le nœud et tous les autres nœuds.
+
+Note : si un vertex a une excentricité de 1, c'est qu'il est adjacent à tous les autres vertex du graphe (star graph). Plus généralement : petite excentricité ⇒ vertex proche de tous les autres nœuds du graphe.
+
+**Diameter du graphe** = la plus grande excentricité parmi tous les nœuds du graphe.
+
+**Radius du graphe** = la plus petite excentricité parmi tous les nœuds du graphe.
+
+**Peripheral vertex** = vertex dont l'excentricité est égale au diamètre.
+
+**Periphery of the graph** = ensemble de tous les peripheral vertex.
+
+**Central vertex** = vertex dont l'excentricité est égale au rayon.
+
+**Center of the graph** = ensemble de tous les central vertex.
+
+Ces concepts sont tous liés à la notion de distance, mais ne s'appliquent pas aux mêmes objets :
+
+- distance = s'applique à une PAIRE de vertex
+- eccentricity = s'applique à un SEUL vertex
+- diameter = s'applique à tout le GRAPHE
+- radius = s'applique à tout le GRAPHE
+
+Notations : `cen(g)` , `dia(g)`, `rad(g)`, ...
+
+Théorème = le diamètre est supérieur ou égal à R et inférieur ou égal à 2R : `rad(G) ≤ dia(G) ≤ 2.rad(G)`
 
 ## Graph Theory: 52. Radius and Diameter Examples
 
-STILL TO DO
+Théorème = si G est disconnected, son complémentaire (noté "G barre" = G avec une barre au dessus) est connexe et de diamètre inférieur ou égal à 2.
+
+(la preuve est assez logique : en gros, si G est déconnecté, alors il y aura des edegs entre tous les nœuds de chaque composantes connexes, et on pourra aller partout en au max deux edges)
+
+Théorème = tout graphe G est le centre d'un graphe connecté H. La façon dont il est construit est assez rigolote :
+
+- on ajoute deux vertex u1 et u2, chacun est adjacent à tous les vertices de G.
+- on ajoute deux vertex v1 et v2, chacun n'est adjacent qu'à u1 (resp. u2)
+- avec un tel graphe, par construction :
+   - tous les nœuds de G sont au max à 2 de v1 ou v2 (car ils sont tous connectés à u1/u2) et au moins à 2 de v1/v2
+   - u1 est à 3 de v2 et v1 est à 4 de v2 ⇒ 2 est bien la plus petite excentricité de H aka le radius de H
+   - ⇒ tous les nœuds de G ont bien une excentricité de 2, égale au radius de H, donc G est le centre de H, CQFD
 
 ## Graph Theory: 53. Cut-Vertices
 
-STILL TO DO
+**cut-vertex** = v est cut-vertex de G si `G—v` (G privé de v) a plus de composantes connexes que G.
+
+Notation : `C(G)` (ou parfois `K(G)`) est le nombre de composantes connexes de G.
+
+Caractérisation des cut-vertices v = il existe deux vertex u et w pour lesquels v est sur tous les uw-path. (il existe l'équivalent pour les bridges)
 
 ## Graph Theory: 54. Number of Cut-Vertices
 
-STILL TO DO
+Ici, on donne quelques limites sur le nombre de cut-vertices que peut contenir un graphe.
+
+Les cas extrêmes :
+- `Kn` qui a 0 cut-vertex (en effet, si le graphe est complet, on peut lui retirer des vertices, il restera connexe)
+- `Pn` qui en a `n-2` (en effet, sur un path-graph, à l'exception des deux extrêmités, tout vertex relie deux moitiés du graphe)
+
+Théorème : tout graphe connecté non trivial a au moins deux nodes si ne sont pas des cut-vertices.
+
+Plus généralement, les peripheral vertices ne peuvent pas être des cut-vertices.
 
 ## Graph Theory: 55. Bridges and Blocks
 
-STILL TO DO
+**bridge-edge** : `e` est un bridge si `C(G—e) > C(G)` ; aka retirer `e` augmente le nombre de composantes connexes.
+
+En fait, on a même `C(G—e) = C(G) + 1` ; c'est une différence avec les cut-vertices où en retirant un seul nœud, on peut séparer le graphe en plusieurs morceaux : en retirant un bridge, on ne peut "que" séparer le graphe en 2.
+
+Caractérisation des bridges e (similaire à la caractérisation des cut-vertices) = il existe deux vertex u et w pour lesquels e est sur tous les uw-path.
+
+Condition nécessaire et suffisante pour que `e` soit un bridge : il n'est sur aucun cycle du graphe.
+
+Si uv est un bridge et que `deg(u) >= 2`, alors u est un cut-vertex ; c'est logique graphiquement, de base les deux nœuds d'un bridge sont des cut-vertices, et ce n'est que si l'un des deux sous-graphe est vide que ce n'est pas le cas.
+
+**2-connected graph = non-separable graph** : un graphe connecté non-trivial est dit non-separable (ou 2-connected) s'il n'a pas de cut-vertices ; dit autrement, tous ses nœuds sont connectés par au moins deux chemins, donc on peut lui retirer n'importe quel vertex, on ne déconnectera jamais le graphe.
+
+NdM : je trouve la notation "2-connected" plus intuitive.
+
+**Block** = maximal 2-connected subgraph. NdM : c'est un peu l'équivalent d'une composante connexe, mais pour la 2-connexité.
+
+Théorème : si G a au moins un cut-vertex, alors au moins deux blocks de G contiennent un cut-vertex de G (ils sont appelés **end-blocks**).
 
 ## Graph Theory: 56. Central Vertices are in a Single Block
 
-STILL TO DO
+Les central vertices appartiennent tous au même block (démontré par l'absurde).
 
 ## Graph Theory: 57. Planar Graphs
 
