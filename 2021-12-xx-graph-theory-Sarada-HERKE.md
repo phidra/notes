@@ -11,13 +11,13 @@
 
 Les notions abordées restent introductives, mais sont définies plutôt formellement.
 
-Dans ces notes, j'essaye de mettre en gras les notions importantes (mais je ne reporte pas systématiquement leur définition).
+Dans ces notes, j'essaye de mettre **en gras** les notions importantes (mais je ne reporte pas systématiquement leur définition).
 
-J'ai mis le titre de certaines vidéos en chapitre, mais pas tous : ce n'est pas parce qu'il n'existe pas de titre pour une notion qu'elle n'est pas présente quelque part dans ces notes.
+J'ai mis certains titre de vidéos en chapitre, mais pas tous : ce n'est pas parce qu'il n'existe pas de titre pour une notion qu'elle n'est pas présente quelque part dans ces notes.
 
 Note : pour gagner du temps, je ne regarde pas les vidéos qui se contentent de prouver les théorèmes ou les résultats, mais elles ont l'air super super intéressantes du point de vue mathématique !
 
-Note bis : pour les termes de théorie des graphes, ces deux ressources peuvent être intéressantes :
+Note bis : pour les termes de théorie des graphes, ces deux ressources peuvent également être intéressantes :
 
 - en français : [lexique de la théorie des graphes](https://fr.wikipedia.org/wiki/Lexique_de_la_th%C3%A9orie_des_graphes)
 - en anglais : [glossary of graph theory](https://en.wikipedia.org/wiki/Glossary_of_graph_theory)
