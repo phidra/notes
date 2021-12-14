@@ -340,7 +340,7 @@ K₂ x P₄ :
 
 **Maximal** = on maximise une relation d'inclusion (i.e. on ne peut pas inclure dans XXX un élément de plus).
 
-**Independent set in a graph G** = set de vertices tel qu'aucune paire de vertex du set ne soient adjacents. Le terme français semble être **un stable** ([lien](https://fr.wikipedia.org/wiki/Stable_(th%C3%A9orie_des_graphes)).
+**Independent set in a graph G** = set de vertices tel qu'aucune paire de vertex du set ne soient adjacents. Le terme français semble être **un stable** ([lien](https://fr.wikipedia.org/wiki/Stable_(th%C3%A9orie_des_graphes))).
 
 **Maximal independent set** = on ne peut pas inclure un nouveau vertex au set (car si on le fait, le set n'est plus indépendant).
 
