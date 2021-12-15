@@ -126,12 +126,12 @@ Comme je suis plus intéressé par la prise de note et consultation facile que p
 
 Rendre obligatoire la présence d'un TL;DR en début d'article ?
 - +++ à la rédaction de la note, ça me force à prendre du recul
-- +++ à la lecture de la note, ça a BEAUCOUP de valeur pour me la remetter en tête sans tout relire
+- +++ à la lecture de la note, ça a BEAUCOUP de valeur pour me la remettre en tête sans tout relire
 - --- ça augmente l'inertie à la prise de notes
 
 Rien que pour l'inertie, il vaut sans doute mieux pas rendre le TL;DR obligatoire, même si je vais essayer d'en mettre le plus possible.
 
-Éventuellement, force la présence d'un TL;DR, en acceptant de ne pas l'avoir rempli (i.e. en acceptant les TL;DR vides ?). Ainsi, j'ai plus de chances d'avoir envie de le remplir, sans que ce soit obligatoire.
+Éventuellement, forcer la présence d'un TL;DR, en acceptant de ne pas l'avoir rempli (i.e. en acceptant les TL;DR vides ?). Ainsi, j'ai plus de chances d'avoir envie de le remplir, sans que ce soit obligatoire.
 
 ### autres tags intéressants ?
 
