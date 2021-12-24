@@ -637,4 +637,8 @@ Ndm : j'avais pas fait attention mais tout tree est bipartite :-)
 
 Théorème : `χ(G) ≤ Δ(G) + 1`
 
-Théorème de Brook = les deux seuls cas où l'égalité est atteinte sont Kn et les graphes cycles d'ordre impair. Dans tous les autres cas, on a `χ(G) ≤ Δ(G)`
+Théorème de Brooks = les deux seuls cas où l'égalité est atteinte sont Kn et Cn = les graphes cycles d'ordre impair. Dans tous les autres cas, on a `χ(G) ≤ Δ(G)`
+
+La formulation [sur wikipedia](https://fr.wikipedia.org/wiki/Th%C3%A9or%C3%A8me_de_Brooks) :
+
+> Dans tout graphe connexe non orienté G de degré maximal `Δ`, le nombre chromatique `χ(G)` vérifie `χ(G) ≤ Δ`, sauf si G est un graphe complet ou un cycle de longueur impaire, auquel cas `χ(G) = Δ + 1`.
