@@ -4,18 +4,20 @@ Cette page décrit mes choix pour utiliser le présent repo.
 
 **Note** : ces instructions ont été rédigées le 28 février 2021, et correspondent à une première itération, à l'état _ACTUELLEMENT_ retenu : il est probable qu'à l'usage, je revienne modifier ce workflow.
 
+**Edit du 18 janvier 2022** : je commence à ajouter à ce repo un équivalent markdown de mes notes OTL privées, dans un sous-répertoire `structured`
+
 ## nom du repo github
 
 Nom retenu = `notes`
 
 La grande question, c'est le conflit possible entre :
-- ces notes déstructurées sur des ressources que je consulte
-- des notes OTL publiques que j'aimerais faire
+- les présentes notes déstructurées sur des ressources que je consulte
+- des notes OTL publiques que j'aimerais faire (EDIT janvier 2022 : que je commence à intégrer dans ce repo, quoi qu'au format markdown)
 - mes notes OTL privées
 - mes notes bibliographiques (sur des papiers scientifiques), actuellement dans : https://github.com/phidra/biblio
 
 J'ai tout de même retenu `notes`, malgré les potentiels conflits :
-- plus tard le repo fera office de monorepo de notes, à l'intérieur duquel je distinguer les notes structurées et les notes au fil de l'eau (voire les notes bibliographiques) ; pour le moment, seules les notes déstructurées sont dans ce repo
+- plus tard le repo fera office de monorepo de notes, à l'intérieur duquel je distinguer les notes structurées et les notes au fil de l'eau (voire les notes bibliographiques) ; pour le moment, seules les notes déstructurées sont dans ce repo (EDIT janvier 2022 : j'ai commencé, le repo contient maintenant également des notes structurées)
 - je pourrai toujours [renommer le repo](https://docs.github.com/en/github/administering-a-repository/renaming-a-repository) plus tard
 
 Il y a un lien avec le besoin du lecteur RSS (feedly, miniflux), puisqu'actuellement feedly centralise systématiquement ce que je consulte, et joue le rôle de "mémoire" :
@@ -24,6 +26,8 @@ Il y a un lien avec le besoin du lecteur RSS (feedly, miniflux), puisqu'actuelle
 - quelques articles donnent lieu à des actions, et l'action la plus fréquente est justement de prendre des notes déstructurées (ou parfois structurées) sur le sujet (c'est en ce sens qu'il y a un lien entre le présent repo et le sujet du lecteur RSS). Pour le moment, je ne vais toutefois pas prendre de notes via le lecteur RSS.
 - plus rarement, il s'agit de quelque chose à essayer concrètement (e.g. une commande linux)
 - parfois encore, il s'agit de pérenniser la ressource dans un réservoir de trucs à faire plus tard : outil à explorer, ou projet qui a l'air chouette à mener
+
+**EDIT janvier 2022** : du coup, les règles qui suivent ne s'appliquent qu'aux notes déstructurées.
 
 ## nom de chaque fichier de notes
 
