@@ -83,6 +83,8 @@ Si besoin, la stratégie `simple` nécessite un peu moins de RAM (cf. [la doc](h
 osmium extract --strategy simple --bbox 7.4143945,43.7285819,7.4155760,43.7289873 /tmp/monaco.osm.pbf --output /tmp/extracted.osm.pbf
 ```
 
+J'aurais bien utilisé `ogr2ogr` avec l'option `-spat` pour ça, mais on dirait qu'il ne sait pas créer de fichier OSM, juste les lire : https://gdal.org/drivers/vector/index.html
+
 # Mes utilisations
 
 ## Consulter les attributs d'un edge

@@ -134,6 +134,8 @@ OGRFeature(lines):4224972
 
 La doc du driver GDAL permettant d'important des données OSM est : https://gdal.org/drivers/vector/osm.html
 
+Note : GDAL sait **lire** les fichiers OSM, mais pas les créer : https://gdal.org/drivers/vector/index.html (c'est dommage, ça m'aurait été utile pour extraire facilement des sous-parties de données restreintes à un polygone, avec `ogr2ogr` et `-spat`).
+
 ## Fichier `osmconf.ini`
 
 L'import des features d'un fichier OSM est configuré par un fichier `osmconf.ini` (celui par défaut est : `/usr/share/gdal/osmconf.ini`).
