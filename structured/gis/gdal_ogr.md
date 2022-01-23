@@ -38,7 +38,7 @@ OGR est la sous-partie de GDAL qui sait gérer les formats vectoriels (comme les
 
 La librairie s'accompagne de binaires utilitaires, notamment :
 - `ogrinfo` pour analyser une source de données (e.g. fichier `.osm.pbf`), ou en extraire les infos d'une feature particulière (e.g. consulter les tags et la géométrie d'une way OSM)
-- `ogr2ogr` pour convertir des données d'un format à un autre (e.g. convertir un fichier `.osm.pbf` en geojson)
+- `ogr2ogr` pour convertir des données d'un format à un autre (e.g. convertir un fichier `.osm.pbf` en geojson, ou en dump postgis)
 
 # Utilisation
 
