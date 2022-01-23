@@ -1,4 +1,4 @@
-Contexte = janvier 2022, j'utilise qgis pour visualiser simplement des données au format OSM, sans dépendre de fonds de carte ou d'autres outils. Mon cahier des charges :
+Contexte = janvier 2022, j'utilise qgis pour visualiser simplement des données au format OSM, sans dépendre d'idEditor, de fonds de carte ou d'autres outils. Mon cahier des charges :
 
 - charger un fichier `.osm.pbf` et visualiser les géométries des nodes/edges
 - pouvoir cliquer sur un edge/node pour consulter ses attributs, et notamment son id
@@ -207,6 +207,15 @@ Avec "Catégorisé", on peut rendre le layer différemment en fonction d'un attr
 Avec "Ensemble de règles", je peux définir des règles plus fines sous forme de requête SQL
 
 (ergonomie : si je commence avec "Catégorisé", puis que je switche sur "Ensemble de règles", les règles sont initialisées avec des équivalents de ce qu'il y avait dans "Catégorisé", ce qui me permet de les modifier)
+
+## Colorier les features sélectionnées d'une façon particulière
+
+Si j'utilise la sélection comme un moyen d'afficher un chemin, il peut être utile de le rendre très visible.
+
+Ça se fait en deux étapes :
+
+- _Projet > Propriétés > Général > Couleur de la sélection_ pour choisir un rouge bien flashy
+- Clic droit sur la couche + puis _Propriétés > Symbologie > Ensemble de règles_ + ajouter une règle avec le filtre `is_selected() = true` + appliquer.
 
 # Autres notes vrac sur l'UI
 
