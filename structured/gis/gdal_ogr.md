@@ -134,7 +134,14 @@ OGRFeature(lines):4224972
 
 La doc du driver GDAL permettant d'important des données OSM est : https://gdal.org/drivers/vector/osm.html
 
-Note : GDAL sait **lire** les fichiers OSM, mais pas les créer : https://gdal.org/drivers/vector/index.html (c'est dommage, ça m'aurait été utile pour extraire facilement des sous-parties de données restreintes à un polygone, avec `ogr2ogr` et `-spat`).
+Note : GDAL sait **lire** les fichiers OSM, mais pas les créer : https://gdal.org/drivers/vector/index.html  :
+
+```sh
+ogr2ogr -f OSM dest.osm /tmp/monaco.osm.pbf lines
+ERROR 1: OSM driver does not support data source creation.
+```
+
+(c'est dommage, ça m'aurait été utile pour extraire facilement des sous-parties de données restreintes à un polygone, avec `ogr2ogr` et `-spat`)
 
 ## Fichier `osmconf.ini`
 
