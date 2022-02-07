@@ -7,7 +7,7 @@
 - **source** = [sa chaîne YouTube](https://www.youtube.com/c/EricLombardot/about)
 - **tags** = language>none ; topic>statistics ; topic>maths ; level>beginner
 
-**TL;DR** : Notes très brutes sur la série de vidéos d'Éric LOMBARDOT sur les statistiques descriptives. La série de vidéo a une approche très terre-à-terre, peu formelle. Du coup, même si elle est peu mathématique, elle est intéressante pour se faire une idée des notions "avec les mains".
+**TL;DR** : Notes très brutes sur la série de vidéos d'Éric LOMBARDOT sur les statistiques descriptives. La série de vidéo a une approche très terre-à-terre, peu formelle. Du coup, même si elle est peu mathématique, elle reste intéressante pour se faire une idée des notions "avec les mains".
 
 * [Statistiques descriptives](#statistiques-descriptives)
    * [Statistiques univariées](#statistiques-univariées)
@@ -28,6 +28,9 @@
       * [Corrélation de Pearson](#corrélation-de-pearson)
       * [Corrélation n'est pas causalité !](#corrélation-nest-pas-causalité-)
       * [Régression linéaire](#régression-linéaire)
+   * [Tests statistiques](#tests-statistiques)
+      * [Test de Student](#test-de-student)
+      * [Test du Χ²](#test-du-χ)
 
 ## Statistiques univariées
 
@@ -93,7 +96,7 @@ Variance = moyenne des carrés des écarts à la moyenne. (Carrés pour éviter 
 
 Décomposition de la variance intra et inter population : si la population se décompose en deux sous-types de populations, la variance s'explique par la contribution de chaque type de population (en gros, la part de la variance au sein du sous-type 1, et de la variance 2 au sein du sous-type 2).
 
-Coefficient de variation = écart type divisé par moyenne : permet en quelques sorte de normaliser la dispersion.
+Coefficient de variation = écart-type divisé par moyenne : permet en quelques sorte de normaliser la dispersion.
 
 ### Moments
 
@@ -236,3 +239,70 @@ Méthode la plus utilisée pour trouver une régression linéaire = [méthode de
 La régression linéaire permet de réaliser des prévisions : une fois qu'on connait `a` et `b`, étant donné un `x` donné (e.g. "je passe 3 heures quotidiennes devant la télé"), alors on peut prévoir le `y` ("alors je lis 7 livres par an"). Mais la fiabilité dépend de l'interprétation donnée aux variables...
 
 (il y a également une vidéo de révisions générales, mais on dirait que ce ne sont que des applications numériques → je saute)
+
+## Tests statistiques
+
+Inférence statistique = on veut déduire des caractéristiques sur une population globale  à partir de caractéristiques sur un échantillon limité ; de plus, on veut obtenir la probabilité d'erreur associée à cette déduction.
+
+On formule **l'hypothèse nulle H0** comme quoi la corrélation observée est dûe au hasard (0 comme 0 lien : aucun rapport). L'hypothèse opposée est H1 : la corrélation est établie.
+
+Pour prendre l'exemple d'un test de médicament :
+
+- H0 = le médicament n'a pas d'effet (et les éventuels résultats positifs observés sont dûs au hasard)
+- H1 = le médicament a bien un effet et explique les résultats positifs
+
+Plusieurs conditions doivent être réunies, et notamment : il faut un échantillon de taille suffisante, et il faut que l'échantillon soit représentatif de la population.
+
+**Attention** : c'est bien l'hypothèse nulle qu'on teste, et éventuellement qu'on rejette :
+
+- si on peut rejeter H0, alors H1 est validée
+- sinon, on ne rejette pas H0, _mais ça ne veut pas dire qu'on la valide_ ! C'est juste qu'on n'a pas eu assez d'éléments pour la rejeter.
+
+Exemple concret illustrant que rejeter H0 revient à valider H1, mais que ne pas rejeter H0 _ne revient pas_ à rejeter H1 :
+
+- H0 = tous les cygnes sont blancs
+- H1 = certains cygnes ne sont pas blancs
+- si on fait le tour du monde, et qu'on croise un cygne noir, on peut rejeter H0 ce qui valide H1
+- si on fait le tour du monde, et qu'on ne croise que des cygnes noirs, on ne valide pas H0 pour autant : peut-être qu'on n'a juste "pas eu de bol" et qu'on n'a croisé que des cygnes blancs, alors que des cygnes noirs existent bel et bien.
+
+### Test de Student
+
+Objectif = répondre à la question : "le lien entre deux variables **quantitatives** est-il statistiquement significatif ?"
+
+Test de Student : une droite de régression est-elle statistiquement significative ? Le coefficient de corrélation est-il statistiquement significatif ? Il ne fonctionne qu'avec deux séries qui suivent une distribution _normale_.
+
+La formule de Student permet de calculer un paramètre `t` en fonction de la taille de l'échantillon et du coefficient de corrélation entre les variables. Derrière, on compare ce `t` calculé à une valeur de référence = le `t critique` dans une table de Student.
+
+NdM : de façon contre-intuitive, `t` ne dépend pas de la taille totale de la population ! Cf. mon bouquin de stats qui disait la même chose...
+
+Plus la corrélation est forte, plus `t` est grand (i.e. plus la relation est statistiquement significative).
+
+La table de Student donne différents `t` critiques en fonction de la taille de l'échantillon (appellé degré de liberté dans la vidéo) et la probabilité d'erreur souhaitée.
+
+L'interprétation est intéressante : à partir d'un couple `t` + taille d'échantillon donné, on trouve une probabilité, par exemple : "il y a moins d'une chance sur mille de se tromper en rejetant H0" (et dans ce cas, à 999 chances sur 1000, on valide H1 = la corrélation entre X et Y est statistiquement significative).
+
+L'autre interprétation donnée est également très intéressante : on peut dire _à quel point une variable X explique une variable Y_ : "16% des salaires s'expliquent par l'ancienneté, et ceci est statistiquement significatif".
+
+### Test du Χ²
+
+Le test du Χ² analyse le lien de dépendance entre deux caractères (i.e. deux variables qualitatives) : est-il statistiquement significatif ou non ?
+
+Exemple d'application : on a 4 types d'abonnement (de regular à premium, avec deux intermédiaires), on a les chiffres du nombre de type d'abonnements souscrits, ventilés par le sexe de l'abonné. La question est : le type d'abonnement dépend-il du sexe ?
+
+H0 = _statu quo_ : le type d'abonnement et le sexe sont indépendants (et H1 = ils sont corrélés).
+
+Tout comme student, le test s'intéresse à la probabilité d'erreur quand on fait de l'inférence statistique.
+
+Principe : on regarde quels seraient les valeurs du tableau de l'échantillon (i.e. du tableau indiquant le nombre d'abonnés par sexe et par type d'abonnement) si H0 était vraie, puis on regarde si les valeurs obtenues empiriquement (i.e. les "vraies" valeurs obtenus dans la réalité) en sont éloignées, en sommant les carrés des différences.
+
+Ici aussi, il y a une table donnant le Χ² critique en fonction de la probabilité d'erreur, et du degré de liberté (qui dépend du nombre de valeurs possibles pour la variable quantitative).
+
+NdM : attention à ne pas confondre discret/continu ET qualitatif/quantitatif.
+
+Rappel important : établir un lien et l'interprétation sont deux choses différentes.
+
+À [05:57](https://www.youtube.com/watch?v=iNbCaR2Ven8&t=357s), il y a un tableau qui indique quel test est à utiliser selon le type (qualitative ou quantitative) des variables.
+
+Les tests de Χ² sur des tableaux 2x2 (2 variables, chacune ayant 2 valeurs possibles) sont très classiques en statistique.
+
+En plus de savoir si le test est significatif (Χ² > Χ² critique), on peut aussi savoir "à quel point" on est confiant dans le fait de rejeter H0 (e.g. "on est confiant à 6% près qu'on peut rejeter H0", ce 6% est la définition la **p-value**).
