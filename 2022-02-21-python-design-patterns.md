@@ -36,9 +36,12 @@
          * [Pattern Factory Method](#pattern-factory-method)
       * [The Prototype Pattern](#the-prototype-pattern)
       * [The Singleton Pattern](#the-singleton-pattern)
+   * [Gang of Four: Behavioral Patterns](#gang-of-four-behavioral-patterns)
       * [The Composite Pattern](#the-composite-pattern)
       * [The Decorator Pattern](#the-decorator-pattern)
       * [The Flyweight Pattern](#the-flyweight-pattern)
+   * [Gang of Four: Behavioral Patterns](#gang-of-four-behavioral-patterns-1)
+      * [The Iterator Pattern](#the-iterator-pattern)
 
 ## Gang of Four: Principles
 
@@ -469,6 +472,8 @@ La conclusion de la section, c'est donc qu'au lieu d'utiliser un singleton, il v
 
 > The canonical way to share information across modules within a single program is to create a special module (often called config or cfg). Just import the config module in all modules of your application; the module then becomes available as a global name. Because there is only one instance of each module, any changes made to the module object get reflected everywhere.
 
+## Gang of Four: Behavioral Patterns
+
 ### The Composite Pattern
 
 https://python-patterns.guide/gang-of-four/composite/
@@ -549,6 +554,42 @@ Il mentionne une dernière façon encore plus crado = créer une nouvelle classe
 
 https://python-patterns.guide/gang-of-four/flyweight/
 
+Principe = lorsque beaucoup de petits objets partagent un même état (qui se retrouve donc dupliqué), on peut sortir les états dupliqués à part, pour les mutualiser. [L'exemple de cette page](https://refactoring.guru/fr/design-patterns/flyweight) est assez illustratif : si un jeu simule des millions de projectiles différents, et que en plus de leur état intrinsèque (coordonnées, vitesse), ceux-ci partagent à l'identique des états communs (e.g. la façon dont chaque projectile est dessiné), alors il vaut mieux ne stocker qu'un exemplaire de l'état commun, et que chaque projectile pointe dessus. L'intérêt est de gagner de la RAM.
+
+Un exemple d'utilisation du **Pattern Flyweight** en python, c'est la façon dont les strings sont _interned_, i.e. une même string peut n'exister qu'en un seul exemplaire, et est partagée par toutes les références qui pointent vers elle (c'est notamment le cas pour les identifiers du programme). Le code illustrant est clair :
+
+```python
+# sys.intern permet de "forcer" la mutualisation
+# https://docs.python.org/3/library/sys.html#sys.intern
+from sys import intern
+a = intern("py" + "thon")
+b = intern("PYTHON".lower())
+a is b
+# True
+```
+
+Les strings sont de bons candidats pour l'application du pattern Flyweight, car elles regroupent les 3 conditions nécessaires :
+
+- elles sont immutables (donc partageables sans risque que ceux qui les utilisent se marchent sur les pieds)
+- leur utilisation ne dépend pas d'un contexte, sont auto-porteuses
+- ce sont des value-objects (c'est leur VALEUR qui nous est utile, pas leur IDENTITÉ)
+
+D'autres flyweights sont utilisés en python : les bools, les entiers entre `-5` et `256` (`1 + 4 is 2 + 3` renvoie `True`, mais `100 + 400 is 200 + 300` pourra renvoyer `False` selon la plate-forme).
+
+Pour récupérer l'instance partagée, deux possibiltiés : soit c'est le constructeur qui gère ça tout seul (c'est le cas en python pour `bool` ou `int`), soit il faut faire appel à une factory spécialement conçue pour ça, comme `sys.intern` pour les strings.
+
+Par ailleurs, si une seule instance est partagée par tout le monde (comme `None` qui est la seule instance de la classe `NoneType`), alors on est plutôt dans le pattern singleton que dans le pattern flyweight, même si le principe est le même.
+
+Côté implémentation, soit on créée toutes les instances partagées au début du programme, soit on les créée dynamiquement (et dans ce cas, attention à ce qu'il n'y en ait pas trop ; NdM : j'imagine qu'il pense au cas où on les garde en RAM alors même qu'on n'en a plus l'usage, car sinon, la RAM serait consommée avec ou sans flyweight).
+
+Sa conclusion : essayer d'éviter d'utiliser le pattern (NdM : sauf si inévitable vue la RAM, sans doute) car ça rend le code moins intuitif, puisque ce qui ressemble à une instanciation n'en est en fait pas une.
+
+## Gang of Four: Behavioral Patterns
+
+### The Iterator Pattern
+
+https://python-patterns.guide/gang-of-four/iterator/
+
 ---
 
-REPRENDRE À : The Flyweight Pattern
+REPRENDRE À : The Iterator Pattern
