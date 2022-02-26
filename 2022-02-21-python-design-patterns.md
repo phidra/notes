@@ -27,6 +27,14 @@
       * [The Abstract Factory Pattern](#the-abstract-factory-pattern)
       * [The Builder Pattern](#the-builder-pattern)
       * [The Factory Method Pattern](#the-factory-method-pattern)
+         * [Position du problème et pattern](#position-du-problème-et-pattern)
+         * [Alternative 1 = use Dependency Injection](#alternative-1--use-dependency-injection)
+         * [Alternative 2 = use a Class Attribute Factory](#alternative-2--use-a-class-attribute-factory)
+         * [Alternative 3 = use an Instance Attribute Factory](#alternative-3--use-an-instance-attribute-factory)
+         * [Alternative 5 = Instance attributes override class attributes](#alternative-5--instance-attributes-override-class-attributes)
+         * [Complément = Any callables accepted](#complément--any-callables-accepted)
+         * [Pattern Factory Method](#pattern-factory-method)
+      * [The Prototype Pattern](#the-prototype-pattern)
 
 ## Gang of Four: Principles
 
@@ -327,6 +335,78 @@ Normalement, on ne doit pas voir ce pattern en python.
 
 https://python-patterns.guide/gang-of-four/factory-method/
 
+#### Position du problème et pattern
+
+Supposons qu'on ait un objet A (e.g. `HttpConnectionPool`), dont une partie du métier nécessite d'être responsable de créer d'autres objets X (e.g. `HttpConnection`). Supposons également que les `HttpConnection` créées doivent suivre une configuration particulière (p.ex. parce qu'elles seront utilisées derrière un proxy particulier).
+
+Le problème est : comment customiser `HttpConnectionPool` pour créer ces `HttpConnection` particulières ?
+
+Le **Pattern Factory Method** conssite à ce que le code métier de `HttpConnectionPool` fasse appel à une méthode `create_http_connection` pour créer les objets qu'il va utiliser, et à ce que l'utilisateur puisse dériver `HttpConnectionPool` : la classe dérivée va surcharger `create_http_connection` pour lui faire créer des `HttpConnection` capables de traverser le proxy.
+
+Dans le reste de la section, il présente des alternatives plus pythoniques.
+
+#### Alternative 1 = use Dependency Injection
+
+Principe = pour éviter que l'objet A doivent CRÉER d'autres objets X, utiliser de l'injection de dépendance pour lui passer directement les objets X. Exemple = `json.load` accepte un file-like object, plutôt qu'un chemin, pour éviter d'avoir à instancier lui-même le file-like object à partir du chemin. Les avantages sont nombreux :
+
+> - Decoupling: the library doesn’t need to know all the parameters accepted by the open() method, and doesn’t need to accept every one of them as a parameter itself. If the file object were to grow more creation parameters in the future, json.load() won’t need to change.
+> - Efficiency: If you already have the file open for other reasons, you can go ahead and provide the open file object. The library won’t insist on re-opening the file.
+> - Flexibility: You can pass any file-like object you want. It can be a subclass of the standard file object, or be completely independent. You could pass a StringIO that operates directly on data in RAM instead of needing the JSON written to disk first.
+
+Au final, on shunterait complètement la nécessité pour A de créer des X.
+
+> So (a) if your class always needs a particular object built, and (b) if users will normally want to at least customize the parameters with which it is instantiated, you should strongly consider Dependency Injection.
+
+#### Alternative 2 = use a Class Attribute Factory
+
+Principe = _The class that needs to be created can be attached as an attribute on the class that will be doing the creating._
+
+On spécialise la classe A en A' qui utilise un attribut différent, ainsi, les méthodes de A qui utilisent directement l'attribut de classe pour instancier les objets X utiliseront en fait l'attribut de A'.
+
+(NdM : dériver A en A' n'est pas indispensable, cf. plus bas)
+
+#### Alternative 3 = use an Instance Attribute Factory
+
+> Why should you have to subclass an object merely to customize its behavior?
+
+(NdM : ah ben il a mieux formulé que moi mes critiques avec les approches OO)
+
+Principe = la façon pour A de créer les objets X est d'appeler un attribut d'instance `A.create_x()`, qui est passée à A à la construction (ou pas, si `create_x` accepte une valeur par défaut).
+
+On tire ainsi parti du fait que les fonctions et classes sont des first-class objects en python, et peuvent être passés comme arguments de fonctions, ou stockés dans des variables.
+
+Et en passant `create_x` à la construction de `A`, on n'a plus besoin de la dériver pour la customiser :
+
+```python
+my_decoder = JSONDecoder(parse_float=Decimal)
+```
+
+#### Alternative 5 = Instance attributes override class attributes
+
+Principe = A peut très bien avoir un attribut de classe `create_x` ; et pour que le client customise le comportement, au lieu de dériver A en A', il se contente de définir un attribut d'instance `self.create_x` : comme les attributs d'instances ont priorité sur les attributs de classe, le code de A qui utilise `create_x` utilisera en fait l'attribut d'instance.
+
+#### Complément = Any callables accepted
+
+Comme python n'utilise pas de syntaxe particulière pour créer des objets, `create_x` peut être n'importe quoi : une classe (et `create_x(...)` instanciera la classe), mais également un callable quelconque qui renvoit un objet : fonction, bound-method, partial, foncteur, etc.
+
+#### Pattern Factory Method
+
+Le principe du pattern = la classe `A` a un métier complexe, et une partie de celui-ci implique de créer des `X`. Pour ce faire, `A` a implémente une méthode `create_x`. Lorsque l'utilisateur veut spécialiser la création des X, il dérive `A` et surcharge `create_x`.
+
+Vue la puissance de python, ce pattern ne devrait jamais être nécessaire en python, mais il l'est dans des langages moins évolués :
+
+> Imagine that you were using a language where:
+>
+> - Classes are not first-class objects. You are not allowed to leave a class sitting around as an attribute of either a class instance or of another class itself.
+> - Functions are not first-class objects. You’re not allowed to save a function as an instance of a class or class instance.
+> - No other kind of callable exists that can be dynamically specified and attached to an object at runtime.
+>
+> Under such dire constraints, you would turn to subclassing as a natural way to attach verbs — new actions — to existing classes, and you might use method overriding as a basic means of customizing behavior.
+
+### The Prototype Pattern
+
+https://python-patterns.guide/gang-of-four/prototype/
+
 ---
 
-REPRENDRE À : The Factory Method Pattern
+REPRENDRE À : The Prototype Pattern
