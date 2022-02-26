@@ -38,6 +38,7 @@
       * [The Singleton Pattern](#the-singleton-pattern)
       * [The Composite Pattern](#the-composite-pattern)
       * [The Decorator Pattern](#the-decorator-pattern)
+      * [The Flyweight Pattern](#the-flyweight-pattern)
 
 ## Gang of Four: Principles
 
@@ -518,6 +519,36 @@ En conclusion, en python, il recommande de se reposer sur le structural subtypin
 
 https://python-patterns.guide/gang-of-four/decorator-pattern/
 
+Ce paragraphe commence par un warning : le **Pattern Decorator** tel que décrit par le GoF est _différent_ de ce que python appelle un decorator (genre `@mydecorator`).
+
+Son verdict = le pattern Decorator tel qu'imaginé par le GoF reste utile en python ! _Use it on the rare occasion when you need to adjust the behavior of an object that you can’t subclass but can only wrap at runtime._
+
+Principe = un décorateur wrappe une classe tout en présentant exactement la même interface qu'elle ; il délègue ses appels de méthodes à la classe wrappée, en modifiant ou étendant leur comportement. Exemple typique = le décorateur ajoute un logge à l'appel de la méthode wrappée.
+
+Ce type d'ajout de comportement est également possible en dérivant la classe, mais le **Pattern Decorator** a un énorme avantage = il est accessible sur un objet déjà existant, alors que dériver une classe n'est possible que si on contrôle la création de l'instance :
+
+> For example, it isn’t helpful to subclass the Python file object if a library you’re using is returning normal file objects and you have no way to intercept their construction — your new MyEvenBetterFile subclass would sit unused. A decorator class does not have that limitation. It can be wrapped around a plain old file object any time you want, without the need for you be in control when the wrapped object was created.
+
+Le reste de la section explore diverses implémentations.
+
+Il donne un premier exemple intéressant où il commence par implémenter un décorateur "statique" d'un file-object à l'ancienne (pour logger les appels à `write`), où le décorateur implémente statiquement _toutes_ les méthodes du file-object (et même un triplet getter/setter/deleter pour chaque attribut !). Très verbeux, ce décorateur n'a que peu de valeur ajoutée, puisqu'il se contente d'être un passe-plat pour 98% de ses 100 lignes de code, et seul le wrapping de `write` fait quelque chose utile = logger. Conclusion : lourd, et pas pérenne par dessus le marché (puisqu'il ne faut pas oublier de le modifier dès que le file-object gagne des méthodes ou attributs).
+
+En seconde approche, il réduit son wrapper à uniquement ce qui est nécessaire = le wrapping de `write()` pour logger, en supposant que les autres méthodes ne sont pas appelées dans notre cas. En taillant ainsi dans le lard, on est certes plus concis, mais on prend le risque de ne pas avoir wrappé assez (et de rencontrer une `RuntimeError` lorsqu'un usage aura besoin d'autre chose que `write()`).
+
+En troisième approche, il fait un wrapper dynamique, à base de `__getattr__` et `__setattr__` (ainsi que d'autres dunder méthodes qui s'avèrent en fait nécessaires, telles que `__iter__` !) : les méthodes réellement implémentées par le wrapper (comme `write()`) sont appelées directement, et les autres sont déléguées via le wrapping dynamique à l'objet wrappé. Même si c'est marginalement plus lent, cette façon de faire est plus concise et plus robuste que le premier wrapper statique.
+
+C'est cette troisième approche qu'il recommande.
+
+WARNING : comme python permet de l'introspection poussée (en utilisant `dir()` ou `__dict__`), il sera toujours possible de détecter que l'objet qu'on utilise est un wrapper et non le vrai objet original. Par exemple, lister les attributs de l'instance donnera des résultats différents. Normalement, quand on fait de la _programmation_, on n'a pas besoin d'introspecter les entrailles des instances qu'on utilise. Mais si on fait de la _metaprogrammation_, ça peut être utile (e.g. debugger, framework, testing, etc.) et dans ce cas, aucun décorateur, pas même notre troisième décorateur dynamique, ne se comportera exactement comme l'instance wrappée...
+
+Une avant-dernière façon hacky de wrapper est en fait de redéfinir dynamiquement l'attribut `write` de l'instance, pour que la nouvelle fonction `write` fasse à la fois appel à l'ancienne `write`, et ajoute le logging. Le problème, c'est que quand on redéfinit dynamiquement une méthode comme ça, elle ne reçoit pas `self` comme premier argument ; or, on en a besoin pour appeler l'ancienne fonction `write`. Il y a certes un moyen de contourner (capturer `self.write` dans une closure, et la nouvelle fonction qui ne reçoit pas self y aura accès tout de même), mais c'est crado.
+
+Il mentionne une dernière façon encore plus crado = créer une nouvelle classe (dérivée de celle de l'instance, mais qui possède le comportement qui nous intéresse) et l'attribuer comme `__class__` de notre objet. Dans le cas général, ça ne fonctionne pas.
+
+### The Flyweight Pattern
+
+https://python-patterns.guide/gang-of-four/flyweight/
+
 ---
 
-REPRENDRE À : The Decorator Pattern
+REPRENDRE À : The Flyweight Pattern
