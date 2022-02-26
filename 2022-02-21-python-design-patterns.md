@@ -35,6 +35,8 @@
          * [Complément = Any callables accepted](#complément--any-callables-accepted)
          * [Pattern Factory Method](#pattern-factory-method)
       * [The Prototype Pattern](#the-prototype-pattern)
+      * [The Singleton Pattern](#the-singleton-pattern)
+      * [The Composite Pattern](#the-composite-pattern)
 
 ## Gang of Four: Principles
 
@@ -407,6 +409,68 @@ Vue la puissance de python, ce pattern ne devrait jamais être nécessaire en py
 
 https://python-patterns.guide/gang-of-four/prototype/
 
+D'après [la page wikipedia](https://fr.wikipedia.org/wiki/Prototype_(patron_de_conception)), le pattern consiste à remplacer les instanciations explicites d'une classe, jugées coûteuses (ou bien introduisant du couplage à la construction de la classe), par l'appel à une méthode `clone()` sur une instance déjà existante. Exemple d'application :
+
+> Exemple où prototype s'applique : supposons une classe pour interroger une base de données. À l'instanciation de cette classe on se connecte et on récupère les données de la base avant d'effectuer tous types de manipulation. Par la suite il sera plus performant pour les futures instances de cette classe de continuer à manipuler ces données que de réinterroger la base. Le premier objet de connexion à la base de données aura été créé directement puis initialisé. Les objets suivants seront une copie de celui-ci et donc ne nécessiteront pas de phase d'initialisation.
+
+L'auteur a une définition différente du problème, que je comprends moins :
+
+> It is this situation — supplying a framework with a menu of classes that will need to be instantiated with pre-specified argument lists — that the Prototype pattern is designed to address.
+
+Sa solution est donc de lister les différentes classes à instancier avec leurs arguments :
+
+```python
+menu = {
+    'whole note': (Note, (1,)),
+    'half note': (Note, (2,)),
+    'quarter note': (Note, (4,)),
+    'sharp': (Sharp, ()),
+    'flat': (Flat, ()),
+}
+```
+
+Python permet beaucoup de variations autour de ce thème.
+
+Le pattern du GoF qu'il décrit retombe sur celui décrit par wikipedia : les différentes notes peuvent être créer les unes à partir des autres, chaque classe dérivée implémente sa propre version de `clone()`.
+
+### The Singleton Pattern
+
+https://python-patterns.guide/gang-of-four/singleton/
+
+Le terme "singleton" peut avoir plusieurs sens en python :
+
+- un tuple qui ne contient qu'un élément
+- un module (vu qu'un module d'un nom donné ne sera importé qu'une fois)
+- une instance globale à un module (cf. Global Object Pattern)
+- _Individual flyweight objects that are examples of The Flyweight Pattern are often called “singleton” objects by Python programmers._
+- l'objet correspondant réellement au pattern Singleton
+
+Il n'y avait pas de "vrais" singletons en python2 : il y avait des objets-singletons (e.g. `None` ou `Ellipsis`) mais pas de classes permettant de les créer, qui renvoyaient toujours la même instance. En python3, ces classes existent, mais ce n'est pas très utilisé :
+
+> This makes life easier for programmers who need a quick callable that always returns None, though such occasions are rare. In most Python projects these classes are never called and the benefit remains purely theoretical. When Python programmers need the None object they use The Global Object Pattern and simply type its name.
+
+Dans le livre du GoF, ils visaient C++, qui a une syntaxe particulière (`new`) pour instancier des classes. Or, le standard C++ impose que `new` renvoie toujours une nouvelle instance, du coup, comment renvoyer un singleton ?
+
+Le **Pattern Singleton** = on rend le constructeur protégé ou privé (de sorte qu'on ait une erreur de compilation si on l'utilise), et on fournit une méthode de classe pour créer les objets, qui renvoie toujours la même instance = le singleton. Une autre possibilité (non-retenue) aurait été que le singleton soit accessible dans l'espace de nom global.
+
+> In one sense, Python started out better prepared than C++ for the Singleton Pattern, because Python lacks a new keyword that forces a new object to be created. Instead, objects are created by invoking a callable, which imposes no syntactic limitation on what operation the callable really performs
+
+Pour simuler ce comportement en python, l'auteur montre un exemple où `__init__` raise une `RuntimeError`, et où à la place on peut utiliser une `@classmethod` nommée `instance()` qui permet de récupérer le singleton (en le créant au premier appel).
+
+Le pattern original du GoF n'est pas directement applicable à python (car pas de protected/private), mais on peut en avoir un équivalent à base de `__new__`. Ces implémentations sont :
+
+1. moins lisibles (car `__new__` est peu connu des devs)
+2. moins intuitives (une opération qui ressemble à une instanciation n'en est pas vraiment une)
+3. radicales (si on décide qu'un objet est singleton, on ne peut plus revenir en arrière, alors qu'avec le Global Object Pattern, rien n'empêche de créer d'autres instances en plus de l'instances globale partagée, ce qui s'avère très précieux pour les tests).
+
+La conclusion de la section, c'est donc qu'au lieu d'utiliser un singleton, il vaut mieux utilier des toplevel variables dans un module, comme [préconisé par la doc python](https://docs.python.org/3/faq/programming.html#how-do-i-share-global-variables-across-modules) :
+
+> The canonical way to share information across modules within a single program is to create a special module (often called config or cfg). Just import the config module in all modules of your application; the module then becomes available as a global name. Because there is only one instance of each module, any changes made to the module object get reflected everywhere.
+
+### The Composite Pattern
+
+https://python-patterns.guide/gang-of-four/composite/
+
 ---
 
-REPRENDRE À : The Prototype Pattern
+REPRENDRE À : The Composite Pattern
