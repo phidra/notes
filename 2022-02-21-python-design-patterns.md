@@ -37,6 +37,7 @@
       * [The Prototype Pattern](#the-prototype-pattern)
       * [The Singleton Pattern](#the-singleton-pattern)
       * [The Composite Pattern](#the-composite-pattern)
+      * [The Decorator Pattern](#the-decorator-pattern)
 
 ## Gang of Four: Principles
 
@@ -471,6 +472,52 @@ La conclusion de la section, c'est donc qu'au lieu d'utiliser un singleton, il v
 
 https://python-patterns.guide/gang-of-four/composite/
 
+L'auteur donne une bonne description du **Pattern Composite** :
+
+> The Composite Pattern suggests that whenever you design “container” objects that collect and organize what we’ll call “content” objects, you will simplify many operations if you give container objects and content objects a shared set of methods and thereby support as many operations as possible without the caller having to care whether they have been passed an individual content object or an entire container.
+
+Principe = en deux mots, l'idée est de pouvoir manipuler un conteneur et son contenu de la même façon, ce qui permet de travailler sur les différents items d'une hiérarchie d'objets de façon homogène.
+
+Exemple classique = les fichiers et répertoires d'un filesystem. C'est d'ailleurs l'exemple suivi par la section : `ls` accepte indifféremment en entrée un chemin vers un fichier ou un répertoire.
+
+Avantages :
+
+- ça permet de ne pas avoir à switcher entre deux commandes (l'une pour les fichiers, l'autre pour les répertoires)
+- un wildcard tel que `/etc/logrotate*` peut matcher indifféremment avec des fichiers (`/etc/logrotate.conf`) et des répertoires (`/etc/logrotate.d/`), ce qui n'aurait pas été possible avec des commandes différenciées
+- plus généralement, les scripts qui se fichent de savoir s'ils travaillent sur un fichier ou un répertoire peuvent passer à `ls` un argument sans avoir à vérifier son type réel
+
+> This not only lowers cognitive overhead, but makes shell scripts easier to write — there are many operations that a script can simply run blindly without needing to stop and check first whether a path names a file or a directory.
+
+En python, le **Pattern Composite** est plus simple que dans d'autres langages, et notamment on peut se reposer sur le duck-typing (structural subtyping) plutôt que sur l'héritage (nominal subtyping) pour que le container et les objets contenus présentent un comportement homogène.
+
+La partie difficile, c'est de savoir quand choisir de ne PAS manipuler fichiers et répertoires de façon homogène... Par exemple, la commande de création est différente pour les deux : `touch` et `mkdir` :
+
+> But the designers thought that the two operations were conceptually different enough to deserve separate commands.
+
+Il prend l'exemple du troisième bit `x` des permissions de fichiers/réperotires pour illustrer que c'est pas toujours facile de choisir entre manipuler les deux entités de façon homogène, ou bien avoir des comportements propres à chacun. Si on se goure et qu'on mutualise là où il n'y a pas lieu d'être, on va créer des cas particuliers bizarres...
+
+Il prend l'exemple concret de "lis-moi le contenu de ce fichier/répertoire" pour illustrer que quand les opérations sont différentes (et notamment quand les opérations renvoient un type de données différentes : byte-stream pour un fichier, liste de strings pour un répertoire), il faut rompre la symétrie et manipuler les deux entités de façon différente. C'est très visible s'il faut que le code client analyse la valeur retournée à coup de `if` ou `isinstance` :
+
+> if your desire to create symmetry between container and content leads you to engineer calls that require an if statement or isinstance() to safely handle their return value, then the desire for symmetry has led you astray
+
+L'auteur note que là où par le passé les hiérarchies avaient la cote (notamment dans les noms de pacakges tels que `zope.app/i18n`, ou dans les structures de données tels que les arbres binaires), de nos jours, elles sont tombées en désuétude au profit de structures plus flat, ce qui se retrouve même dans le zen de python = _flat is better than nested_. Exception = les hiérarchies sont encore bien présentes dans les documents.
+
+Exemple d'application du pattern Composite = les GUI construites avec TKinter : pour éviter d'avoir à tester que le widget a des enfants et implémente `winfo_children()` (soit par `isinstance`, soit avec `getattr`), TOUS les widgets implémentent `winfo_children()` : ceux pour qui ça n'a pas de sens (comme les labels) renvoient simplement une liste vide.
+
+À noter que cette façon de faire est controversée : certes elle facilite la manipulation des widgets, mais on pourrait arguer en retour que c'est contre-intuitif d'avoir un `winfo_children()` sur un widget qui n'aura jamais d'enfants...
+
+L'intérêt est de rendre les différents objets interchangeables :
+
+> The benefits of the symmetry that the Composite Pattern creates between containers and their contents only accrue if the symmetry makes the objects interchangeable.
+
+Dans certains langages statiquement typés, ça veut obligatoirement dire hériter d'une interface (voire, d'une implémentation !) commune. En python, on peut soit hériter d'une classe parente, soit se reposer sur le duck-typing, avec les subtilités si souhaitées, comme l'utilisation d'`abc`, de `zope.interface` ou encore des protocoles...
+
+En conclusion, en python, il recommande de se reposer sur le structural subtyping pour que conteneur et contenu présentent les mêmes comportements.
+
+### The Decorator Pattern
+
+https://python-patterns.guide/gang-of-four/decorator-pattern/
+
 ---
 
-REPRENDRE À : The Composite Pattern
+REPRENDRE À : The Decorator Pattern
