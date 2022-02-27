@@ -590,6 +590,57 @@ Sa conclusion : essayer d'éviter d'utiliser le pattern (NdM : sauf si inévitab
 
 https://python-patterns.guide/gang-of-four/iterator/
 
+Principe, décrit par [cette autre page](https://refactoring.guru/fr/design-patterns/iterator) : ce pattern est à utiliser pour permettre à un client d'itérer sur une structure de données, sans pour autant lui exposer sa constitution interne (pour des raisons pratiques, ou de sécurité). Le client peut ainsi itérer de la même façon sur un array, une liste, un arbre, etc.
+
+Le métier de la structure de données reste de stocker les données, et pas nécessairement d'itérer dessus de telle ou telle façon :
+
+> Plus vous ajoutez d’algorithmes différents pour parcourir votre collection et plus vous masquez sa responsabilité principale : stocker efficacement les données. De plus, certains algorithmes sont dédiés à un usage spécifique. Il serait donc bizarre de les ajouter au comportement d’une collection générique.
+
+À l'inverse, le client ne s'intéresse pas à comment les données sont stockées, mais a "juste" besoin de les récupérer, et de pouvoir itérer dessus.
+
+Du coup, le pattern consiste à extraire le comportement qui permet de parcourir une collection et de le mettre dans un objet séparé de la structure elle-même : l'itérateur, qui permet de :
+
+- accéder à l'élément actuel
+- accéder au "prochain" élement (et pour une même structure de données, la notion de "prochain élément" peut être propre à l'itérateur, car dépendre de la façon dont on itère dessus)
+- savoir s'il reste des éléments à itérer
+- etc.
+
+Bonus : si différents itérateurs implémentent la même interface, le code client peut itérer sur tous les types de collections (selon tous les algorithmes de parcours), tant que l'itérateur adéquat existe.
+
 ---
 
-REPRENDRE À : The Iterator Pattern
+Le **Pattern Iterator** est omniprésent en python :
+
+> Python supports the Iterator Pattern at the most fundamental level available to a programming language: it’s built into Python’s syntax.
+
+La façon dont il est implémenté est différent du GoF : `__iter__` et `__next__` à implémenter par les objets, et `iter()` et `next()` à appeler sur ces objets.
+
+Dans des langages de bas-niveau, on se fiche d'exposer les détails des structures de données. Mais du coup, le développeur peut (et doit !) utiliser ces détails pour itérer sur les structures de données... C'est pas fi-fou :
+
+> Code in such languages struggles to stay at the high level of describing programmer intent.
+
+Le pattern Iterator encapsule cette itération dans un objet à part dont le métier est de savoir itérer. Du point de vue du monde extérieur, un itérateur renvoie les objets de la collection l'un après l'autre, sans exposer les détails de la structure.
+
+L'auteur présente la boucle for en python, dont l'implémentation intègre le pattern dans le langage lui-même :
+- terminologie : on a un _container_ qui contient des _items_
+- `myiterator = iter(mycontainer)` permet de construire et récupérer un itérateur permettant de parcourir `mycontainer`
+- `next(myiterator)` permet de récupérer "le prochain item" de l'itérateur (et raise `StopIteration` quand il n'y en a plus)
+
+Note : l'itérateur et son état interne (par exemple, l'index de l'item courant) doit bien être _séparé_ du container, sans quoi on ne pourrait effecteur qu'une seule itération à la fois sur le container (alors que là, on peut créer autant d'itérateurs concurrents qu'on veut : comme ce sont des objets indépendants, ils ne se marchent pas sur les pieds, et n'ont pas d'impact sur le container lui-même).
+
+En contradiction avec la phrase précédente, certains containers fonctionnent différemment : au lieu de recommencer l'itération de 0 quand on appelle `iter()`, ils reprennent l'itération là où ils en étaient la fois d'avant... Ça contredit ce qui précède, mais ça peut être utile pour itérer sur des objets qui ne sont parcourables qu'une seule fois, et "consommés" par ce premier parcours. De plus, ça permet splitter l'itération en plusieurs fois : un exemple est donné pour parser un email en trois fois, avec à chaque fois une boucle for sur toutes les lignes de l'email, mais qui `break` dès qu'elle a fini de travailler sur les lignes qui l'intéressent : les boucles for qui suivent reprennent l'itération là où elle s'était arrêtée.
+
+Pour ces containers à parcours unique (e.g. le `TextIOWrapper` de son exemple), le trick est que `iter()` appelé sur le container renvoie... le container lui-même, qui est aussi un itérateur ! Du coup, c'est toujours le même itérateur (= le container lui-même) qui est renvoyé.
+
+Autre point intéressant : appeler `iter()` sur un iterator est idempotent, et renvoie toujours lui-même :
+
+```python
+iter(myiterator) is myiterator  # sera toujours vrai
+```
+
+Pour faire en sorte qu'une classe custom implémente le pattern Iterator, il suffit d'implémenter :
+
+- `__iter__` qui doit renvoyer un iterator, qui doit lui-même disposer d'une méthode `__iter__` se renvoyant lui-même
+- `__next__` qui doit raiser `StopIteration` le cas échéant
+
+Question : dans le pattern habituel, on n'a besoin que de `iter()` : derrière, c'est l'itérateur lui-même (i.e. l'objet que retourne `iter()`) qui implémente `next()` → pourquoi avoir fait deux builtins ? Réponse = pour des raisons legacy, pour supporter en même temps le pattern Iterator et une ancienne façon d'itérer.
