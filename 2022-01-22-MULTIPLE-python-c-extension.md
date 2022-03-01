@@ -16,10 +16,12 @@
    * [Writing cpython extension modules using C++](#writing-cpython-extension-modules-using-c)
    * [Extending and Embedding the Python Interpreter](#extending-and-embedding-the-python-interpreter)
       * [Extending Python with C or C++](#extending-python-with-c-or-c)
+         * [Reference count](#reference-count)
       * [Defining Extension Types: Tutorial](#defining-extension-types-tutorial)
       * [Defining Extension Types: Assorted Topics](#defining-extension-types-assorted-topics)
       * [Building C and C++ Extensions](#building-c-and-c-extensions)
    * [Python/C API Reference Manual](#pythonc-api-reference-manual)
+      * [Introduction](#introduction)
 
 ## Writing the Setup Script
 
@@ -208,15 +210,59 @@ Il y a une sous-section dédiée à `PyArg_ParseTuple()` = https://docs.python.o
 
 Il y a une sous-section dédiée à `Py_BuildValue` (qui fait le contraire de `PyArg_ParseTuple` = elle construit un objet python à partir d'un objet C et d'une chaîne de formattage) = https://docs.python.org/3/extending/extending.html#building-arbitrary-values
 
-Il y a une longue sous-section dédiée aux règles qui gouvernent le refcount en python = https://docs.python.org/3/extending/extending.html#reference-counts (je la saute pour le moment, mais elle a l'air très intéressante)
-
 Il y a une sous-section dédiée au cas où on écrit une extension C qui n'a pas pour objectif d'être utilisé en python, mais plutôt par d'autres extensions C = https://docs.python.org/3/extending/extending.html#providing-a-c-api-for-an-extension-module (dans ce cas, il y a l'air d'avoir des trucs spéciaux, mais je saute la section)
+
+Il y a une longue sous-section dédiée aux règles qui gouvernent le refcount en python = https://docs.python.org/3/extending/extending.html#reference-counts :
+
+#### Reference count
+
+> Py_DECREF() also frees the object when the count reaches zero. For flexibility, it doesn’t call free() directly — rather, it makes a call through a function pointer in the object’s type object. For this purpose (and others), every object also contains a pointer to its type object.
+
+Le type de l'objet est stocké avec l'objet (et c'est le type qui appelle `free()`).
+
+>  Nobody “owns” an object; however, you can own a reference to an object. An object’s reference count is now defined as the number of owned references to it. The owner of a reference is responsible for calling Py_DECREF() when the reference is no longer needed. Ownership of a reference can be transferred.
+
+Le code client créée des références à un objet avec `Py_INCREF`, et s'en débarasse avec `Py_DECREF`.
+
+> It is also possible to borrow a reference to an object. The borrower of a reference should not call Py_DECREF(). The borrower must not hold on to the object longer than the owner from which it was borrowed. Using a borrowed reference after the owner has disposed of it risks using freed memory and should be avoided completely.
+>
+> The advantage of borrowing over owning a reference is that you don’t need to take care of disposing of the reference on all possible paths through the code — in other words, with a borrowed reference you don’t run the risk of leaking when a premature exit is taken. The disadvantage of borrowing over owning is that there are some subtle situations where in seemingly correct code a borrowed reference can be used after the owner from which it was borrowed has in fact disposed of it.
+>
+> A borrowed reference can be changed into an owned reference by calling Py_INCREF(). This does not affect the status of the owner from which the reference was borrowed 
+
+On peut emprunter des références, avec les caveats habituels du type use-after-free.
+
+> Whenever an object reference is passed into or out of a function, it is part of the function’s interface specification whether ownership is transferred with the reference or not.
+
+Ce point est important : l'interface d'une fonction définit implicitement si les références qu'elles reçoit ou retourne sont transférées (auquel cas elle doit `Py_DECREF`) ou empruntées.
+
+> Most functions that return a reference to an object pass on ownership with the reference. In particular, all functions whose function it is to create a new object, such as PyLong_FromLong() and Py_BuildValue(), pass ownership to the receiver.Even if the object is not actually new, you still receive ownership of a new reference to that object.
+>
+> When you pass an object reference into another function, in general, the function borrows the reference from you — if it needs to store it, it will use Py_INCREF() to become an independent owner. There are exactly two important exceptions to this rule: PyTuple_SetItem() and PyList_SetItem(). These functions take over ownership of the item passed to them — even if they fail!
+>
+> When a C function is called from Python, it borrows references to its arguments from the caller. The caller owns a reference to the object, so the borrowed reference’s lifetime is guaranteed until the function returns. Only when such a borrowed reference must be stored or passed on, it must be turned into an owned reference by calling Py_INCREF().
+
+Quelques règles habituelles.
+
+> The solution, once you know the source of the problem, is easy: temporarily increment the reference count. The correct version of the function reads:
+
+Un pattern classique lorsqu'on reçoit une référence empruntée est d'augmenter temporairement son refcount.
+
+> Functions that return object references generally return NULL only to indicate that an exception occurred.
+
+Gestion d'erreur usuelle = null pointer.
+
+> The reason for not testing for NULL arguments is that functions often pass the objects they receive on to other function — if each function were to test for NULL, there would be a lot of redundant tests and the code would run more slowly.
+>
+> It is better to test for NULL only at the “source:” when a pointer that may be NULL is received, for example, from malloc() or from a function that may raise an exception
+>
+> It is a severe error to ever let a NULL pointer “escape” to the Python user.
 
 ### Defining Extension Types: Tutorial
 
 **url** = https://docs.python.org/3/extending/newtypes_tutorial.html
 
-Il y a une page dédiée à la définition de nouveaux types, équivalents à `str` et `dict`, je saute pour le moment.
+Il y a une page dédiée à la définition de nouveaux types de base, équivalents à `str` et `dict`, je saute pour le moment.
 
 > Python allows the writer of a C extension module to define new types that can be manipulated from Python code, much like the built-in str and list types.
 
@@ -248,4 +294,62 @@ Il y a d'autres conventions à suivre sur le nommage de la fonction d'initilaisa
 
 **url** = https://docs.python.org/3/c-api/
 
-C'est cette page qui documente l'API C python, utilisée pour les extensions (et probablement au sein de l'interpréteur aussi).
+C'est cette page qui documente l'API C python, utilisée pour les extensions (et probablement au sein de l'interpréteur aussi). Elle contient beaucoup de choses intéressantes, et beaucoup de sous-pages intéressantes.
+
+Je viendrai sans doute incrémenter ces notes au fur et à mesure de mes lectures.
+
+### Introduction
+
+**url** = https://docs.python.org/3/c-api/intro.html
+
+> To include the headers, place both directories (if different) on your compiler’s search path for includes. Do not place the parent directories on the search path and then use `#include <pythonX.Y/Python.h>;`
+
+À vérifier, mais c'est dans doute une option `-I` passée par `setup.py build_ext` qui inclut `/usr/include/python3.8`
+
+Il y a plein de macros utiles, par exemple : `Py_STRINGIFY(x)` = _Convert x to a C string. E.g. Py_STRINGIFY(123) returns "123"._ ou `Py_UNUSED(arg)` = _Use this for unused arguments in a function definition to silence compiler warnings. Example: int func(int a, int Py_UNUSED(b)) { return a; }._
+
+Les objets sont tous instanciés dynamiquement, et associés à un type :
+
+> Most Python/C API functions have one or more arguments as well as a return value of type PyObject*. This type is a pointer to an opaque data type representing an arbitrary Python object.
+>
+> Almost all Python objects live on the heap: you never declare an automatic or static variable of type PyObject, only pointer variables of type PyObject* can be declared. The sole exception are the type objects;
+>
+> All Python objects (even Python integers) have a type and a reference count. An object’s type determines what kind of object it is (e.g., an integer, a list, or a user-defined function
+>
+> For each of the well-known types there is a macro to check whether an object is of that type; for instance, PyList_Check(a) is true if (and only if) the object pointed to by a is a Python list.
+
+Gestion du refcount, qui doit être géré manuellement :
+
+> When an object’s reference count becomes zero, the object is deallocated. If it contains references to other objects, their reference count is decremented. Those other objects may be deallocated in turn, if this decrement makes their reference count become zero, and so on. 
+>
+> Reference counts are always manipulated explicitly. The normal way is to use the macro Py_INCREF() to increment an object’s reference count by one, and Py_DECREF() to decrement it by one. 
+>
+> The type-specific deallocator takes care of decrementing the reference counts for other objects contained in the object if this is a compound object type, such as a list, as well as performing any additional finalization that’s needed.
+
+Pour les objets locaux, c'est pas indispensable d'incrémenter systématiquement :
+
+> It is not necessary to increment an object’s reference count for every local variable that contains a pointer to an object.  [...] If we know that there is at least one other reference to the object that lives at least as long as our variable, there is no need to increment the reference count temporarily. An important situation where this arises is in objects that are passed as arguments to C functions in an extension module that are called from Python; the call mechanism guarantees to hold a reference to every argument for the duration of the call.
+
+Mais attention à ce que l'objet pointé continuent de vivre pendant la durée du scope local — pour être safe, on incrémente temporairement :
+
+> However, a common pitfall is to extract an object from a list and hold on to it for a while without incrementing its reference count. Some other operation might conceivably remove the object from the list, decrementing its reference count and possibly deallocating it.
+>
+> A safe approach is to always use the generic operations (functions whose name begins with PyObject_, PyNumber_, PySequence_ or PyMapping_). These operations always increment the reference count of the object they return. This leaves the caller with the responsibility to call Py_DECREF() when they are done with the result; this soon becomes second nature.
+
+Un point important : le comportement vis-à-vis de la référence qu'une fonction nous renvoie (soit possédée, soit empruntée) dépend de la fonction !
+
+> It is important to realize that whether you own a reference returned by a function depends on which function you call only
+
+---
+
+REPRISE = d'autres pages qui ont l'air intéressantes :
+
+- https://docs.python.org/3/c-api/stable.html
+- https://docs.python.org/3/c-api/intro.html
+- https://docs.python.org/3/c-api/exceptions.html
+- https://docs.python.org/3/c-api/abstract.html
+- https://docs.python.org/3/c-api/init.html
+- https://docs.python.org/3/c-api/memory.html
+- https://docs.python.org/3/c-api/objimpl.html
+- https://docs.python.org/3/c-api/apiabiversion.html
+- https://docs.python.org/3/reference/datamodel.html#types
