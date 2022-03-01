@@ -22,6 +22,9 @@
       * [Building C and C++ Extensions](#building-c-and-c-extensions)
    * [Python/C API Reference Manual](#pythonc-api-reference-manual)
       * [Introduction](#introduction)
+   * [Coding Patterns for Python Extensions](#coding-patterns-for-python-extensions)
+   * [Building a Python C Extension Module](#building-a-python-c-extension-module)
+   * [Python Bindings: Calling C or C++ From Python](#python-bindings-calling-c-or-c-from-python)
 
 ## Writing the Setup Script
 
@@ -353,3 +356,40 @@ REPRISE = d'autres pages qui ont l'air intéressantes :
 - https://docs.python.org/3/c-api/objimpl.html
 - https://docs.python.org/3/c-api/apiabiversion.html
 - https://docs.python.org/3/reference/datamodel.html#types
+
+## Coding Patterns for Python Extensions
+
+**url** = https://pythonextensionpatterns.readthedocs.io/en/latest/
+
+La ressource est facile d'accès, même si elle n'est pas introductive (l'auteur suppose une préconnaissance du développement d'extensions C pour python) ; elle regroupe des bonnes pratiques poussées par l'auteur.
+
+Quelques notes très vrac :
+
+- [Chapitre 9](https://pythonextensionpatterns.readthedocs.io/en/latest/compiler_flags.html) = les flags de compilateur à utiliser.
+- Pour un usage avancé, [la section 10](https://pythonextensionpatterns.readthedocs.io/en/latest/debugging/debug.html) donne des conseils de debugging très intéressants
+   - Notamment, pour utiliser un IDE pour debugger l'extension, on peut créer un main C qui utilise l'extension.
+- La [section 13](https://pythonextensionpatterns.readthedocs.io/en/latest/code_layout.html) donne également des infos sur ce sujet du testing
+- La [section 14](https://pythonextensionpatterns.readthedocs.io/en/latest/cpp.html) a plein de trucs chouette pour se simplifier la vie avec C++, notamment gestion du refcount par RAII, et conversion depuis et vers les conteneurs de la STL
+- La [section 17](https://pythonextensionpatterns.readthedocs.io/en/latest/further_reading.html) donne une ressource qui a l'air intéressante
+
+## Building a Python C Extension Module
+
+**url** = https://realpython.com/build-python-c-extension-module/
+
+Cette page est un tuto alternatif à celui de la doc officielle python pour construire (et packager) une extension C à python.
+
+Difficile d'avoir la date du post, mais d'après les commentaires les plus anciens, ça remonte à octobre 2019.
+
+## Python Bindings: Calling C or C++ From Python
+
+**url** = https://realpython.com/python-bindings-overview/
+
+Complément de la précédente, cette page revoit des alternatives third-party possibles à l'écriture d'une extension python directement en C, avec tout le boilerplate :
+
+- ctypes
+- CFFI
+- pybind11
+- cython
+- et d'autres...
+
+Difficile d'avoir la date du post, mais d'après les commentaires les plus anciens, ça remonte à juillet 2020.
