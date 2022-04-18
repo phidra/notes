@@ -7,6 +7,8 @@ La doc est sur [le github du projet](https://github.com/pyenv/pyenv), et le [tut
 * [Installation](#installation)
 * [Utilisation](#utilisation)
    * [quelques essais](#quelques-essais)
+   * [passer d'une version de python à une autre](#passer-dune-version-de-python-à-une-autre)
+   * [utiliser plusieurs versions de python en même temps](#utiliser-plusieurs-versions-de-python-en-même-temps)
    * [shims et rehash](#shims-et-rehash)
    * [pyenv local](#pyenv-local)
    * [pyenv virtualenv](#pyenv-virtualenv)
@@ -19,8 +21,8 @@ La doc est sur [le github du projet](https://github.com/pyenv/pyenv), et le [tut
 
 # TL;DR
 
-- `pyenv install` pour installer une version de python en particulier (dans le répertoire pyenv)
-- `pyenv [global / local / shell]` pour utiliser une version gérée par pyenv en tant que python [système / du projet courant / du shell courant] ; _attention_, même installée, une version de python ne sera PAS disponible à moins d'utiliser `global / local / shell`
+- `pyenv install` pour installer une version de python en particulier (dans le répertoire pyenv) ; _attention_, même installée, une version de python ne sera PAS utilisable sans passer par `global / local / shell`
+- `pyenv [global / local / shell]` pour utiliser une version gérée par pyenv en tant que python [système / du projet courant / du shell courant]
 - `pyenv version` pour connaître la version actuellement utilisée (et `pyenv versions` pour connaître celles dispos sur la machine)
 - quand on utilise pyenv, `which python` pointe _toujours_ sur le shim ; il faut utiliser `pyenv which python` pour voir sur quoi pointe le shim lui-même.
 - `pyenv rehash` pour créer un shim inexistant (e.g. un `entry_point` créé dans un venv) et supprimer les shims inutiles
@@ -166,6 +168,77 @@ Le besoin auquel pyenv répond est de pouvoir installer simplement (puis jongler
     pyenv which python
     # /home/username/.pyenv/versions/3.5.10/bin/python  <--- mais ceci change !
     ```
+
+## passer d'une version de python à une autre
+
+D'une façon générale, quand on installe une version donnée de python avec pyenv, elle n'est PAS utilisable immédiatement :
+
+```sh
+pyenv install 3.7.12
+# Downloading Python-3.7.12.tar.xz...
+# [...]
+# Installed Python-3.7.12 to /home/phijul/.pyenv/versions/3.7.12
+
+python3.7 -c "print('coucou')"
+# pyenv: python3.7: command not found
+# The `python3.7' command exists in these Python versions:
+#   3.7.12
+```
+
+On ne peut utiliser une version de python gérée par pyenv **QUE** après avoir utilisé les commandes `shell / local / shell` :
+
+```sh
+pyenv shell 3.7.12
+python3.7 -c "print('coucou')"
+# coucou
+```
+
+Et pour revenir à la version "par défaut", il faut _activer explicitement_ celle-ci :
+
+```sh
+pyenv shell system
+# pyenv: python3.7: command not found
+# The `python3.7' command exists in these Python versions:
+#   3.7.12
+```
+
+## utiliser plusieurs versions de python en même temps
+
+Comme on n'a accès qu'au python qu'on a activé explicitement (p.ex. avec `pyenv shell` ou `pyenv local`), ça n'est PAS parce qu'on a installé plusieurs versions de python sur son poste qu'on peut les utiliser !
+
+Or, certains contextes nécessitent d'accéder à plusieurs pythons différents : par exemple quand on veut tester avec tox que son package est bien compatible avec plusieurs versions de python.
+
+Dans ce cas, on peut choisir d'activer PLUSIEURS versions de python, ils seront tous utilisables en même temps :
+
+```sh
+pyenv shell 3.7.12   3.8.10   3.9.9   3.10.1
+
+python3.7 -c "print('coucou')"
+# coucou
+
+python3.8 -c "print('coucou')"
+# coucou
+
+python3.9 -c "print('coucou')"
+# coucou
+
+python3.10 -c "print('coucou')"
+# coucou
+```
+
+Le premier environnement (`3.7` ici) reste l'environnement **principal**, dans lequel les commandes seront recherchées en premier par les shims. Mais si une commande n'est pas trouvée en `3.7`, alors pyenv ira la chercher en `3.8`... puis en `3.9`, etc.
+
+Ça marche aussi avec `pyenv local`, et dans ce cas, le fichier `.python-version` contient toutes les versions souhaitées :
+
+```sh
+pyenv local 3.7.12   3.8.10   3.9.9   3.10.1
+
+cat .python-version
+# 3.7.12
+# 3.8.10
+# 3.9.9
+# 3.10.1
+```
 
 ## shims et rehash
 
@@ -321,12 +394,6 @@ D'après la doc, cette ligne du `.zshrc` permet d'appeler automatiquement `activ
 
 La question demeure : à quoi ça sert ? Typiquement, quel intérêt de faire `pyenv activate` plutôt que `pyenv shell` ?
 
-
-
-
-
-
-
 À quoi sert `pyenv activate mysuperenv` ?
 - si on a la petite ligne dans zshrc, `pyenv activate` est lancé automatiquement lorsqu'on rentre dans le répertoire du projet
 - (et si on n'a pas la ligne dans `.zshrc`, on peut appeler `pyenv activate` manuellement)
@@ -393,6 +460,7 @@ Le mécanisme utilisé par pyenv (shims) ne marche pas très bien quand on insta
 
 - `source /path/to/mysupervenv/bin/activate` modifie dynamiquement le `PATH` pour prepend `/path/to/mysupervenv/bin/`, et permet donc de trouver les binaires de mysupervenv
 - `pyenv activate mysupervenv` laisse le `PATH` inchangé (il avait déjà été modifié dans `.zshrc` pour prepend le chemin vers les shims), on se repose sur l'existence d'un shim "global" (à créer éventuellement avec `pyenv rehash`) pour rediriger sur les binaire de mysupervenv
+
 
 ## connexe = zsh precmd_functions
 
