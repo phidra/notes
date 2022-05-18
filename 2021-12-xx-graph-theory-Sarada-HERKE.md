@@ -13,7 +13,7 @@ Les notions abordées restent introductives, mais sont définies plutôt formell
 
 Dans ces notes, j'essaye de mettre **en gras** les notions importantes (mais je ne reporte pas systématiquement leur définition).
 
-J'ai mis certains titre de vidéos en chapitre, mais pas tous : ce n'est pas parce qu'il n'existe pas de titre pour une notion qu'elle n'est pas présente quelque part dans ces notes.
+J'ai mais certains titre de vidéos en chapitre, mais pas tous : ce n'est pas parce qu'il n'existe pas de titre pour une notion qu'elle n'est pas présente quelque part dans ces notes.
 
 Note : pour gagner du temps, je ne regarde pas les vidéos qui se contentent de prouver les théorèmes ou les résultats, mais elles ont l'air super super intéressantes du point de vue mathématique !
 
