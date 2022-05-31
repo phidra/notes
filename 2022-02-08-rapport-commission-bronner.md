@@ -16,6 +16,10 @@ Description succinte de la méthodologie suivie pour analyser ce rapport :
 
 Note : j'ai commencé la lecture le 8 février, mais ça va sans doute s'étaler sur plusieurs semaines, vu la longueur, les notes, et le contenu.
 
+**EDIT 1er juin 2022** : le sujet a été commencé, mais est freezé par manque de temps.
+
+REPRISE = mettre en forme toutes les notes du chapitre 2 (car actuellement, elles sont des transferts bruts de mes notes sur téléphone) + poursuivre la lecture/analyse du document.
+
 * [Les lumières à l'ère numérique](#les-lumières-à-lère-numérique)
    * [Introduction](#introduction)
       * [Le chaos informationnel contemporain](#le-chaos-informationnel-contemporain)
@@ -275,5 +279,109 @@ Organisation du rapport :
 
 ## CHAPITRE 2 = Logiques algorithmiques
 
-REPRENDRE LES NOTES ICI
+REPRENDRE LE TRAVAIL ICI
 
+CHAPITRE 2 = Logiques algorithmiques
+
+TITRE = De la nécessité de la nuance
+
+La connaissance scientiﬁque sur la manière dont les algorithmes façonnent nos croyances ou nos comportements, notamment politiques, n’est pas encore stabilisée et fait parfois valoir des données et des arguments qui peuvent paraître contradictoires.
+...
+Ceux qui consomment des informations venant de la presse par ce truchement ne lisent le plus souvent qu’un article80 , et sont moins susceptibles de lire l’intégralité du journal que ceux qui y ont accès dans d’autres conditions. De ce fait, ce seront souvent les thématiques plutôt que les supports qui domineront l’éditorialisation numérique
+...
+on constate que le marché cognitif y est animé par des eﬀets de concentration d’attention brefs, soudains et massif81 . Cette concen­tration temporelle de l’attention constitue ce que certains appellent le buzz. Cela prend une forme très tangible lorsqu’on observe à grande échelle la façon dont notre attention collective est orientée vers une histoire qui fera l’actualité un bref instant pour nous conduire à une autre, qui n’aura pas plus d’espérance de vie.
+...
+Autrement dit, l’augmentation importante du nombre des sources et du volume des ﬂux d’information engendrée par le développement d’Internet n’a pas inversé la tendance à l’homogénéisation des thématiques d’actualité captant massivement l’attention du public.
+...
+On entend souvent qu’Internet et les réseaux sociaux sont envahis par les fausses informations, idée qu’il faut fortement nuancer, comme nous l’avons vu dans le chapitre précédent: plusieurs études, conduites tant aux États-Unis qu’en France, soulignent que la désinformation constitue probablement une part minoritaire du volume globale des actualités consultées sur les réseaux sociaux, et plus largement sur Internet83 . Pour autant, il faut se garder d’en conclure que la dé-sinformation en ligne ne constituerait dès lors pas un problème. En eﬀet, la question du seuil à partir duquel des eﬀets tangibles de la désinformation peuvent être observés est laissée en suspens par les études qui se focalisent sur la part de la population exposée à ces informations
+...
+une étude85 montre que les médias traditionnels ont tendance à reprendre certaines informations de ces sources douteuses lorsqu’elles vont dans le sens de leur inclination parti-sane, participant ainsi à leur mise en avant.
+...
+De même que la désinformation en ligne ne doit pas être surestimée, gardons-nous d’exagérer son inﬂuence sur les grands événements sociaux86 . La polarisation politique par exemple ne peut que partiellement s’expliquer par le contexte numérique, et on ne trouve pas dans la lit-térature scientiﬁque de réponse ferme à la question du rôle qu’y jouent les réseaux sociaux et Internet87 . L’impact de la désinformation sur les résultats électoraux mériterait d’ailleurs aussi d’être scientiﬁquement mieux établi88
+Le plus probable est que de tels phénomènes soient plurifactoriels et que leur explication ne puisse donc reposer sur la seule inﬂuence du monde numérique et des perturbations qu’il provoque.
+il faut souligner que nous ne sommes pas incompétents quand il s’agit de détecter les fausses informations et que, dans l’ensemble, nous les trouvons
+
+TITRE = Les bouleversements algorithmiques
+
+La prudence s’impose donc lorsque l’on aborde le lien entre les algorithmes et la conﬁguration des plateformes avec les phénomènes sociaux négatifs qu’ils sont accusés de produire. Pour autant, les réseaux numériques ont des spéciﬁcités90 qui contribuent de manière inédite à l’am­pliﬁcation de ces nuisances. D’abord, la taille des réseaux numériques, le nombre de contacts que nous pouvons y avoir ou encore la visibilité potentielle des messages que nous y faisons circuler sont plus importants que jamais. Ensuite, dans les interactions hors ligne, la proximité spatiale entre les individus les incite généralement à éviter l’insulte ou l’invective; les réseaux sociaux n’oﬀrent pas cette caractéristique paciﬁcatrice. Les échanges sur Internet incitent sou­vent à l’intolérance91 et à ce que l’on appelle la désinhibition numérique92 . Enﬁn, la multiplicité des sources d’informations a tendance à favoriser une balkanisation des perceptions de la réalité, comme nous l’avons évoqué dans l’introduction de ce rapport.
+...
+Todo = résumer ces trois points ci-dessous :
+Les principaux eﬀets de la révolution algorithmique en matière d’organisation de l’information peuvent être subdivisés en trois axes, que nous allons explorer successivement dans le reste de ce chapitre:
+
+l’éditorialisation algorithmique: la manière dont les algorithmes régissent à la fois l’ordre et la fréquence d’apparition des informations, selon une logique de captation de l’attention;
+le calibrage social: la façon dont les réseaux sociaux altèrent la perception de la représentativité et de la popularité de certains points de vue;
+l’inﬂuence asymétrique: le fait qu’Internet permette à des individus motivés d’accéder à une visibilité numérique qui excède de beaucoup leur représenta-tivité, rendant ainsi possible la prévalence de certains discours extrêmes qui proﬁtent des conditions numériques pour sortir de leur espace de radicalité et diﬀuser leurs argumentaires.
+
+...
+L’un des rôles des médias est d’éditorialiser les informations d’actualité, c’est-à-dire de les sé-lectionner et de les hiérarchiser pour son public. (...) Pour un journal papier traditionnel, par exemple, c’est la salle de rédaction et son rédacteur en chef qui choisissent et organisent l’information jugée pertinente
+...
+Chacun com-prend qu’un article en première page, occupant plus de colonnes ou assorti de photos, gagnera davantage de visibilité. De la même façon, les plateformes éditorialisent l’information. Elles le font cependant selon une logique algorithmique qui reste opaque pour les utilisateurs93 . Lorsqu’une recherche est faite sur Google ou YouTube, ou encore qu’un ﬁl Facebook est ouvert, certaines informations sont présentées préférentiellement et ont de ce fait plus de chances d’être prises en compte par l’internaute.
+...
+Le discret travail d’éditorialisation de l’information des algorithmes pourrait même, dans certaines circonstances, inﬂuer sur les préférences électorales de leurs utilisateurs98 .
+...
+Ce que nous pourrions penser relever de notre liberté de choix se révèle ainsi, parfois, le pro-duit d’architectures numériques inﬂuençant nos conduites
+...
+Le terme inquié-tant de «dark patterns» a ainsi cristallisé ces dernières années les inquiétudes autour de la capacité du design des plateformes à se jouer des régularités de notre système cognitif, jusqu’à nous faire prendre des décisions malgré nous
+...
+La question des darks patterns99 (interfaces conçues dans le but de manipuler ou tromper les utilisateurs) et celle de la possibili-té de leur régulation exigent de prendre en compte la probléma­tique du design des interfaces utilisateurs. En eﬀet, même au-delà de toute intention maligne, les choix de design ont nécessaire­ment une inﬂuence sur le comportement des utilisateurs sur les plateformes numériques. 
+...
+Recommandation
+Ouvrir une réﬂexion en vue d’une régulation sur l’importance de la question du design des interfaces utilisateurs (R2).
+...
+La logique qui oriente la conception de ces architectures numériques ne répond, la plupart du temps, qu’à un objectif économique: il s’agit pour les plateformes numériques de retenir aussi longtemps que possible l’attention de leurs utilisateurs, aﬁn de pouvoir la convertir en ressources ﬁnancières au moyen d’espaces publicitaires payants; ou encore de les inciter à partager plus de données, in ﬁne monétisables, qu’il n’est nécessaire au strict fonctionnement du service
+...
+Le problème est que cet enfermement n’est pas seulement dommageable pour les individus – ce qui serait en soi une raison suﬃsante pour s’en inquiéter – mais produit également des eﬀets collectifs négatifs. (...)l’entreprise a calibré son algorithme de manière à attribuer5 fois plus de poids à ces expressions d’indigna­tion, assurant ainsi aux contenus concernés une visibilité maximale dans les ﬁls d’actualité101 . Dans ces conditions, comment s’étonner des eﬀets de polarisation aﬀective que l’on observe?
+...
+l’algorithme de YouTube conduisait vers des contenus de plus en plus extrêmes, pavant ainsi la voie à la radicalisation105 . Cet algo-rithme a été jugé responsable d’une partie de la progression des extrêmes-droites allemandes et états-uniennes106 .
+...
+
+TITRE = Perturbation du calibrage social
+
+De ce fait, notre opinion naissante sur une question donnée peut largement être inﬂuencée par la visibilité de celle que les autres ont exprimée à son sujet, en particulier s’ils font partie de notre réseau d’amis ou nous paraissent socialement semblables. La numé-risation des relations sociales et la multiplication des producteurs de contenus d’information perturbent beaucoup notre calibrage social108 , c’est-à-dire l’accès raisonné que nous avons à l’avis des autres
+...
+D’une part, elle conduit à accorder une prime aux contenus que la métrique numérique a rendus populaires. Ainsi, les algorithmes qui organisent la visibilité de l’information ont pour but de maximiser l’attention des utilisateurs et leur engagement plutôt que de proposer des sources ﬁables109 et équilibrées110
+...
+Cette disposition pourrait paraître raisonnable en partant du principe qu’une intelligence collective a plus de chances de faire émerger les points de vue solides et argumentés. Il n’en est rien, en raison de l’existence de ce que l’on nomme le biais de popularité1(...) À un certain niveau de popularité, la diﬀu­sion d’un article, par exemple, ne cessera de s’ampliﬁer.
+...
+Recommandation
+Permettre aux utilisateurs de mieux se représenter l’état du réseau et la préva­lence réelle des opinions en désactivant par défaut les métriques de popularité et l’éditorialisation algorithmique, et en mettant en avant des métriques permettant de juger de la qualité épistémique des contenus (historique de partage notam­ment) (R3).
+...
+D’autre part, nous avons tendance à nous associer sur les réseaux sociaux (comme dans la vie réelle) à des personnes qui nous ressemblent et partagent nos points de vue, et à nous éloigner de celles qui nous paraissent au contraire trop dissemblables
+...
+Ainsi peuvent se former des communautés épistémiques au sein desquelles émergent des consensus illusoires et où s’opère un renforcement mutuel des opinions114 .
+...
+
+TITRE = Inﬂuences asymétriques et radicalisation
+
+Très tôt, plusieurs études115 ont montré que, sur Internet, un petit nombre de personnes mo-tivées pouvait inﬂuencer l’opinion. Internet a en eﬀet permis l’émergence de ce que certains nomment, en référence aux thèses de l’école de Columbia, des «super leaders d’opinion116»
+...
+en réalité, dans la cité numérique, certains ont beaucoup plus voix au chapitre que les autres
+...
+Cela ne serait pas nécessaire-ment problématique s’il n’était démontré que cette conﬁguration favorisant les inﬂuenceurs numériques les plus visibles constitue un facteur essentiel de la propagation virale des fausses informations119 . Ceux-ci ne sont pas nécessairement producteurs ou relais de fausses informa­tions, mais lorsqu’ils cèdent à la tentation d’en partager, ils deviennent les causes principales de cascades de désinformation120 .
+...
+Recommandation
+Encourager les plateformes à une modération plus attentive des inﬂuenceurs aﬁn de les responsabiliser.
+...
+D’une façon générale, la motivation des acteurs sur ce marché cognitif peut leur conférer une visibilité qui dépassera leur représentativité.
+...
+Il se trouve que, pour le meilleur et pour le pire, certains groupes motivés ont montré qu’ils étaient capables de préempter une part déséqui-librée de la visibilité numérique. Ainsi, sur Facebook, les mouvements anti-vaccins ont réussi – avant la pandémie – à occuper une place dominante face aux pro-vaccins121 .
+...
+Certaines analyses proposent de généraliser ces observations en montrant que la tendance des réseaux sociaux est d’invisibiliser les modérés au proﬁt des opinions extrêmes 122 .
+...
+Recommandations
+Donner plus d’inﬂuence à la compétence en mettant en avant les comptes d’ex­perts et en ampliﬁant leur contenu (lorsqu’ils portent sur un sujet relatif à leur expertise) (R5).
+Veiller à ce que, sur certains sujets fermement établis, le classement algorith­mique n’induise pas en erreur le public sur l’état réel des connaissances. Pour cela, encourager un dialogue entre les plateformes et les institutions scientiﬁques aﬁn que l’existence d’un consensus soit reﬂétée dans la visibilité accordée aux diverses opinions (R6).
+...
+En dehors des réseaux sociaux, le classement proposé par un moteur de recherche comme Google, par exemple, peut être inﬂuencé par l’activité plus ou moins coordonnée de certains réseaux militants.
+...
+C’est notamment le cas lorsqu’un fait d’actua-lité vient de se produire (par exemple, un attentat) et n’a pas encore généré beaucoup d’articles. Dès lors, si un groupe motivé par la manipulation de l’opinion agit rapidement, il peut, au moins provisoirement, détourner les premières recherches vers des interprétations idéologisées de l’événement.
+...
+L’action de tels groupes motivés peut contribuer à produire des bulles épistémiques126,espaces numériques à l’intérieur desquels l’esprit critique peine à faire valoir ses droits127 . Dans ces communautés virtuelles, les fausses informations peuvent se diﬀuser sans rencontrer beau­coup de contradictions. Il est documenté qu’elles alimentent l’extrémisme et la polarisation aﬀective128
+...
+Ces groupes peuvent par ailleurs agir de façon plus ou moins coordonnée pour signaler en essaim des comptes qui contrarient leur combat idéologique et obtenir des suspen­sions ou des bannissements.
+Recommandation
+Se prémunir contre le risque de sur-modération en analysant plus ﬁnement les signalements d’utilisateurs (signalements en essaim) (R7).
+
+TITRE = Conclusion du chapitre 2
+
+REPRENDRE ICI
