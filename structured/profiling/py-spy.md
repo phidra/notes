@@ -1,0 +1,63 @@
+* [py-spy c'est quoi](#py-spy-cest-quoi)
+* [Enregistrer le profil d'un script](#enregistrer-le-profil-dun-script)
+* [Profiler une extension C/C++](#profiler-une-extension-cc)
+
+# py-spy c'est quoi
+
+https://github.com/benfred/py-spy
+
+Un profiler de code python, qui peut également profiler les extensions C/C++, et qui sait générer sa sortie au format [speedscope](./speedscope.md).
+
+Installation simple :
+
+```
+pip install py-spy
+```
+
+(py-spy fonctionne même sur des pythons aussi anciens que python3.5)
+
+# Enregistrer le profil d'un script
+
+Le principe de base, c'est de lancer son script avec py-spy :
+
+```
+py-spy -- python myscript.py --option=value arg1 arg2
+```
+
+Détail 1 = il y a diverses options, la plus importantes est `--format speedscope`, ainsi que `--native` si on veut profiler les extensions C/C++ :
+
+```
+py-spy --native --format speedscope -o /tmp/profile.json -- python myscript.py --option=value arg1 arg2
+```
+
+Détail 2 = si on utilise pyenv, il faut trouver l'emplacement de l'interpréteur python :
+
+```sh
+pyenv which python
+# /home/coucoucestmoi/.pyenv/versions/mysupervenv/bin/python
+
+py-spy -- /home/coucoucestmoi/.pyenv/versions/mysupervenv/bin/python myscript.py --option=value arg1 arg2
+```
+
+Détail 3 = si on utilise un entry-point, il faut trouver l'emplacement du script exécuté :
+
+```sh
+which myentrypoint
+
+# ou si on utilise pyenv :
+pyenv which myentrypoint
+
+# /home/coucoucestmoi/.pyenv/versions/mysupervenv/bin/myentrypoint
+```
+
+Au global, la commande complète peut ressembler à ça :
+
+```sh
+py-spy record --native --idle --threads -o /tmp/profile.speedscope --format speedscope -- /home/coucoucestmoi/.pyenv/versions/mysupervenv/bin/python /home/coucoucestmoi@ratpsmart.local/.pyenv/versions/mysupervenv/bin/myentrypoint --option=value arg1 arg2
+```
+
+# Profiler une extension C/C++
+
+Ne pas oublier l'option `--native` (mais voir aussi les autres options de `py-spy help record`).
+
+Compiler en `RelWithDebInfo` pour avoir les infos de debug (numéros de lignes, notamment), sinon on n'aura que les noms des symboles sans savoir où on passe le temps.
