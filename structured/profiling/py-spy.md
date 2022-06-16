@@ -1,5 +1,6 @@
 * [py-spy c'est quoi](#py-spy-cest-quoi)
-* [Enregistrer le profil d'un script](#enregistrer-le-profil-dun-script)
+* [Lancer un script en enregistrant son profil py-spy](#lancer-un-script-en-enregistrant-son-profil-py-spy)
+* [Enregistrer le profil d'un process déjà en train de tourner](#enregistrer-le-profil-dun-process-déjà-en-train-de-tourner)
 * [Profiler une extension C/C++](#profiler-une-extension-cc)
 
 # py-spy c'est quoi
@@ -16,7 +17,7 @@ pip install py-spy
 
 (py-spy fonctionne même sur des pythons aussi anciens que python3.5)
 
-# Enregistrer le profil d'un script
+# Lancer un script en enregistrant son profil py-spy
 
 Le principe de base, c'est de lancer son script avec py-spy :
 
@@ -55,6 +56,17 @@ Au global, la commande complète peut ressembler à ça :
 ```sh
 py-spy record --native --idle --threads -o /tmp/profile.speedscope --format speedscope -- /home/coucoucestmoi/.pyenv/versions/mysupervenv/bin/python /home/coucoucestmoi@ratpsmart.local/.pyenv/versions/mysupervenv/bin/myentrypoint --option=value arg1 arg2
 ```
+
+# Enregistrer le profil d'un process déjà en train de tourner
+
+Même principe, avec la subtilité qu'il faut être **root** pour s'attacher au process :
+
+```sh
+ps aux|grep mysuperprocess
+sudo env PATH=$PATH py-spy record --native --idle --threads -o /tmp/profile.speedscope --format speedscope --pid 42419
+```
+
+Attention aux droits du fichier de profil (et malheureusement, ça n'est qu'à la fin du record que ça échouera s'il y a un souci là-dessus). Le mieux étant soit que le fichier de destination n'existe pas, soit qu'il ait des droits ouverts à tout le monde.
 
 # Profiler une extension C/C++
 
