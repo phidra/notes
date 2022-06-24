@@ -341,6 +341,9 @@ pyenv local mysuperenv
 
 # si besoin, au sein de myproject, on peut revenir temporairement sur le python système :
 pyenv shell system
+
+# suppression du virtualenv
+pyenv virtualenv-delete mysuperenv
 ```
 
 ### comment ça marche
@@ -383,6 +386,10 @@ Utilisation :
     ```
 - le truc cool : si le plugin pyenv-virtualenv est dans le `PATH` (`eval "$(pyenv virtualenv-init -)"`), avec `pyenv local` zsh reconnaît automatiquement qu'à l'intérieur du répertoire `myproject/`, je suis dans le venv `mysuperenv`
 - du coup, de la même façon que je pouvais avoir une version de python automatique par projet, je peux avoir un virtualenv automatique par projet \o/
+- il y a une commande dédiée pour supprimer le venv :
+    ```sh
+    pyenv virtualenv-delete mysuperenv
+    ```
 
 ### qu'apporte pyenv activate ?
 
