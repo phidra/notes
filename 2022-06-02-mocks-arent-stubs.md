@@ -5,7 +5,7 @@
 - **auteur** = [Martin FOWLER](https://martinfowler.com/) = auteur de bouquins (dont [Refactoring](https://martinfowler.com/books/refactoring.html), une référence), conférencier
 - **date de publication** = 2007-01-02
 - **source** = [son blog](https://martinfowler.com/)
-- **tags** = language>agnostic ; topic>design ; topic>testing ; topic>classicists-vs-mockists level>intermediate
+- **tags** = language>agnostic ; topic>design ; topic>testing ; topic>classicists-vs-mockists ; level>intermediate
 
 
 **TL;DR** : un article ancien mais très intéressant (mais aussi très dense en infos pertinentes : presque chaque paragraphe du post a une petite pépite de sagesse) sur l'approche classicist vs. mockist pour le testing, et il explique très bien les différences entre les deux, ce qui permet de se forger une opinion sur leurs avantages/inconvénients. En deux mots :
