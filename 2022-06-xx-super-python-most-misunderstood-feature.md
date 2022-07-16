@@ -115,7 +115,9 @@ Il explique quelques règles de fonctionnement du MRO :
     class D(A, C):  # dans le MRO, D < A < C
         pass
 
-    # on a la contradiction C < A et A < C
+    # on a la contradiction C < A et A < C, ce qui provoque l'exception :
+     # TypeError: Cannot create a consistent method resolution
+     # order (MRO) for bases A, C
     ```
 
 Puis, il donne des bonnes pratiques pour designer une hiérarchie de classes. Problèmes à résoudre :
