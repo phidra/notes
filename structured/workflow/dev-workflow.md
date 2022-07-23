@@ -19,6 +19,7 @@ Notes sur mon workflow de dev
     # zshrc :
     export PATH="$HOME/neovim/bin:$PATH"
     ```
+- derrière, [la doc](https://neovim.io/doc/user/nvim.html#nvim-from-vim) indique comment configurer neovim pour sourcer la config de vim
 - truc cool pas si fréquent = la doc indique comment _déinstaller_ neovim :
     ```
     # documenté :
