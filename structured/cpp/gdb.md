@@ -1,6 +1,10 @@
 * [Généralités](#généralités)
 * [Configuration de gdb](#configuration-de-gdb)
    * [Historique des commandes](#historique-des-commandes)
+   * [UX = meilleure utilisabilité](#ux--meilleure-utilisabilité)
+      * [TUI](#tui)
+      * [gdbinit](#gdbinit)
+      * [gdb-dashboard](#gdb-dashboard)
 * [Breakpoints](#breakpoints)
    * [Types de breakpoings](#types-de-breakpoings)
    * [Savoir où poser un breakpoint](#savoir-où-poser-un-breakpoint)
@@ -18,6 +22,7 @@
    * [Threads](#threads)
    * [Inspecter l'état du programme](#inspecter-létat-du-programme)
    * [Modifier l'état du programme](#modifier-létat-du-programme)
+   * [charger les symboles de debug d'une lib](#charger-les-symboles-de-debug-dune-lib)
    * [Divers](#divers)
 
 # Généralités
@@ -112,6 +117,53 @@ Derrière, l'historique est utilisable comme sous bash ou zsh :
 - flèches haut et bas pour naviguer dans l'historique
 - `Ctrl+R` pour rechercher dans l'historique
 - (par contre, à la différence de bash/zsh, `Ctrl+S` ne recherche pas en forward)
+
+## UX = meilleure utilisabilité
+
+gdb est pas très ergonomique, mais il existe plusieurs projets pour améliorer ça
+
+https://stackoverflow.com/questions/209534/how-to-highlight-and-color-gdb-output-during-interactive-debugging
+
+### TUI
+
+Intégré à gdb en baseline ; [doc](https://www.zeuthen.desy.de/dv/documentation/unixguide/infohtml/gdb/TUI.html)
+
+```sh
+gdb -tui
+# C-x C-a pour activer/désactiver
+```
+
+Notes :
+
+- clairement, la visibilité est meilleure puisque je vois le source et ma ligne
+- (par contre, je perds l'accès à l'historique avec le flèches, puisqu'elles font maintenant réagir la fenêtre de source-code — EDIT : non, il suffit de mettre le focus ailleurs)
+- d'après la doc, on dirait qu'on peut choisir les fenêtres à afficher
+   - C-x 2 pour afficher DEUX panels
+   - C-x o pour mettre le focus sur une autre fenêtre
+- dans une fenêtre active, on peut scroller avec up/down PgUp/PgDown
+- le panel du source code indique les breakpoints actuels
+- il existe un SingleKey mode permettant de "piloter" l'exécution de gdb depuis une fenêtre de source / assembly : [lien](https://www.zeuthen.desy.de/dv/documentation/unixguide/infohtml/gdb/TUI-Single-Key-Mode.html#TUI-Single-Key-Mode)
+- commandes ([doc](https://www.zeuthen.desy.de/dv/documentation/unixguide/infohtml/gdb/TUI-Commands.html#TUI-Commands)) :
+    ```sh
+    layout src         # pour afficher les sources
+    info win           # pour connaître les fenêtres affichées
+    winheight src -10  # pour réduire la taille de la fenêtre des sources
+    ```
+
+### gdbinit
+
+https://github.com/gdbinit/gdbinit
+
+Config gdb pour une meilleure utilisabilité.
+
+
+### gdb-dashboard
+
+https://github.com/cyrus-and/gdb-dashboard
+
+A l'air trop chouette, à essayer !
+
+Ici aussi, ça n'est qu'un gdbinit = une config gdb.
 
 # Breakpoints
 
@@ -375,6 +427,16 @@ J'ai fait deux pocs sur la modification de variables via gdb :
 
 - [POC1](https://github.com/phidra/pocs/tree/c7a082ce09d789eaea4bb31e5697f652091cca7d/cpp/TOOL_gdb/01_modify_int) : pour modifier des variables simples (e.g. `int`), on peut directement écrire à l'adresse mémoire
 - [POC2](https://github.com/phidra/pocs/tree/c7a082ce09d789eaea4bb31e5697f652091cca7d/cpp/TOOL_gdb/02_modify_string) pour modidifer des variables plus complexes (e.g. `std::string`), on peut aussi appeler des fonctions : `my_variable.assign("my_value")`
+
+## charger les symboles de debug d'une lib
+
+
+(note : pas nécessaire si la lib a été compilé avec les symboles de debug)
+
+- https://visualgdb.com/gdbreference/commands/sharedlibrary
+- https://stackoverflow.com/questions/33886913/make-gdb-load-a-shared-library-from-a-specific-path
+    > If you don't want to do that, set solib-search-path and set sysroot are your friends.
+- https://sourceware.org/gdb/onlinedocs/gdb/Files.html
 
 ## Divers
 
