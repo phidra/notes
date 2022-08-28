@@ -3,6 +3,8 @@ Notes sur mon workflow de dev
 * [neovim](#neovim)
    * [Notes d'installation](#notes-dinstallation)
    * [Tips](#tips)
+   * [Plugins (neo)vim possiblement intéressants, mais que j'ai choisi de ne pas utiliser](#plugins-neovim-possiblement-intéressants-mais-que-jai-choisi-de-ne-pas-utiliser)
+   * [Plugins (neo)vim possiblement intéressant, à regarder](#plugins-neovim-possiblement-intéressant-à-regarder)
 * [JOURNAL](#journal)
    * [Vrac](#vrac)
    * [Utilisation de telescope avec nvim](#utilisation-de-telescope-avec-nvim)
@@ -57,6 +59,32 @@ Notes sur mon workflow de dev
     :lua print(vim.fn.getcwd())
     :echo getcwd()
     ```
+
+## Plugins (neo)vim possiblement intéressants, mais que j'ai choisi de ne pas utiliser
+
+- https://github.com/norcalli/nvim-colorizer.lua : pour colorier les couleurs RGB avec leur couleur (EDIT : pas vraiment réussi à le faire marcher (il faut termguicolors), et de toutes façons je fais pas assez de frontend pour avoir un franc besoin...)
+- https://github.com/tommcdo/vim-lion : une alternative à tabular pour aligner des colonnes (mais comme tabular me convient, je ne change pas)
+- https://github.com/farmergreg/vim-lastplace : mémoriser l'emplacement des derniers fichiers édités pour les rouvrir au même endroit
+- https://github.com/matze/vim-move : pour déplacer plusieurs lignes de code d'un coup. J'ai pas de bon shortcut pour ça : `A-j` / `A-k` sont pris par `ALENext/Previous`,  `C-k` est important pour les digraphes... Dans les deux cas, je pourrais changer la signification du shortcut juste en visual, mais je suis pas fan... De plus, le chemin des écoliers pour déplacer des lignes (= cut/paste) reste relativement facile.
+- https://github.com/p00f/nvim-ts-rainbow : pour colorier les parenthèses. L'installation dépend de nvim-treesitter et a l'air compliqué + je suis pas super fan de colorier les parenthèse, je trouve que ça rend le fichier difficilement lisible.
+- https://github.com/suy/vim-context-commentstring : permet d'avoir plusieurs types de commentaires différents en fonction du contexte (e.g. un fichier python qui génère du html pourra commenter en python ou en html). Pour le moment, mon besoin est trop faible (mais ça pourrait changer car j'ai un cas d'usage assez utile = les configs lua inlinées dans mon vimrc)
+- https://github.com/JamshedVesuna/vim-markdown-preview : pouvoir facilement ouvrir un browser sur un markdown en cours d'édition. Les dépendances sont trop contraingnantes, et mon besoin est suffisamment faible pour ne pas vouloir ajouter un plugin supplémentaire (si le besoin se fait plus pressant, je passerai sans doute par un outil externe plutôt que par un plugin vim)
+- https://github.com/tpope/vim-projectionist : pour configurer certains trucs par projet (e.g. les types d'alternate files) -> bon complément au LSP. Mais a l'air compliqué et pas ce que je veux.
+- https://github.com/mhinz/vim-sayonara : pour fermer proprement les buffers/windows (tss tss, c'est triste d'avoir besoin d'un plugin pour ça). J'ai pas le besoin au point de vouloir m'encombrer d'un plugin supplémentaire pour ça.
+- https://github.com/wellle/targets.vim : ajoute de nouvelles targets pour des motions ciblant des "intérieurs" (e.g. intérieurs de parenthèses, intérieurs de virgules, etc.). Par rapport à l'utilisation classique des intérieurs, ça semble rajouter trop peu de trucs pour que je veuille ajouter un plugin pour ça.
+- https://github.com/mg979/vim-visual-multi : pouvoir travailler sur plusieurs mots en même temps. Semble trop complexe pour valoir la peine d'utiliser ce plugin plutôt que répéter une commande ou faire une macro...
+- https://github.com/liuchengxu/vim-which-key : un plugin qui semble pouvoir lister automatiquement les raccourcis. L'idée est excellente, mais la mise en oeuvre trop clumsy.
+- https://github.com/tommcdo/vim-exchange : permet d'échanger deux textes entre eux. J'ai pas le besoin au point de vouloir m'encombrer d'un plugin supplémentaire pour ça.
+- https://github.com/unblevable/quick-scope : permet d'aider les mouvements en highlightant des caractères uniques dont on pourrait vouloir se servir pour des motions. J'ai pas le besoin au point de vouloir m'encombrer d'un plugin supplémentaire pour ça.
+- https://github.com/folke/trouble.nvim : lister tout ce qui ne va pas dans un fichier ; je vois pas trop le besoin...
+- https://github.com/nvim-lua/lsp-status.nvim : indique les erreurs LSP dans la statusline. Ça ne m'intéresse pas plus que ça.
+- https://github.com/ethanholz/nvim-lastplace : rouvrir un fichier là où on l'avait laissé. Je pressens que ça pourrait être plus confusant qu'autre chose, mieux vaut me concentrer sur le fait de naviguer efficacement dans une codebase.
+
+## Plugins (neo)vim possiblement intéressant, à regarder
+
+- https://github.com/nvim-lualine/lualine.nvim : statusline
+- https://github.com/folke/which-key.nvim : ouvrir une popup pour terminer une commande que j'ai commencé à taper
+
 # JOURNAL
 
 ## Vrac
@@ -408,6 +436,29 @@ Ce journal correspond à mon travail sur le petit PC pour avoir une utilisation 
     :digraph
     :ALEInfo
     ```
+- neovim/LSP : quand j'utilise l'omnicompletion avec lsp, ça m'ouvre une fenêtre en bas de mon écran, qu'il faut que je referme manuellement derrière...
+    - pour corriger, il faudra que je comprenne mieux la complétion sous vim
+    - notamment, quelle différence entre :
+        - taper directement `Ctrl+n` (actuellement, ça trigge la complétion "dumb")
+        - taper `Ctrl+x` puis `Ctrl+o` (actuellement, ça trigge la complétion "smart")
+- dev C++/python : pouvoir compiler/exécuter/débugger via vim ? (est-ce vraiment une feature pertinente ? le seul intérêt serait de jumper directement aux localisations des erreurs et breakpoints dans le code)
+- Divers liens à écluser :
+    - [Vim for Python in 2020 | Vim From Scratch](https://www.vimfromscratch.com/articles/vim-for-python) : Contient quelques plugins à essayer qui ont l'air intéressants
+    - [Your ultimate VIM setup for Python](https://casas-alejandro.medium.com/your-ultimate-vim-setup-for-python-b43a522b1152) : Contient quelques plugins à essayer qui ont l'air intéressants + une config
+    - https://www.incredibuild.com/blog/vim-c-there-is-such-a-thing-tricks-to-use-vim-in-c : Pas fou... Quelques plugins à regarder though
+    - https://dane-bulat.medium.com/vim-setting-up-a-build-system-and-code-completion-for-c-and-c-eb263c0a19a1 : Pas inintéressant car mixe vim et cmake très concrètement, mais rien de nouveau pour vim
+    - https://hackingcpp.com/dev/vim_plugins.html : Plein plein plein de plugins qui ont l'air cool !
+    - [https://idie.ru/posts/vim-modern-cpp/](lien1) + [lien2](https://chmanie.com/post/2020/07/17/modern-c-development-in-neovim/) : pour développer en C++ avec neovim
+    - liens sur le profiling de vim : [lien1](https://thoughtbot.com/blog/profiling-vim), [lien2](https://stackoverflow.com/questions/12213597/how-to-see-which-plugins-are-making-vim-slow)
+    - [lien](https://superuser.com/questions/77800/vims-autocomplete-how-to-prevent-vim-to-read-some-include-files) pour avoir un vim fonctionnel avec le C++, mieux gérer les includes dans l'autocomplétion :
+    - [cet article](https://medium.com/@lakshmankumar12/c-source-code-browsing-in-vim-d0afee82b688) donne quelques outils intéressants pour le C++ : [lien1](https://github.com/deoplete-plugins/deoplete-clang), [lien2](https://github.com/Andersbakken/rtags)
+    - Voir également [ce post](https://www.danielfranklin.id.au/extending-a-shared-vim-configuration/) sur le fait d'étendre une config vim partagée (entre plusieurs machines)
+    - Autres références à lire : [lien1](https://realpython.com/vim-and-python-a-match-made-in-heaven/), [lien2](https://www.vimfromscratch.com/articles/vim-and-language-server-protocol/)
+    - sur [une vidéo cmake et ses dérivées](https://youtu.be/Y_UubM5eYAM), j'ai choppé quelques trucs cools :
+        - Au moins dans ses vidéos (donc avec neovim + coc), il y a des messages indiquant que l'indexation est en cours... ce serait top d'avoir la même chose avec le client LSP natif
+        - Google test + intégration avec vim
+    - (N)VIM = Regarder d'un peu plus près les splits vim (utiles pour garder un morceau de code sous le coude) : [lien](https://thoughtbot.com/blog/vim-splits-move-faster-and-more-naturally)
+    - https://stackoverflow.com/questions/24232354/vim-set-color-for-listchars-tabs-and-spaces
 
 # DEPRECATED — ALE
 
