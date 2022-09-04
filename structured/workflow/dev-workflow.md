@@ -4,15 +4,20 @@ Notes sur mon workflow de dev
    * [Notes d'installation](#notes-dinstallation)
    * [Tips](#tips)
    * [Plugins (neo)vim possiblement intéressants, mais que j'ai choisi de ne pas utiliser](#plugins-neovim-possiblement-intéressants-mais-que-jai-choisi-de-ne-pas-utiliser)
-   * [Plugins (neo)vim possiblement intéressant, à regarder](#plugins-neovim-possiblement-intéressant-à-regarder)
+   * [Plugins (neo)vim possiblement intéressants, à regarder](#plugins-neovim-possiblement-intéressants-à-regarder)
+* [Telescope](#telescope)
+   * [Cheatsheet](#cheatsheet)
+   * [Installation](#installation)
+   * [Notes à l'usage](#notes-à-lusage)
 * [JOURNAL](#journal)
-   * [Vrac](#vrac)
+   * [Vrac1](#vrac1)
    * [Utilisation de telescope avec nvim](#utilisation-de-telescope-avec-nvim)
    * [Installation sur le vieux PC](#installation-sur-le-vieux-pc)
-   * [Vrac](#vrac-1)
+   * [Vrac2](#vrac2)
+   * [Vrac3](#vrac3)
 * [FUTUR](#futur)
 * [DEPRECATED — ALE](#deprecated--ale)
-   * [Installation](#installation)
+   * [Installation](#installation-1)
    * [Setup python](#setup-python)
    * [Setup C++](#setup-c)
       * [compile_commands.json](#compile_commandsjson)
@@ -59,6 +64,21 @@ Notes sur mon workflow de dev
     :lua print(vim.fn.getcwd())
     :echo getcwd()
     ```
+- pour rediriger le résultats de commandes qui occupent l'écran (comme `:digraphs`) :
+    ```
+    :redir @a
+    :digraphs
+    :redir END
+    # le buffer "a contient maintenant la liste des digraphs.
+    ```
+- pour faire un alias de fonctions, il suffit de :
+    ```
+    :lua lsp_rename = vim.lsp.buf.rename
+    ```
+- pour la complétion, il y a une différence entre :
+    - `Ctrl-n` (ou `Ctrl-p`)directement (qui trigge la complétion non-intelligente)
+    - `Ctrl-x` suivi de `Ctrl-o` (qui trigge la complétion intelligente utilisant le lsp)
+    - `Ctrl-x` suivi de `Ctrl-l` (qui trigge la complétion de ligne)
 
 ## Plugins (neo)vim possiblement intéressants, mais que j'ai choisi de ne pas utiliser
 
@@ -80,14 +100,109 @@ Notes sur mon workflow de dev
 - https://github.com/nvim-lua/lsp-status.nvim : indique les erreurs LSP dans la statusline. Ça ne m'intéresse pas plus que ça.
 - https://github.com/ethanholz/nvim-lastplace : rouvrir un fichier là où on l'avait laissé. Je pressens que ça pourrait être plus confusant qu'autre chose, mieux vaut me concentrer sur le fait de naviguer efficacement dans une codebase.
 
-## Plugins (neo)vim possiblement intéressant, à regarder
+## Plugins (neo)vim possiblement intéressants, à regarder
+
+Ressource pour trouver des plugins neovim = https://github.com/rockerBOO/awesome-neovim
 
 - https://github.com/nvim-lualine/lualine.nvim : statusline
 - https://github.com/folke/which-key.nvim : ouvrir une popup pour terminer une commande que j'ai commencé à taper
+- https://github.com/tanvirtin/vgit.nvim : visualiser les diffs/blame/commits git
+
+# Telescope
+
+**C'est quoi ?** Un plugin (exclusif à neovim) diablement efficace permettant de "choisir des items dans une liste", qui sert à plein plein de trucs (e.g. fuzzy file opener, live grep dans une codebase, recherche dans les symboles LSP, etc.)
+
+https://github.com/nvim-telescope/telescope.nvim
+
+## Cheatsheet
+
+Lancement sans préciser le picker = `:Telescope` (on accède alors à une liste des pickers disponibles).
+
+Sinon, lancement direct sur le picket :
+
+```
+:Telescope live_grep
+:Telescope lsp_references
+:Telescope man_pages
+:Telescope help_tags
+```
+
+Une fois dans le picker, deux modes vim sont possibles :
+
+- en mode normal, les commandes de déplacement classiques fonctionnent
+- en mode insertion, on peut utiliser `Ctrl-n` / `Ctrl-p`
+
+Aide en ligne (sur les shortcuts utilisables dans telescope) :
+
+- `?` en mode normal
+- `Ctrl-/` en mode insertion
+
+`Ctrl-c` pour fermer telescope (plus intuitif que `Escape`, qui peut soit fermer Telescope, soit quitter le insert mode)
+
+La doc des mapings est [ici](https://github.com/nvim-telescope/telescope.nvim#default-mappings).
+
+Note : le texte cherché par `live_grep` est un match EXACT ; par contre il accepte les regex : `closed.*real` (du coup, les parenthèses doivent être échappées).
+
+## Installation
+
+Apparemment il faut préciser le tag :
+
+```
+Plug 'nvim-telescope/telescope.nvim', { 'tag': '0.1.0' }
+```
+
+De plus, il faut installer les dépendances, [fd](https://github.com/sharkdp/fd) (qui permet notamment d'ignorer les fichiers binaires ou de respecter le gitignore) et [ripgrep](https://github.com/BurntSushi/ripgrep) (sans lequel `live_grep` ne fonctionnera pas) :
+
+```sh
+sudo apt install fd-find
+sudo apt install ripgrep
+```
+
+Si l'une des deux dépendances est absentes, telescope peut nous prévenir :
+
+```
+:checkhealth Telescope
+10   - WARNING: fd: not found. Install sharkdp/fd for extended capabilities
+```
+
+Par ailleurs, pour `live_grep`, j'utilise un plugin ([project.nvim](https://github.com/ahmedkhalf/project.nvim)) pour définir le cwd automatiquement à la racine git, sans quoi telescope ne parcourt pas tout le projet s'il a été ouvert depuis un sous-répertoire.
+
+Au final, le plus casse-bonbons reste encore de définir les bindings pour lancer telescope...
+
+
+## Notes à l'usage
+
+- +++ la preview de fichiers est top de chez top (e.g. `live_grep` ou recherche dans les symboles), elle aide à choisir l'item
+- +++ IHM intuitive
+- +++ on peut cocher plusieurs fichiers (avec Tab) pour p.ex. ouvrir 3 tabs d'un coup. EDIT : ah non, je peux bien cocher plusieurs fichiers, mais je ne sais pas comment ouvrir plusieurs tabs d'un coup... On dirait que ça sert à envoyer les fichiers dans la quickfix-list, mais je ne sais pas quoi en faire derrière... On dirait qu'il y a p.ex. moyen de faire des [fonctions custom pour tout ouvrir dans des tabs](https://vimrcfu.com/snippet/143).
+- +++ plein de pickers utiles
+- +++ notamment, utilisation avec LSP très très puissante
+- --- tous les bindings à faire à l'installation
+- --- limité à neovim
+- --- uniquement compatible avec le lsp-client builtin (mais qui est très bien en fait)
+
+Les principes de fonctionnement :
+
+- on dirait qu'un picker, c'est une "commande telescope" ; e.g. find_files est un picker qui permet d'utiliser telescope pour trouver des fichiers
+- dans l'idée, telescope permet de "choisir dans une liste" de façon efficace, fuzzy, et avec preview
+- les "listes" peuvent être beaucoup, beaucoup de choses :
+    - fichiers
+    - commits git
+    - symboles LSP
+    - tags
+    - buffers vim
+    - etc.
+- il y a plein de pickers, y compris utiles pour d'autres choses que neovim (e.g. man_pages, ou git_commits)
+- les concepts semblent être :
+    - picker = ce qui remplit la liste (e.g. "git_commits" va remplir la liste avec des commits git ; lsb_incoming_calls va remplir la liste avec des symboles LSP)
+    - previewer = ce qui permet de preview un item de la liste (on ne preview pas de la même façon un fichier de code et un commit git, I guess)
+    - sorter = ce qui permet d'ordonner les items de la liste en fonction de la chaîne fuzzy que l'utilisateur a tapée
+
+On peut rouvrir telescope dans l'état dans lequel on l'avait laissé : `:lua require('telescope.builtin').resume()`
 
 # JOURNAL
 
-## Vrac
+## Vrac1
 
 - j'installe depuis les sources (cf. les notes dédiées) en utilisant un `INSTALL_PREFIX custom = ~/neovim`
 - je suis [l'aide pour transitionner de vim à neovim](https://neovim.io/doc/user/nvim.html#nvim-from-vim)
@@ -355,7 +470,7 @@ Ce journal correspond à mon travail sur le petit PC pour avoir une utilisation 
         ```
     - Le simple lancement de pyright dans un répertoire vide dans mon shell échoue... (alors qu'il passe bien sur le PC WeWork)
 
-## Vrac
+## Vrac2
 
 - je finis de tester + configurer des bindings pour telescope :
     - ouvrir un fichier (du coup je dégage le plugin Ctrl+p, mais je garde le raccourci)
@@ -387,8 +502,14 @@ Ce journal correspond à mon travail sur le petit PC pour avoir une utilisation 
         :lua require("null-ls").toggle({})
         ```
     - je me débrouille pour pouvoir toggle les diagnostics LSP, avec une fonction custom inspirée de [ce lien](https://www.reddit.com/r/neovim/comments/ng0dj0/lsp_diagnostics_query_is_there_an_way_to_toggle/)
-- j'utilise un plugin pour définir le cwd automatiquement à git (sans quoi telescope ne parcourt pas tout le projet)
+- j'utilise un plugin ([project.nvim](https://github.com/ahmedkhalf/project.nvim) pour définir le cwd automatiquement à git (sans quoi telescope ne parcourt pas tout le projet)
 - lien éclusé = [lunarvim](https://www.lunarvim.org/), pas vraiment un plugin mais un outil buildé sur neovim (pour transformer vim en IDE)
+
+## Vrac3
+
+J'abandonne le fait que mon workflow soit 100% utilisable sur le petit PC portable, qui est vraiment trop vieux pour que le jeu en vaille la chandelle...
+
+Notamment, j'abandonne le fait d'installer pyright.
 
 # FUTUR
 
@@ -431,11 +552,6 @@ Ce journal correspond à mon travail sur le petit PC pour avoir une utilisation 
     - https://github.com/tmux/tmux/releases/tag/3.0a
     - https://bogdanvlviv.com/posts/tmux/how-to-install-the-latest-tmux-on-ubuntu-16_04.html
     - https://jdhao.github.io/2018/10/16/tmux_build_without_root_priviledge/
-- retrouver + ajouter à ma doc vim la commande pour copier dans un buffer le contenu de commandes dans le genre de :
-    ```
-    :digraph
-    :ALEInfo
-    ```
 - neovim/LSP : quand j'utilise l'omnicompletion avec lsp, ça m'ouvre une fenêtre en bas de mon écran, qu'il faut que je referme manuellement derrière...
     - pour corriger, il faudra que je comprenne mieux la complétion sous vim
     - notamment, quelle différence entre :
@@ -459,10 +575,66 @@ Ce journal correspond à mon travail sur le petit PC pour avoir une utilisation 
         - Google test + intégration avec vim
     - (N)VIM = Regarder d'un peu plus près les splits vim (utiles pour garder un morceau de code sous le coude) : [lien](https://thoughtbot.com/blog/vim-splits-move-faster-and-more-naturally)
     - https://stackoverflow.com/questions/24232354/vim-set-color-for-listchars-tabs-and-spaces
+- Splitter mon usage de neovim en deux :
+    - éditeur de texte (la config vim doit fonctionner avec neovim AINSI QU'AVEC vim legacy)
+    - IDE (je n'utiliserai que neovim, et m'autorise donc à ce que la config ne soit pas compatible avec vim legacy)
+- Du coup, discriminer mes plugins (neo)vim :
+    - les plugins essentiels à l'édition de texte (e.g. NERDTree ?)
+    - les plugins essentiels au dev (e.g. LSP, telescope)
+    - les plugins non-essentiels
+- python : utiliser [isort](https://github.com/PyCQA/isort) pour les imports.
+- TELESCOPE> lsp_references est top (bien mieux que la loclist) par contre par défaut l'affichage du nom de fichier est trop petit (comme il est mangé par la répétition de la ligne greppée, que j'ai de toutes façons via la preview, je peux customizer la config pour faire sauter le panel central...)
+- TELESCOPE> question : comment tuner la recherche ?
+    - toggle une recherche exacte/fuzzy
+    - toggle case sensitive ou non
+    - limiter la recherche à mon workspace (et ne pas recherche dans /usr/include/boost, p.ex.)
+- TELESCOPE> une feature qui me manque = Ctrl-D pour matcher avec le nom du fichier uniquement (sans son chemin)
+- TELESCOPE> est-ce que j'ai moyen de limiter le grep/find_files au répertoire local ?
+- TELESCOPE> comment ne PAS avoir les symboles de /usr/include comme boost renvoyés par LSP ?
+- TELESCOPE> Le dynamic_workspace_symbol de telescope n'est pas très pratique car dans le panel de gauche, les noms des fichiers sont tronqués par le nom du symbole...
+    - à la limite, comme le match est fuzzy, le nom du symbole reste utile
+    - mais peut-être que son type non ?
+    - et idéalement, quand le chemin du fichier doit être tronqué, mieux que le CHEMIN (et non le nom du fichier) soit tronqué
+- TELESCOPE> jeter un oeil aux extensions ([lien](https://github.com/nvim-telescope/telescope.nvim/wiki/Extensions)). Par exemple = une extension pour visualiser les variables d'environnement = https://github.com/LinArcX/telescope-env.nvim
+- LSP> voir ce que permettent les code actions ? Notamment, utiliser [ce plugin](https://github.com/kosayoda/nvim-lightbulb) pour les rendre visible ? Exemple de code-action :
+    - ajouter automatiquement un import manquant
+    - renommer automatiquement une fonction pour être cohérent avec la convention de nommage
+    - ajouter automatiquement de la doc
+    - créer des accesseurs
+    - plus généralement : fixer une erreur (en fait, les code-actions sont peut-être l'équivalent de :ALEFix)
+    - à noter qu'en décembre 2021, pyright ne supportait rien d'autre que le tri des imports ([lien](https://stackoverflow.com/questions/70162438/neovim-built-in-lsp-shows-no-code-actions-available-for-python-files/70192996#70192996))
+- LSP> permettre le formattage de code python avec black (quitte à hard-coder la line-length à 120) ?
+- LSP> être capable d'arrêter les LSP null-ls avec `LspStop` (LspStop arrête correctement pyright et clangd, mais pas null-ls). cf. https://github.com/jose-elias-alvarez/null-ls.nvim/issues/896  :
+    ```
+    :lua vim.diagnostic.show()
+    :lua vim.diagnostic.hide()
+    (à noter que ça n'arrête pas vraiment les LSP)
+    ```
+- LSP> utiliser d'autres linters avec null-ls ; la liste des tools gérés par null-ls est [ici](https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md) :
+    - [markdownlint](https://github.com/DavidAnson/markdownlint) = https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#markdownlint
+    - [pydocstyle](http://www.pydocstyle.org/en/stable/) = https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#pydocstyle
+    - [shellcheck](https://www.shellcheck.net/) = https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#shellcheck-1
+    - [vulture](https://github.com/jendrikseipp/vulture) = https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#vulture
+    - [autopep8](https://github.com/hhatto/autopep8) = https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#autopep8
+    - [beautysh](https://github.com/lovesegfault/beautysh) = https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#beautysh
+    - [black](https://github.com/psf/black) = https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#black
+    - [clang-format](https://www.kernel.org/doc/html/latest/process/clang-format.html) = https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#clang_format
+    - [cmake-format](https://github.com/cheshirekow/cmake_format) = https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#cmake_format
+    - [isort](https://github.com/PyCQA/isort) = https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#isort
+- LSP> trouver comment mapper les commandes neovim LSP à l'ouverture de tabs plutôt que de buffers ? (peut-être avec telescope plutôt ?) Les références LSP sont ouvertes dans des buffers. Pour les ouvrir dans des newtabs :
+    ```
+    :set switchbuf+=usetab,newtab
+    ```
+- LSP> besoin qui pourrait être utile = ouvrir la définition/implémentation/déclaration dans un split vertical (ce serait l'équivalent du "peek" de vscode)
+- LSP> [ceci](https://github.com/neovim/nvim-lspconfig/issues/903#issuecomment-843820972) permettrait d'utiliser directement black pour le formatting LSP
+- LSP> sinon, [ceci](https://www.reddit.com/r/neovim/comments/gm4ir3/comment/hj9zvh9/) est intéressant pour ne formatter que partiellement (plutôt que tout le fichier) :
+    ```
+    :'<,'>lua vim.lsp.buf.range_formatting()
+    ```
 
 # DEPRECATED — ALE
 
-C'est quoi ? En gros, un plugin vim pour lancer plein de linters sur un fichier de code, et interpréter les résultats. Il joue le rôle de LSP client.
+**C'est quoi ?** En gros, un plugin vim pour lancer plein de linters sur un fichier de code, et interpréter les résultats. Il joue le rôle de LSP client.
 
 ## Installation
 
@@ -508,7 +680,7 @@ ln -s build/compile_commands.json .
 
 ### compile_commands.json
 
-C'est quoi, ça sert à quoi ? Problématique = les linters utilisés par ALE ont besoin de compiler le fichier en cours d'édition **exactement** comme la toolchain de mon projet le fait (e.g. en incluant les bons chemins vers les headers, ou en passant exactement les bonnes options de compilation, telles que le standard C++).
+**C'est quoi ?** Problématique = les linters utilisés par ALE ont besoin de compiler le fichier en cours d'édition **exactement** comme la toolchain de mon projet le fait (e.g. en incluant les bons chemins vers les headers, ou en passant exactement les bonnes options de compilation, telles que le standard C++).
 
 Pour cela, les toolchains peuvent générer une base de données des commandes permettant de compiler chaque fichier = `compile_commands.json`. Exemple de contenu :
 
