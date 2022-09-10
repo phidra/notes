@@ -35,9 +35,9 @@ Détail 2 = si on utilise pyenv, il faut trouver l'emplacement de l'interpréteu
 
 ```sh
 pyenv which python
-# /home/coucoucestmoi/.pyenv/versions/mysupervenv/bin/python
+# /home/myself/.pyenv/versions/mysupervenv/bin/python
 
-py-spy -- /home/coucoucestmoi/.pyenv/versions/mysupervenv/bin/python myscript.py --option=value arg1 arg2
+py-spy -- /home/myself/.pyenv/versions/mysupervenv/bin/python myscript.py --option=value arg1 arg2
 ```
 
 Détail 3 = si on utilise un entry-point, il faut trouver l'emplacement du script exécuté :
@@ -48,13 +48,13 @@ which myentrypoint
 # ou si on utilise pyenv :
 pyenv which myentrypoint
 
-# /home/coucoucestmoi/.pyenv/versions/mysupervenv/bin/myentrypoint
+# /home/myself/.pyenv/versions/mysupervenv/bin/myentrypoint
 ```
 
 Au global, la commande complète peut ressembler à ça :
 
 ```sh
-py-spy record --native --idle --threads -o /tmp/profile.speedscope --format speedscope -- /home/coucoucestmoi/.pyenv/versions/mysupervenv/bin/python /home/coucoucestmoi@ratpsmart.local/.pyenv/versions/mysupervenv/bin/myentrypoint --option=value arg1 arg2
+py-spy record --native --idle --threads -o /tmp/profile.speedscope --format speedscope -- /home/myself/.pyenv/versions/mysupervenv/bin/python /home/myself/.pyenv/versions/mysupervenv/bin/myentrypoint --option=value arg1 arg2
 ```
 
 # Enregistrer le profil d'un process déjà en train de tourner

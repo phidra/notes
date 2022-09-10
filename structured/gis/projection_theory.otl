@@ -1,0 +1,986 @@
+CES NOTES SONT RESTÉES AU FORMAT OTL !
+
+CONTEXTE :
+	avril 2021 : j'essaye de mieux comprendre les notions en jeu derrière projection/systèmes de coordonnées/référentiel
+	Exemple de phrase que j'aimerais mieux comprendre :
+		Toutes les données que nous avons à disposition voient les coordonnées géographiques encodées dans le système de coordonnées WGS 84 (EPSG:4326)
+		Libre à nous de les transformer ensuite en Web Mercator (EPSG:3857).
+		Quelle différence entre un référentiel, un système de coordonnées, et une projection cartographique ?
+
+REPRISE :
+	continuer d'explorer les liens notés (sur la triangulation, et la réalisation d'un système géodésique)
+	mettre en forme mes notes suite à la discussion avec Évangéline
+
+MES NOTES = RÉSUMÉ DE MA COMPRÉHENSION DU SUJET :
+	note : au vu des connaissances actuelles, le meilleur article est celui-ci :
+		https://medium.com/cr%C3%A9ation-dune-app-cartographique-avec-firebase-vue/comprendre-les-coordinates-reference-system-crs-b67a88bce63c
+	quel est l'objectif final :
+		objectif 1 = comment repérer (=géolocaliser) des objets du monde réel (par exemple un clocher)
+			comment indiquer à quelqu'un "le clocher se trouve ICI" de façon précise et non-ambigüe
+		objectif 2 = comment représenter le monde réel sur une carte
+	pour géolocaliser des points de la terre, il faut les géolocaliser "sur quelque chose", i.e. par rapport à un référentiel
+		on ne peut pas les géolocaliser par rapport au sol, car sinon, tous les points du sol auraient une altitude nulle
+		on pourrait les géolocaliser par rapport au niveau de la mer (c'est presque ce qu'on fait), mais reste à définir ce qu'est ce "niveau de la mer" là où il n'y a pas de mer !
+	comme c'est lui qui donne la direction du "bas" (par définition de ce qu'est "en bas"), le référentiel idéal serait le géoïde
+		géoïde = surface équipotentielle de référence du champ de pesanteur terrestre
+		si la Terre était uniformément recouverte d’eau et qu’il n’y avait pas de marée/vent/vague/courant, la surface de la Terre coïnciderait avec le géoïde.
+		il sert de zéro de référence pour les mesures précises d'altitude
+	le géoïde est trop tarabiscoté pour être utilisé comme référence ; on utilise à la place un ellipsoïde
+		ellipsoïde = surface régulière qui lorsqu'elle est bien choisie (centre, dimensions, orientation...) s'écarte au maximum de quelques dizaines de mètres du géoïde
+	plusieurs ellipsoïdes sont possibles, en fonction des besoins :
+		en effet, tous les ellipsoïdes étant des approximations, certains sont plus adaptés à tel endroit de la Terre qu'à tel autre
+		la donnée précise d'un ellipsoïde, et son positionnement + orientation par rapport à la Terre est un datum
+		Some of these datums are accurate only in certain locations in the world, as the ellipsoid they’re using is a great fit for the real earth surface in those locations, but may be way way off in other places.
+		de nos jours, on utilise prinipalement l'ellipsoïde et le datum de WGS84 (= du GPS)
+	une fois qu'on a un référentiel sur lequel géolocaliser des objets, pour exprimer leur position, il faut un système de coordonnées
+		par exemple, on définit un méridien d'origine, et on dit qu'on mesure les positions sur l'ellipsoïde avec latitude φ, longitude λ et élévation h
+		ces coordonnées utilisant latitude+longitudes sont dites "géographiques"
+	coordonnées projetées :
+		plutôt que de géolocaliser les objets réels sur l'ellipsoïde, on les géolocalise sur une projection de l'ellipsoïde sur un plan
+		dans ce cas, plutôt que lat/long, on les appelle E,N (pour Earthing/Northing), ou bien X,Y
+		elles disposent d'un domaine de validité : par exemple, EPSG:3857 est valable entre 85.06°S et 85.06°N
+		ça permet par exemple de représenter les objets sur une carte, MAIS les coordonnées projetées ne servent pas uniquement dans le contexte du rendu sur une carte
+		en effet : les coordonnées projetées (si elles sont en bijection avec les coordonnées géographiques) permettent elles aussi de géolocaliser les objets de façon non-ambigüe
+	l'ensemble de ellipsoïde+datum+système de coordonnées est un système géodésique, permettant de géolocaliser parfaitement les objets du monde réel
+	en théorie, exprimer une position avec des lat/long NE SERT À RIEN si on n'a pas le système géodésique qui va avec
+		les coordonnées sont toujours liées à des hypothèses : quelle forme avons nous choisie pour la Terre et comment nous avons placé cette forme par rapport à la surface de la Terre.
+			Si on change d’hypothèses, un point change de coordonnées.
+		par exemple : dans Le Trésor de Rackham Le Rouge, juste à partir des lat/long, ils se trompent d'endroit où chercher le trésor
+		autre exemple : dans postgis, les géométries sont associées au SRID (= identifiant de système géodésique) permettant d'interpréter les coordonées
+		mais en pratique, si on reçoit des lat,long, on peut supposer que ce sont des coordonnées GPS
+		les coordonnées GPS utilisent le système géodésique WGS84, aussi appelé EPSG:4326
+	les systèmes géodésiques sont identifiés par leur srid :
+		EPSG:4326 = système géodésique du GPS (utilisant WGS84), avec des coordonnées géographiques
+		EPSG:3857 = coordonnées projetées utilisées sur le web, notamment par google/bing/OSM (avec une merdouille 'spherical development of ellipsoidal coordinates')
+		EPSG:2154 = RFG93 = Lambert-93 = coordonnées projetées, qui sont les coordonnées officielles pour la France
+	la France (=Lambert93) utilise-t-elle le référentiel WGS84 ?
+		réponse courte : non, mais le référentiel utilisé par la France et WGS84 sont compatibles
+		réponse longue :
+			le référentiel WGS84 est calqué sur la Terre
+			or, à cause de la tectonique des plaques (essentiellement), la position d'un objet réel (par exemple un clocher) par rapport à la Terre... évolue avec le temps !
+			dit autrement : sur une période de 100 ans, les corodonnées GPS d'un clocher CHANGENT !
+			pour limiter cet effet, le référentiel utilisé par Lambert93 est "le même que WGS84", mais qui se déplace en même temps que la plaque tectonique eurasienne
+			avantage : exprimées en RFG93, les coordonnées de mon clocher seront les mêmes dans 100 ans
+	et la cartographie ?
+		la carto, c'est représenter le monde réel 3D sur une carte 2D
+		en plus de cette notion de projection, être cartographe, c'est faire un gros travail de sélection d'information, et de stylisation
+		La carte géographique n'est pas le territoire. Elle en est tout au plus une représentation ou une “perception”.
+	une projection, c'est "simplement" un couple de fonctions :
+		x = f1(φ,λ)  et   y = f2(φ,λ) , où :
+			(x,y) désignent des coordonnées planes
+			φ la latitude
+			λ la longitude
+			f1 et f2 des fonctions qui sont continues partout sur l'ensemble de départ sauf sur un petit nombre de lignes et de points (tels que les pôles).
+		Il existe donc une infinité de solutions. Les mathématiciens ne se sont pas privés d'en trouver, et on en connaît plus de 200.
+		différentes projections ont différents avantages/inconvénients :
+			projection équivalente  = conserve localement les aires. Cette représentation est préférée dans les atlas pour respecter les surfaces relatives des différents pays
+			projection conforme     = conserve localement les angles, donc les formes. La topographie et la géodésie utilisent exclusivement ce type de représentation
+			projection aphylactique = elle n'est ni conforme ni équivalente, mais peut être équidistante, c'est-à-dire conserver les distances (sur les méridiens uniquement !).
+			Une projection ne peut pas être à la fois conforme et équivalente.
+		Un point du globe étant repéré par sa longitude et sa latitude, une représentation cartographique est caractérisée par l'image des méridiens et des parallèles, c'est-à-dire le canevas de la carte.
+	autres notes en vrac :
+		google maps / bing maps / OSM représentent leurs cartes en utilisant EPSG:3857
+		lorsqu'on passe la souris sur une carte (e.g. leaflet), comment peut-on avoir en retour des coordonnées géographiques ?
+			réponse = parce que le software traduit à la volée les coordonnées projetées (sur la carte) en coordonnées géographiques
+		pour voir si j'ai bien compris :
+			ce qui peut varier entre deux CRS :
+				e.g. la position du méridien d'origine (à Paris ou à Greenwich)
+			ce qui peut varier entre deux datum :
+				e.g. un datum D1 proche d'une grosse chaîne de montagne bien massive verra peut-être son altitude zéro (niveau de la mer) plus éloigné du centre de masse de la terre qu'un datum D2 éloigné des montagnes
+			ce qui peut varier entre deux ellipsoïdes :
+				un ellipsoïde E1 le plus adapté à une zone loin des chaînes de montagnes pourra être moins courbe (plus "plat") qu'un ellipsoïde E2 adapté à une zone proche des montagnes
+	MES QUESTIONS RESTANTES :
+		pas clair : ce à quoi servent les réseaux, et les control-points...
+			repère géodésique
+			réseau géodésique français
+	NOTES VRAC SUITE À DISCUSSION AVEC ÉVANGELINE :
+		la raison pour laquelle les SIG utilisent plutôt les coordonnées projetées, c'est parce que la finalité des SIG c'est de représenter des choses sur des cartes (donc ça fait sens d'utiliser les coordonnées projetées)
+		déformation au niveau de la France plus forte si on projette avec la projection du GPS qu'avec Lambert93
+		en plus de l'histoire du référentiel comobile avec la plaque eurasienne, Lambert93 sert à moins déformer la projection au niveau de la France : sur la france métropolitaine, elle ne déforme quasiment pas en distance ou en aire
+		bornes servent à attribuer des coordonnées au monde réel (et derrière, à mettre à jour la correspondance entre une mesure physique (durée mise à le signal entre le device et le satellite) et des coordonnées)
+		liens restants à à explorer :
+			https://geodesie.ign.fr/contenu/fichiers/documentation/pedagogiques/FDuquenne_Systemes_References_Terrestres.pdf
+			https://geodesie.ign.fr/contenu/fichiers/documentation/pedagogiques/InfrastructuresGeodesiquesMondiales.pdf
+		NOTES VRAC SUR CE LIEN : https://www.parcellesetpolygones.fr/component/docman/doc_download/15-.html
+			0. Introduction :
+				La géodésie est la science de la forme et de la dimension de laTerre et de son champ de pesanteur
+				Afin de localiser  mathématiquement un objet sur  la  Terre d'une façon univoque, il fautdéfinir un  référentiel géodésique
+				Celui-ci est un repère aff ine dont le   centre est proche du [...]
+				La réalisation concrète et numérique de ce   référentiel s'appelle un système géodésique.
+			1. Système géodésique :
+				Le positionnement des points dans l'espace et le temps au voisinage de la Terrenécessite la définition d'un système géodésique de référence.
+				NdM : ici, il y a une super illustration montrant :
+					le géoïde
+					un ellipsoïde global (qui fitte pas mal au géoïde en moyenne)
+					un ellipsoïde local (qui fitte très bien une petite portion locale du géoïde, mais très mal le géoïde en moyenne, et a même son centre décalé !)
+				Les coordonnées géodésiques d'unpoint ne sont pas des valeurs"objectives" liées au seul pointd'observation M mais sont relatives àune construction théorique ou modèle ausens large.
+				Par exemple, pour un ensemble depoints réalisé par géodésie terrestre(triangulation), on fixe un ellipsoïde, unpoint fondamental arbitrairement choisi,et on réalise une campagned'observations d'angles, de distances etd'azimuts ; puis on met en oeuvre unprocessus de compensation.
+				Si un quelconque de ces éléments estmodifié, les coordonnées des points lesont également : on change de système
+				NdM : on dirait donc que le système géodésique nécessite des points mesurés (le "réseau" ?)
+				NdM : une autre cause de déplacement des points (en plus de la tectonique), c'est les marées terrestres = le mouvement des masses terreuses dûes à la gravité de la lune/soleil.
+					https://fr.wikipedia.org/wiki/Mar%C3%A9e_terrestre
+				Dans un système de référence géodésique, un point de la croûte terrestre est quasimentfixe bien qu'il soit soumis à de faibles mouvements dus aux marées terrestres
+				----------------------------------------
+				Les  systèmes  locaux,  issus  de  réalisations  terrestres,  sont  positionnés  à  quelquescentaines de mètres du centre des masses de la Terre.
+				Les systèmes spatiaux sont mondiaux, leur origine est située à quelques mètres du centredes masses de la Terre
+				Réseau géodésique :
+					Un  réseau  est  un  ensemble  de  points  physiquement  liés  à  la  croûte  terrestre  (bornes,piliers,...)  dont  on  décrit  la  position  définie  par  des  coordonnées  estimées  et  leursvariations.
+			2. Systèmes locaux
+				NdM : apparemment, méridienne = triangulation d'un réseau de points autour d'un méridien.
+				Lien entre triangulation et réalisation de réseau géodésique :
+					Cette triangulation similaire à celles effectuées par Cassini et les Ingénieurs Géographes,poursuit l'objectif de la réalisation de la cartographie nationale à moyenne échelle.
+				Ce système NTF  est matérialisé sur le terrain par un réseau géodésique hiérarchisé :
+					- 800 points de 1er ordre espacés de 30 km environ
+					- 5 000 points de 2ème ordre espacés de 10 km environ
+					- 60 000 points de 3ème et 4ème ordre espacés de 3 km environ
+				Apparemment, le "point fondamental" fait partie des caractéristiques d'un système géodésique.
+			3. Systèmes spatiaux :
+				Le Réseau Géodésique Français 1993 (RGF93)Ce système géodésique appelé RGF93, tridimensionnel et géocentrique sert de base à lacréation   d'un   réseau   géodésique   moderne   français,   par   densification   des   pointseuropéens du réseau mondial associé ETRS89.
+				En  France  métropolitaine,  par  exemple,le  Réseau  Géodésique  Français  (RGF)matérialise    ce    nouveau    système    deréférence           RGF93
+				Le réseau RGF est structuré hiérarchiquement en 3 parties :
+					1.    Le    RRF : Réseau de Référence Français23 points déterminés par géodésiespatiale de grande précision (précision 10-7).observations entre 1989 et 1993 :
+					...
+				La   technique   d'observation   est   celle   de   la   mesure   satellitaire   GPS   assurant   unecohérence de niveau centimétrique aux coordonnées publiées des différents points
+					NdM : on dirait que c'est bien le GPS qui permet de donner les coordonnées de divers points aujourd'hui...
+				Les   coordonnées   sont   exprimées   dans   le   système   RGF93,   soit   sous   la   formetridimensionnelle géographique (Longitude, Latitude, hauteur ellipsoïdale), soit sous formebi dimensionnelle, selon la projection Lambert 93, unique pour l'ensemble du territoire.
+					NdM : on dirait donc bien qu'il y a bijection (au moins si on ignore l'élévation) entre coordonnées géographiques et coordonnées projetées.
+				Le système WGS84 (World Geodetic System 1984)
+					Ce système a été mis au point par le département de la défense des États-Unis à partirde coordonnées de points par observations Doppler sur satellites et défini à partir d'unensemble de données : constantes fondamentales, développement du champ enharmoniques sphériques, etc...
+				Le système ITRS
+					L'ITRS,  système  de  référence  terrestre  de  l'International  Earth  Rotation  Service  (IERS),est  matérialisé  par  un  réseau  mondial  de  près  de  300  points.
+					Avec  une  exactitude  auniveau centimétrique, il s'agit du plus précis des systèmes géodésiques mondiaux.
+					Depuis 1988,  l'IERS  fournit  chaque  année  une  réalisation  appelée  ITRFyy,  avec  yy  commederniers chiffre du millésime
+						NdM : on dirait qu'il peut y avoir plusieurs réalisations d'un même système géodésique ?
+					De plus, les réalisationsITRFnn  donnent  pour  chaque  point  une  vitesse  de  déplacement,  qui  est  une  mesure  dumouvement de ce point résultant de phénomèmes géophysiques comme les mouvementstectoniques  et  le  rebond  post-glaciaire.
+						NdM : en plus des coordonnées, on a une vitesse de déplacement des points.
+					NdM : une troisième source de mouvement de la Terre (après la tectonique, les marées terrestres) est le rebond post-glaciaire = le relèvement de masses terrestres consécutif à la fonte des calottes glaciaires.
+					Les  réalisations  ITRFnn  sont  obtenues  par  combinaison  de  jeux  de  coordonnées  issuesde différentes techniques de géodésie spatiale très précises
+				Le système DORIS
+				Le système ETRS89
+					Le système ETRS89 est défini a partir de l'ITRS et coïncide avec ITRS à l'époque 1989.0.
+					Il  est  attaché  à  la  partie  stable  de  la  plaque  eurasienne.  A  une  époque  quelconque  onapplique une vitesse théorique de la plaque Eurasie sur les coordonnées
+					NdM : c'est un point intéressant, il semblerait que pour géolocaliser un point, on utilise le temps pour appliquer une correction sur la dernière coordonnée connue.
+		NOTES VRAC SUR CE LIEN = https://fr.wikipedia.org/wiki/M%C3%A9ridienne_(g%C3%A9od%C3%A9sie) :
+			Une méridienne est un arc de méridien déterminé par triangulation géodésique et mesures astronomiques.
+			NdM : arc de méridien = distance entre deux points sur un même méridien
+				https://fr.wikipedia.org/wiki/Arc_de_m%C3%A9ridien
+				En géodésie, la mesure d'un arc de méridien est la détermination la plus exacte possible de la distance entre deux points situés sur un même méridien, soit à la même longitude.
+				TL;DR : c'est important, car si on mesure deux arcs de méridiens différents en deux endroits différents, on connaîtra l'applatissement de l'ellipsoïde.
+			La détermination, à l'origine, de la grandeur d'un arc de méridien passe par trois phases qui sont :
+				la triangulation sur une zone géographique retenue ; (NdM = définir des triangles entre des points fixes, et connaître leur distances/angles/position des sommets avec précision, par triangulation)
+				la recherche de la direction du méridien en un des lieux triangulés, suivie de la projection des triangles sur cette méridienne ;
+				la détermination de la différence de latitude des points extrêmes de la triangulation pour en déduire un degré de méridien.
+			NdM : en gros, en sachant 1. récupérer la lat/long d'un point quelconque, 2. trianguler pour connaître les distances entre des points 3. récupérer la direction du méridien (comment ? avec une boussole ?)
+				alors on peut choisir deux points quelconques le long du méridien, connaître leur distance, et la diviser par leur écart de latitude pour connaître la longueur de l'arc de méridien == la méridienne
+				note : pour pouvoir trianguler, le jeu consiste à trouver des paires de points de part et d'autre du méridien
+			L'explication de la triangulation sur cet article, et le schéma qui l'accompagne, est beaucoup plus claire !
+				on prend un triangle ABC qui intersecte le méridien
+				en mesurant un côté, on peut trianguler ce triangle, et notamment connaître la longueur du côté "suivant" le long du méridien, qui servira de base pour trianguler le triangle suivant
+				de proche en proche, on triangule tout un tas de triangles qui intersectent tous le méridien
+			La première mesure de distance (la base) est importante :
+				La base est choisie sur un terrain le plus plat possible et de longueur maximum. La mesure s'effectue avec des perches mises bout à bout, sur toute la longueur de la base. 
+				Optimisation : La base doit être la plus longue possible (plusieurs kilomètres) pour accroitre la précision des calculs de triangulation
+			Il y a une section sur la mesure des triangles.
+			Il y a une autre section sur la recherche du méridien :
+				En un point choisi de la triangulation (ici, au point extrême en I), on va déterminer la direction du méridien par des méthodes astronomiques connues.
+			Enfin, il y a une dernière section sur la mesure de la latitude entre les deux points extrêmes.
+			----------------------------------------
+			Tout ceci permet de mesurer différentes méridiennes... et de constater que plus on se rapproche de l'équateur, plus la longueur d'un degré de méridien est grande !
+				ça génère une polémique (la Terre est-elle sphérique ou ellipsoïdale ?)
+				pour aider à y répondre des expéditions géodésiques sont envoyées pendant le 18e siècle
+		NOTES VRAC SUR CE LIEN = https://fr.wikipedia.org/wiki/Figure_de_la_Terre
+			La détermination de la figure de la Terre, autrement dit l'étude de la forme de la surface externe du globe terrestre et de ses dimensions, constitue l'une des tâches classiques de la géodésie. 
+			Il n'existe pas une seule définition de la figure de la Terre, mais plusieurs qui ont chacune leur utilité et leur raison d'être :
+				[...] figure topographique (ou topoïde), qui n'est pas une surface de niveau mais dont les diverses cotes font quand même appel à la pesanteur
+				[...] figure équipotentielle sphéroïdale ou plus précisément ellipsoïdale (dite « sphéroïde normal » ou « ellipsoïde normal »)
+				[...] figure d'équilibre hydrostatique (dite « hydroïde »)
+				[...] surface équipotentielle qui décrit au mieux le champ de pesanteur dans lequel se meuvent les satellites artificiels (dite « géoïde »).
+			Ce géoïde est parfois considéré comme la figure principale de la Terre, mais c'est oublier que :
+				pour les géographes le topoïde est la surface la plus importante,
+				pour les géodésiens l'ellipsoïde joue un rôle bien plus important que le géoïde,
+				les géophysiciens font souvent appel aux propriétés de l'hydroïde plutôt qu'à celles du géoïde.
+		Cette autre page donne le lien (sur un schéma paumé au milieu de la phrase) entre le fait que la Terre soit ellipsoïdale, et le fait que la LONGUEUR d'un DEGRÉ de latitude VARIE en fonction de la latitude :
+			https://fr.wikipedia.org/wiki/Mod%C3%A8le_ellipso%C3%AFdal_de_la_Terre
+			au pôle, un degré de latitude représente une distance (au sol) plus PETITE qu'à l'équateur
+			si la Terre était ronde, ça ne serait pas le cas.
+			NdM : ça implique qu'on mesure la latitude... comment, en fait ? Avec les étoiles ?
+		NdM (à confirmer) : on dirait que le travail des Cassini consistait à mesurer la latitude/longitude de points fixes dans le paysage (et de les rapporter à la distance qui les sépare d'autres points ?)
+			ça pose la question de savoir ce que sont la triangulation et la méridienne
+		https://www.futura-sciences.com/planete/definitions/geographie-geodesie-4429/
+			Les opérations géodésiques sont fondées à l'origine sur la triangulation qui consiste pour déterminer la distance de deux points donnés à la surface de la terre,
+			à rattacher ces deux points à une base une fois mesurée, à l'aide d'une suite de triangles dont on mesure les angles et que l'on résout ensuite de proche en proche.
+			----------------------------------------
+			Cependant, la triangulation possède un défaut lié à la forme même de la Terre : basée sur des distances planes, elle ne permet pas de prendre en compte la courbe formée par la forme sphérique de notre planète.
+		https://www.futura-sciences.com/maison/definitions/maison-triangulation-10954/
+			Le principe, découvert par Thalès pour mesurer la distance qui séparait un bateau en mer de la côte, consiste à mesurer les angles entre deux points de référence dont on connaît la position et la distance qui les séparent, et le point dont on souhaite évaluer la distance
+			Ce que j'en comprends :
+				principe mathématique  = si dans un triangle on connaît deux sommets, deux angles et une distance, alors le triangle est complètement défini (et on peut calculer la position du troisième sommet)
+				application = si on a (par exemple) deux tours d'observations A et B dont on connaît la distance (AB), et qu'on veut position un point X (par exemple un château qu'on voit au loin)...
+				...on se rend d'abord au sommet de la tour A, on mesure l'angle (BAX) ; puis on se rend au sommet de la tour B, on mesure l'angle (ABX)...
+				on a gagné : on peut connaître la position exacte de X (et les distance AX et BX si elles nous intéressent)
+				de proche en proche, en construisant de plus en plus de triangles on peut paver le territoire avec des points de mesures connues
+			Du coup, il semblerait que la triangulation soit utilisée pour connaître la position d'un point (aujourd'hui remplacé par le GPS).
+			Me reste quelques questions :
+				quels sont les points de référence connus ? d'après diverses sources, on dirait qu'ils sont sur un méridien... pourquoi ?
+				on doit avoir de plus en plus d'incertitude et d'erreur au fur qu'on avance (qu'on s'éloigne du méridien si mon hypothèse est correcte) ?
+		http://serge.mehl.free.fr/anx/geodesie_trg.html
+			Mais c'est quoi une triangulation  ?
+			Dans le cas géodésique, si la Terre était "plate", il serait aisé de mesurer les distances. Mais notre planète, tout comme les autres, étant approximativement sphérique,  un chemin "rectiligne" allant d'un lieu A à un lieu B de la Terre, est en fait approximativement un arc de cercle.
+			L'idée de la triangulation est de remplacer cet arc par un segment de droite et, fondamentalement, de substituer aux mesures de distances, la seule mesure des angles
+			On décompose le chemin AB en autant de triangles que possible de part et d'autre de la ligne à mesurer (généralement un arc de méridien ou de parallèle).
+			NdM : il y a une illustration intéressante :
+				on dirait que la position du problème, c'est qu'on dispose de A et de B deux points, on connaît leurs coordonnées, et on cherche à mesurer la distance AB
+				note : on dirait qu'on a accès facilement à la mesure des (latitude + longitude), par des méthodes astronomiques ? EDIT : je confirme, cf. ci-dessous.
+				le principe de base est qu'on connaît la distance entre AP et un premier point de référence P
+				on peut donc créer un premier triangle et connaître toutes ses distances
+				(c'est pas hyper clair comment on propage la connaissance des distances de triangle en triangle)
+				du coup, in fine, on peut "mesurer" la distance AB juste en mesurant des angles et en connaissant une distance de référence
+			L'usage de la trigonométrie rectiligne (plane) apporte bien sûr quelques erreurs car c'est en fait la trigonométrie sphérique qui devrait plutôt s'appliquer (à condition de connaître le rayon de la Terre supposée sphérique : on tourne en rond...).
+			Mais pour des distances réduites (de l'ordre de quelques kilomètres), fruits de la triangulation, ces erreurs sont faibles.
+		https://fr.wikipedia.org/wiki/Latitude
+			La latitude astronomique d'un point est l'angle que fait la verticale du lieu en ce point avec le plan équatorial. C'est elle que l'on peut mesurer directement à partir d'observations
+			De plus, on dirait qu'on peut mesurer la latitude en mesurant la position du soleil à midi.
+		https://fr.wikipedia.org/wiki/Navigation_astronomique
+			Cette page explique comment mesurer latitude et longitude par rapport à l'éphéméride d'une étoile donnée :
+			Le lieu des points du globe, depuis lesquels on relève un astre (à une heure donnée) à telle hauteur au-dessus de l'horizon, dessine un cercle sur la sphère terrestre.
+			Le centre de ce cercle correspond à la position à laquelle cet astre est au zénith.
+			On connaît avec exactitude (par les éphémérides) la latitude et la longitude de cette position, aussi appelé "pied" de l'astre ou point substellaire.
+			En mesurant plusieurs hauteurs d'astres différents ou en établissant des mesures du même astre à des heures différentes, il est possible de déterminer une position à l'intersection de ces différents cercles.
+			----------------------------------------
+			L'illustration donnée est top :
+				À une date précise donnée (et une heure précise, éventuellement), le soleil n'est à la verticale que d'un seul point P sur Terre.
+				Et les lieux de la Terre pour lesquelles on voit le soleil à un certain angle de la verticale (par exemple 15°) sont un cercle concentrique autour de P.
+				Dit autrement, si à telle date+heure je vois le soleil à 15°, je suis sûr d'être sur ce cercle.
+				En refaisant l'opération avec un autre astre, je suis à l'intersection de plusieurs cercles, et je sais dire sans ambiguïté où je me trouve :-)
+			À noter que c'est pas si simple de mesurer latitude (et surtout longitude) par cette méthode :
+				https://fr.wikipedia.org/wiki/Mesure_de_la_longitude
+				(mais pour ma compréhension du système, je peux supposer qu'on sait attribuer latitude+longitude à un point donné)
+			En navigation maritime, la détermination de la position nécessite l'emploi d'un sextant, la consultation d'éphémérides, un identificateur d'étoiles, la mesure de l'heure exacte, et l'application de formules de mathématiques.
+		https://fr.wikipedia.org/wiki/Triangulation
+			Jusque dans les années 1980, on utilisait essentiellement la triangulation pour mesurer les distances (distances en ligne droite et non à parcourir, la surface ayant un relief et une courbure).
+			La triangulation consiste à obtenir par des visées les angles d’un triangle dont les sommets sont choisis pour leur visibilité (tour, sommet, clocher…).
+			On enchaîne ensuite ce premier triangle à un autre qui a un côté en commun avec lui, en poursuivant la chaîne le long du méridien à mesurer.
+			Il suffit de déterminer une base au départ, c’est-à-dire de mesurer au sol un côté du premier triangle, pour obtenir la longueur des côtés de tous les triangles. 
+			----------------------------------------
+			Ce procédé, répété de proche en proche, a été utilisé par Delambre et Méchain de 1792 à 1798 pour mesurer la distance entre Dunkerque et Barcelone (environ 1 147 km) sur le méridien de Paris
+			NdM = ma compréhension :
+				la triangulation permet de mesurer des distances sans avoir à "compter les pas" (ce qui est pas pratique avec le relief ou les obstacles)
+				pour obtenir la "première" distance de référence, il suffit de la mesurer :-)
+		https://fr.wikipedia.org/wiki/M%C3%A9ridien_de_Paris
+			NdM : méridien surtout intéressant car il a servi de "support" à des mesures de méridiennes (= des mesures de longueurs d'un degré de méridien)
+			Le méridien de Paris définit l'ensemble des points situés sur une ligne imaginaire reliant le pôle Nord au pôle Sud à la longitude de l'observatoire de Paris.
+			La Méridienne de France correspond à une ligne réelle déterminée au moyen de triangulation géodésique et de mesures astronomiques suivant le méridien de Paris.
+			La Méridienne de France a été mesurée à plusieurs reprises au cours de l'histoire de la géodésie
+		https://fr.wikipedia.org/wiki/Histoire_de_la_triangulation_en_France
+			Les premiers travaux de triangulation à grande échelle sont initiés en France au XVIIe siècle.
+			À l'époque, faute de carte correcte sur le plan géométrique, les distances entre les différentes villes du royaume ne sont que très approximatives
+			Les travaux de triangulation ont alors en France deux visées complémentaires qui sont menées en parallèle :
+				la mesure de la Terre
+				la cartographie
+			NdM : intéressant = la triangulation sert à la fois à vérifier la courbure de la Terre et à mesurer des distances.
+				peut-être est-ce l'intérêt premier des bornes géodésique ? matérialiser phyisquement les distances qu'on s'est fait suer à calculer par triangulation ?
+			En parallèle, les réseaux de triangulation se densifient afin de couvrir le royaume dans son ensemble, jusqu'à ses confins.
+			Une fois que l'on dispose d'un tel maillage, il devient possible d'y appuyer une carte « géométriquement correcte »
+			NdM : à supposer que le réseau de triangulation soit matérialisé par une borne géodésique, elles servent donc bien à ça = calculer une carte géométriquement juste.
+				si on n'a pas d'autre info que "Marseille est à 3 jours de cheval à l'Est d'Aix-en-Provence", positionner les villes sur une carte va vite être imprécis
+				alors que si on connait les positions des bornes géodésiques triangulées, on peut les placer avec certitude
+				hum, non ça ne doit pas être ça : on dispose en effet de la latitude et longitude des villes...
+				donc peut-être que la clé est dans ce "géométriquement correct" ? Peut-être que l'apport de la triangulation / des bornes géodésiques, c'est d'être correct dans le plan 2D, par rapport à lat/long qui sont 3D ?
+				dit autrement : disposer des lat/long de deux points ne suffisait pas avec les connaissances de l'époque à connaître leur distance ?
+				autre façon de voir les choses : on pave la carte d'un réseau de triangles dont on connaît les longueurs des côtés
+					(mais en dehors des notions de projections, je ne comprends toujours pas bien l'apport de ce pavage par rapport au fait de mesurer lat/long en chaque sommet des triangles)
+			Au XVIIIe siècle, deux méthodes coexistent pour déterminer la figure de la Terre :
+				la mesure d'arcs de méridien au moyen de triangulations géodésiques
+				la détermination de la pesanteur par la mesure de la longueur du pendule battant la seconde
+			Apparemment (je ne comprends pas bien pourquoi), l'invention du télégraphe en 1835 permet des mesures précises d'arcs de parallèles, alors que jusqu'ici on ne savait mesurer que des arcs de méridiens
+				(peut-être parce que le télégraphe permet de synchroniser des horloges pour prendre les mesures au même instant ?)
+		https://fr.wikipedia.org/wiki/Carte_de_Cassini
+			élément de réponse à ma question :
+				Sur la carte sont aussi localisés un grand nombre de villes, bourgs, châteaux, etc., déterminés géométriquement.
+				Dans les marges sont indiquées les distances à l'Observatoire de Paris de 440 villes, fanaux et montagnes
+				plus tard y seront ajoutées latitude et longitude des lieux considérés
+			NdM : peut-être qu'à cette époque, on ne savait pas mesurer avec précision latitude et longitude d'un lieu ?
+		https://www.futura-sciences.com/tech/definitions/technologie-sextant-11146/
+			Un sextant désigne un instrument de navigation utilisé pour obtenir la hauteur angulaire d'un astre situé au-dessus de l'horizon.
+			Il permet de déterminer la latitude d'un point par rapport à la hauteur angulaire d'un astre tel que le Soleil.
+			Inventé assez tard, en 1731
+		https://fr.wikipedia.org/wiki/Sextant
+			Un usage courant du sextant est de relever la hauteur angulaire du soleil à midi, ce qui permet de déterminer la latitude du point de l'observation à l'aide d'une table de déclinaison du soleil.
+			[...] bien que son usage se restreigne en raison du développement des systèmes de positionnement par satellites
+				NdM : il sert donc bien à relever sa position...
+		https://fr.wikipedia.org/wiki/Histoire_de_la_navigation_astronomique
+			le problème du « point » présente deux recherches, de difficultés bien différentes. L'une est la détermination de la latitude, l'autre celle de la longitude.
+			détermination de la latitude :
+				Pour la détermination de la latitude, le navigateur s'adressa d'abord à l'étoile polaire.
+				Dès le XIVe siècle, en mesurant avec l'astrolabe nautique la hauteur de l'étoile Polaire, le navigateur obtenait, avec une légère correction que les pilotes savaient par cœur, sa latitude.
+				Ce procédé si commode ne pouvait cependant suffire à lui seul pour tous les besoins de la navigation.
+				Il n'était utilisable que de nuit. De plus, l'étoile polaire n'est visible que dans l'hémisphère nord.
+				A mesure que les navigateurs s'approchaient de l'équateur, la polaire s'abaissait de plus en plus sur l'horizon, puis cessait d'être visible pour eux.
+				----------------------------------------
+				Il fallait trouver une méthode susceptible d'être employée le jour sur toute la Terre.
+				C'est Martin de Behaim, astronome du roi Jean II de Portugal qui, vers 1485, répandit l'usage de tables pratiques de déclinaison du soleil, et enseigna aux navigateurs le moyen d'avoir leur latitude à l'aide de la hauteur méridienne du Soleil prise à l'astrolabe nautique.
+				Ce progrès marque une époque dans la navigation astronomique.
+				Toutes les navigations se feront à l'estime, en partie rectifiée par la latitude observée (jusqu'à la fin du XVIIIe siècle).
+				On chercha à perfectionner les instruments de mesure de hauteurs, car toute erreur sur la hauteur se reporte intégralement sur la latitude.
+				----------------------------------------
+				Ainsi les navigateurs possédaient à la fin du XVe siècle le moyen de déterminer astronomiquement l'une des coordonnées du point, la latitude. Mais la longitude restait encore du domaine de l'estime.
+				----------------------------------------
+				1485 - Martin de Behaim, [...] répand l'usage de tables pratiques de déclinaison du Soleil permettant aux navigateurs de déduire facilement la latitude d'un lieu à l'aide de la hauteur méridienne du Soleil.
+				NdM = résumé :
+					dès 1300/1400, on peut connaître la latitude
+			détermination de la longitude :
+				Astronomiquement, la longitude est égale à la différence des angles horaires ou des temps simultanés d'un même astre dans le lieu où l'on se trouve et dans le lieu origine des longitudes.
+				L'angle horaire d'un astre dans un lieu à un instant donné était relativement facile à déterminer, même avec les instruments rudimentaires dont on disposait au XVe siècle.
+				Il n'en allait pas de même pour la détermination de l'angle horaire de l'astre dans le lieu origine.
+				On peut constater que les savants trouvèrent immédiatement les procédés qui, après plus de deux siècles et demi de travaux, devaient fournir la solution cherchée :
+					d'une part, utilisation des signaux instantanés que présente le ciel, visibles à la fois sur tout un hémisphère et dont l'instant a été calculé à l'avance en temps du 1er méridien
+					d'autre part, construction d'un appareil permettant de conserver avec une grande précision l'heure du 1er méridien.
+				La construction en 1731 de l'octant [...] qui a servi de base aux sextants modernes, permit de donner aux observations une [bonne] précision.
+				Avec la création de l'octant devait débuter l'ère des "distances lunaires", étape importante vers une solution satisfaisante du problème des longitudes.
+				NdM : TL;DR la méthode chronoométrique, si on a un chronomètre précis, est beaucoup plus simple à mettre en oeuvre que la méthode des distances lunaires.
+		https://fr.wikipedia.org/wiki/Alpha_Ursae_Minoris
+			Alpha Ursae Minoris est l’étoile la plus brillante de la constellation de la Petite Ourse.
+			Elle est connue pour correspondre avec une bonne précision à la direction du pôle nord céleste, ce qui lui vaut l’appellation commune d’Étoile polaire ou plus simplement de Polaire.
+			Sa distance angulaire au pôle céleste est aujourd’hui d'environ 0°45'.
+			Du fait de sa position quasiment confondue avec la direction de l'axe de rotation terrestre, toutes les autres étoiles du ciel paraissent tourner autour d'elle
+		https://fr.wikipedia.org/wiki/Mesure_de_la_longitude
+			La mesure de la longitude révèle un écart est ou ouest par rapport à un axe nord-sud de référence.
+			C'est une mesure complémentaire à celle de la latitude, essentielle pour la navigation.
+			Plus complexe à réaliser, la mesure de la longitude fut un enjeu scientifique, technologique et économique majeur du XVIIIe siècle.
+			----------------------------------------
+			De longue date les marins savaient aisément mesurer la latitude grâce aux étoiles ou à l'aide d'un sextant, mais jusqu'au XVIIIe siècle il leur était difficile de mesurer la longitude avec exactitude.
+				NdM : ainsi, l'utilisation du sextant NE SUFFIT PAS à mesurer la longitude.
+				Le problème est que la Terre tourne sur elle-même, à 464,99 m/s à l’Équateur.
+				La mesure de longitude est très difficile à effectuer si l'on ne possède pas de montre précise, car la Terre pivote d'un tour en 86 164 s
+			----------------------------------------
+			Les solutions antérieures au XVIIIe siècle
+				[...]
+				On fit aussi de vaines tentatives pour conserver à bord l'heure du méridien de référence au moyen d'horloges, de sabliers de 24 heures, [...] mais ces instruments de mesure manquaient de précision.
+				à l'équateur, une erreur d'un dixième de seconde correspond à une erreur de 46 m !
+			----------------------------------------
+			La construction en 1731 de l'octant [...] qui a servi de base aux sextants modernes, permit de donner aux observations une [bonne] précision.
+			CONCURRENT 1 = distances lunaires :
+				Avec la création de l'octant devait débuter l'ère des distances lunaires, étape importante vers une solution satisfaisante du problème des longitudes.
+				La Lune se déplace relativement vite dans le champ des étoiles - elle fait un tour sidéral en 27,3 jours moyens environ, soit un déplacement quotidien de 13,2°.
+				Sa distance angulaire aux autres astres varie donc constamment.
+				La variation horaire de cette distance est maximum pour les astres qui sont placés sur la trajectoire du centre de la Lune ou pratiquement à proximité tant que la distance reste assez grande
+				Supposons donc que, pour un lieu donné (Greenwich par exemple), on ait calculé des tables donnant de 3h en 3h de temps moyen, la distance de la Lune aux astres précités, il devient possible de se situer en longitude
+				Comme la Lune est relativement proche de la Terre, elle ne se projette pas au même endroit du ciel suivant le point de la Terre d'où on l'observe.
+					NdM : par parallaxe, la distance entre la Lune et une étoile lointaine dépendra de la longitude depuis laquelle on l'observe.
+				Les distances lunaires sont donc calculées pour l'observateur situé au centre de la Terre.
+				Dans le lieu dont on veut déterminer la longitude, on observera au sextant la distance angulaire entre la Lune et le Soleil ou un astre figurant dans les tables de la Lune
+				On en déduira la distance angulaire vraie au même instant pour un observateur situé au centre de la Terre.
+				Les tables de la Lune nous permettront alors de déterminer par interpolation pour quelle heure temps moyen de Greenwich AHmp a lieu la distance angulaire vraie que nous venons de calculer. 
+				[...]
+				On remarquera que cette méthode ne suppose pas un garde-temps, conservant l'heure du méridien origine.
+				Toute erreur sur la distance observée produit une erreur trente fois plus forte sur la détermination de la longitude.
+				La solution n'était pas [donc pas là, vue l'imprécision] : elle devait se trouver dans un procédé permettant d'emporter à bord et de conserver avec précision l'heure du 1er méridien.
+					NdM : jusqu'à ce qu'on sache conserver l'heure de façon précise, les distance lunaires avaient leur utilité, though.
+			CONCURRENT2 = avec un chronomètre :
+				cf. plus haut mes notes sur l'article "Navigation_astronomique" : avec des éphémérides, si je mesure que le soleil est à 15° du zenith à telle date et telle heure précise, alors je saurais où je me trouve
+				du coup, disposer d'une mesure précise de l'heure est important (indispensable pour cette méthode)
+				Jusque vers la fin du premier tiers du XIXe siècle, la méthode des distances lunaires l'a emporté sur la méthode chronométrique car les montres imparfaites demandaient un contrôle permanent par les observations astronomiques.
+				[...] les méthodes lunaires devaient être de moins en moins employées, pour être complètement délaissées avant la fin du 18e siècle
+				NdM : à partir de la fin du 18e siècle, on sait connaître latitude + longitude d'un lieu.
+		https://fr.wikipedia.org/wiki/Syst%C3%A8me_g%C3%A9od%C3%A9sique
+			système géodésique local (historique, rendu obsolète par le GPS) :
+				Historiquement, les systèmes géodésiques étaient déterminés à partir de mesures angulaires et de quelques mesures de longueur.
+				Un système géodésique était associé à un réseau géodésique, ensemble de points dont les coordonnées avaient été déterminées à partir des mêmes mesures de base :
+					détermination par mesures astronomiques (astrolabe ou instrument équivalent) de la position d'un point, dit "point fondamental", et d'une direction de référence en ce point (orientation)
+					mesure très précise d'une longueur (dite "base"), généralement à l'aide d'une référence de longueur en fil invar
+					expansion à l'aide de mesures angulaires horizontales (triangulation) à partir de ces éléments (points de base, longueur de base) : le réseau de points ainsi déterminés constituait le "réseau d'ordre 1"
+					ce réseau pouvait être ensuite densifié progressivement localement par triangulation : le "réseau d'ordre 2" s'obtenait à partir d'angles mesurés depuis des points d'ordre 1, etc.
+				Il y avait autant de systèmes géodésiques (dits "locaux") que de réseaux déterminés indépendamment : un par pays, généralement, et souvent un par île.
+				NdM = donc : les bornes géodésiques (qui matérialisaient les sommets de la triangulation) correspondent aux systèmes géodésiques locaux
+			système géodésique global :
+				Les techniques spatiales ont permis de définir des systèmes géodésiques "mondiaux" ou "globaux", en combinant [...]mesures d'angles et de distances [...] entre ces satellites et des points du globe
+				le "réseau" géodésique est désormais virtuel, et ce sont les éléments orbitaux des satellites et les positions des stations de trajectographie qui définissent désormais le système géodésique. 
+			NdM : je retrouve donc bien ce qui me paraîssait logique : avec les satellites GPS, les bornes géodésiques ne servent plus à rien !
+		https://geodesie.ign.fr/index.php?page=points_geodesiques
+			Un point géodésique est un point matérialisé dont les coordonnées (bidimensionnelles ou tridimensionnelles suivant le type de point) sont connues avec précision.
+			L’existence de différents types de points géodésiques est essentiellement liée aux deux procédés de triangulation qui permettaient, avant l’avènement des techniques modernes de positionnement par satellite, de déterminer les coordonnées d’un point : l’intersection et le relèvement.
+			NdM : ça confirme que leur utilité était AVANT l'avènement des techniques de positionnement par sattellite.
+		EDIT : en fait c'est pas si clair que ça que les bornes géodésiques ne servent, car ces deux ressources parlent de 23 points, APRÈS utilisation des GPS :
+			https://geodesie.ign.fr/contenu/fichiers/Reseau_de_Reference_Francais.pdf
+				1993: observations GPS des 23 points du RRF
+			https://fr.wikipedia.org/wiki/R%C3%A9seau_g%C3%A9od%C3%A9sique_fran%C3%A7ais
+		https://geodesie.ign.fr/index.php?page=rgf93
+			Le Réseau Géodésique Français 1993 matérialise sur le territoire métropolitain un repère de référence précis, adapté aux technologies modernes, et compatible avec les références mondiales.
+			Depuis 1989 [...] il a été noté une inadéquation de plus en plus importante du réseau géodésique en usage (la "Nouvelle Triangulation de la France" ou NTF) aux levés topographiques ou aux travaux de géomètres.
+			Ainsi fut-il, à cette époque, décidé du choix d'un nouveau système tridimensionnel, géocentrique et d'exactitude centimétrique.
+			La mise en place de cette nouvelle référence a débuté en 1993.
+			Le système proprement dit était alors fixé comme compatible avec le système européen ETRS89, avec comme repère effectif ETRF93 au travers d'une réalisation d'un réseau de 23 sites : le RRF (ou Réseau de Référence Français).
+			NdM -> il semblerait donc que les 23 points sont la réalisation d'un repère effectif utilisé pour se positionner par sattellite.
+				Je ne comprends toujours pas pourquoi...
+			----------------------------------------
+			On dirait qu'on observe régulièrement ces 23 points (pour mettre à jour leurs coordonnées ?) :
+				A l'origine, le RGF93 fut une réalisation d'ETRS89 à l'époque 1993.0 grâce à l'observation GPS des 23 sites du RRF (Réseau de Référence Français) en 1993
+				[...]
+				Depuis le 18 juin 2010, les coordonnées publiées par l'IGN ont exprimées dans une nouvelle réalisation du RGF93.  Le RGF93 v2 est également une réalisation d'ETRS89, basée sur les observations du Réseau GNSS permanent (RGP) de 1998 à 2009...
+				...et la ré-observation des points du RRF et du RBF de 2000 à 2011, et exprimée en ETRF2000 à l'époque 2009.0.
+				Cette mise à jour était rendue nécessaire et justifiée par l'accumulation de données du RGP et par les progrès qui ont été effectués dans le domaine du positionnement par satellites depuis les années 1996
+					(prise en compte des marées terrestres, surcharges océaniques, constellation complète, modèles de calibration et de variation des centres de phases des antennes…)
+				Les nouvelles coordonnées sont cohérentes avec les anciennes.
+		https://www.reseau-teria.com/2021/01/14/le-rgf93-reseau-geodesique-francais-1993/
+			Le RGF93 permet d’accéder concrètement à un système géodésique.
+			Il peut être :
+				« Matérialisé » grâce à un ensemble de points définis physiquement (bornes, repères) dont les coordonnées sont connues dans le RGF
+				« Actif», représenté par l’intégralité des stations GNSS permanentes dans le RGP (plus d’informations)
+			En 2019 – 2020, l’IGN a réalisé des maintenances sur le RGF93 en recalculant toutes les données du RGP. Ces recalculs ont mené à des réajustements de coordonnées pour une partie des stations du réseau :
+				Mises à jour IGS de calibrations d’antenne (86 stations)
+				Mouvement propre des stations et recalage de signaux périodiques (60 stations)
+				Quelques rattrapages d’erreurs (10 stations)
+		https://geodesie.ign.fr/index.php?page=ntf
+			la partie suivante est intéressante : Transition de la NTF vers le RGF93
+			Pour faire face à l'émergence du positionnement satellitairesss par GPS et conformément aux recommandations du CNIG l'IGN a mis en place un nouveau canevas national, pour succéder à la NTF : le RGF
+			Le RGF93 est la référence légale depuis 2000.
+			Après une période de recouvrement de dix années pour l’utilisation des deux systèmes RGF93 et NTF, l’IGN n’assure plus la diffusion des coordonnées NTF de ses réseaux matérialisés à compter du 18 Juin 2010.
+			La mise en service du système géodésique RGF93 au travers de sa réalisation sur le territoire métropolitain implique une connaissance aussi fine que possible de la correspondance avec la réalisation nationale antérieure, la NTF
+			[...]
+			C'est en utilisant ces sites en colocation que l'IGN a pu élaborer un processus de transformation de coordonnées autorisant le passage en RGF93 de la totalité des sites de la NTF et inversement.
+			NdM : on dirait qu'un même point (e.g. borne géodésique) a pu avoir différentes coordonnées (dans l'ancien, et le nouveau système).
+		https://geodesie.ign.fr/index.php?page=realisation_rrt
+			NdM : cette page (que je ne comprends pas pleinement) est la plus importante pour comprendre à quoi servent les bornes géodésiques et la "réalisation" d'un système de référence.
+			Le Repère de Référence Terrestre (RRT) est un repère ou un réseau qui permet de réaliser le SRT par l’intermédiaire d’observations et de calculs attribuant des coordonnées à des points dans le SRT.
+				NdM : on dirait que le principe est de passer d'un concept abstrait (système de référence) à la réalité (des coordonéées de points physiques)
+			Il existe deux types de RRT :
+				Cinématique = Les réseaux géodésiques (ensembles de points matérialisés ou de stations permanentes) ou les ensembles de stations de poursuite d’un système satellitaire de positionnement.
+				Dynamique = Les éphémérides de satellites de navigation.
+				NdM :
+					pas clair, on dirait que dans le cas des GPS, le fait de dire "tel satellite sera en telle position exacte à telle heure" est l'équivalent de dire "telle borne géodésique est à telle coordonnées"
+					par ailleurs, le rôle des stations de poursuite (dire où sont les satellites) dépend elle aussi de leur position précise
+					http://gps-rs.scg.ulaval.ca/fr/Cours/SurvolGPS/introduction_GPS.htm
+					Les stations de poursuite de la composante de contrôle ont pour principale fonction de calculer la trajectoire des satellites GPS et d'estimer les erreurs de temps des horloges à bord des satellites.
+			Le Réseau (RRT) fournit à utilisateur l’accès au SRT.
+				NdM : c'est justement ça qui est vraiment pas clair.
+			Soit l’utilisateur rattache son chantier en exécutant des mesures terrestre ou GNSS, en se positionnant sur le réseau géodésique (réseau matérialisé)
+			soit par technique GNSS, en récupérant les observations du réseau permanent qui ont été faites en même temps que ses propres mesures dans son chantier et sur les mêmes satellites.
+				NdM : tout ceci n'est vraiment pas clair.
+		Mes questions jusqu'ici :
+			pourquoi la triangulation est-elle nécessaire pour cartographier ? (pour moi, il suffit de mesurer lat/long astronomiques, et à la projection+figure de la terre près, on aura des distances à peu près correctes)
+				EDIT : il semblerait que l'obtention de lat/long soit assez tardive (fin 18e ?)
+				il n'en demeure pas moins qu'on a continué à trianguler plus tard que ça...
+			pourquoi a-t-on toujours besoin du réseau géodésique français et de ses 23 bornes malgré l'avènements du positionnement par sattellite ?
+
+
+NOTES — le meilleur article au vu de mes connaissances actuelles :
+	https://medium.com/cr%C3%A9ation-dune-app-cartographique-avec-firebase-vue/comprendre-les-coordinates-reference-system-crs-b67a88bce63c
+	article en Français, lui aussi parfait pour mon niveau de connaissances actuel
+	Mais enfin pourquoi tout le monde n’utilise pas les coordonnées GPS ? Tu me donnes une latitude + longitude et tout le monde est content !
+	Pourquoi a-t-on besoin de coordonnées ? Simplement pour :
+		dessiner des cartes qui représentent notre Terre et les admirer.
+		pouvoir faire correspondre à un jeu de coordonnées un endroit “physique”.
+	Tentons pour cela une première approche
+		modèle simplifié de la Terre, et des lat/long
+	Deux subtilités débarquent
+		La Terre n’est pas ronde !
+		Son axe de rotation n’est pas stable (L’oscillation principale est nommée oscillation de Chandler et a une période de 14 mois.)
+	Créons un comité que l’on appelera par exemple The International Earth Rotation Service ou IERS et laissons les choisir un pôle Nord une bonne fois pour toutes.
+	Où est le bas ?
+		Mais imaginons que je veuille savoir à quelle latitude je me trouve. Une méthode classique est de me servir des étoiles : je vais regarder l’angle que fait par exemple l’étoile polaire avec la verticale.
+		Comme elle est à la verticale du pôle Nord, quand je suis au pôle Nord justement, elle est au dessus de ma tête.
+		Et au fur et à mesure que je m’éloigne du pôle Nord, elle est de plus en plus basse dans le ciel.
+		J’ai donc besoin de calculer un angle par rapport à l’horizontal, je me munie naturellement d’un niveau à bulle.
+		Autrement dit je compte sur la gravité pour me montrer le bas.
+		[...] Donc le champ de gravité n’est pas gentiment pointé vers le centre de la Terre, mais varie en intensité et en direction en chaque point de la surface de la Terre.
+			NdM : ça explique l'importance d'utiliser une équipotentielle gravitationnelle !
+		La surface équipotentielle de gravité s’appelle le géoïde.
+		Ce que j’ai trouvé de plus clair pour comprendre le géoïde : si la Terre était uniformément recouverte d’eau et qu’il n’y avait pas de marée/vent/vague/courant, la surface de la Terre coïnciderait avec le géoïde.
+		En tout point la gravité est perpendiculaire à cette surface. Et ce géoïde est bien entendu lui même irrégulier
+		Dire à quelqu’un que je me situe à un endroit où l’étoile polaire fait un angle de 30° avec le champ de gravité “local” n’est pas pratique.
+	Les Coordinate Reference System (CRS)
+		1. on modélise la forme de la Terre par une forme simplifiée que l’on appelle le sphéroïde de référence.
+		2. On cale cette forme par rapport à la géométrie de la Terre, ce qu’on appelle le Datum.
+			NdM : c'est donc ça le Datum : c'est une spécification de l'ellipsoïde !
+		3. Et on traduit nos latitudes et longitudes astronomiques telles que mesurées précédemment en latitude et longitudes géodésiques.
+	Et oui car voilà le cœur de l’embrouille : il existe plusieurs catégories de coordonnées en fonction de la définition du "bas" que l’on aura retenue.
+	La latitude est toujours un angle, qui sera :
+		astronomique = lorsque j’aurai pris comme "bas" le direction de la gravité (muni d’un fil de plomb ou d’un niveau à bulle).
+		géodésique   = lorsque j’aurai pris comme "bas" la perpendiculaire à un sphéroïde que j’aurai choisi.
+			NdM : a priori, c'est surtout celui-ci qu'on utilise ?
+			EDIT : confirmé juste derrière = Les coordonnées que l’on manipule couramment sont toujours les coordonnées géodésiques
+		géocentrique = lorsque j’aurais pris comme "bas" le direction du centre de masse de la Terre.
+	Point très important = dépendance des coordonnées aux "hypothèses" choisies :
+		Les coordonnées que l’on manipule couramment sont toujours les coordonnées géodésiques, elles sont donc toujours liées à des hypothèses :
+		quelle forme avons nous choisie pour la Terre et comment nous avons placé cette forme par rapport à la surface de la Terre.
+		Si on change d’hypothèses, un point (NdM : un point "physique" dans la réalité, comme le sommet d'un clocher) change de coordonnées.
+	Un Coordinate Reference System, ou système géodésique en français ce n’est rien de plus que l’ensemble de ces hypothèses.
+		C’est un système de référence qui permet d’exprimer des positions au voisinage de la Terre.
+		Il en existe deux familles :
+			les GCS pour Geographic Coordinate System dans lesquels la Terre est modélisée en 3 dimensions.
+			les PCS pour Projected Coordinate System dans lesquels la Terre a été projetée sur une surface 2D pour être représentée sur une carte plane.
+		Un CRS spécifie aussi :
+			son unité de mesure. Des angles (latitude, longitude) pour les GCS ou des distances (mètres ou pieds) pour les PCS.
+			la projection utilisée dans le cas des PCS.
+			un sphéroïde (NdM : plutôt, ellipsoïde, plutôt) de référence (c’est à dire la géométrie de la Terre retenue)
+			un datum, soit l’emplacement et l’orientation du sphéroïde par rapport à la Terre.
+	Pourquoi y a-t-il historiquement autant de CRS ?
+		Historiquement, chaque pays faisait les choses à sa sauce.
+		Il n’y a pas si longtemps, on n’avait aucune idée d’une manière précise de placer le centre de la Terre.
+		On prenait donc un point quelque part sur son territoire, de préférence au centre de celui-ci.
+		On faisait pendre un fil de plomb et on disait : je déclare qu’ici, la direction de la gravité et la perpendiculaire à mon ellipsoïde sont identiques.
+		Puis on choisissait un ellipsoïde pour qu’il suive au plus près la surface de notre territoire.
+		De là on construisait tout un réseau de points de référence dont les coordonnées étaient déduites de manière optique, depuis la surface de la Terre.
+		[...]
+		Les ellipsoïdes et datums utilisés n’étaient pas géocentriques, mais à l’époque on ne pouvait faire mieux.
+		Et puis avec l’avènement des satellites est apparue une nouvelle famille de CRS, basée sur des ellipsoïdes placés très précisément par rapport à la surface de la Terre et dont le centre coïncide précisément avec le centre de la Terre.
+		WGS84 est le plus connu d’entre eux puisque c’est celui utilisé par le GPS. Il est très précis.
+		Mais alors pourquoi en utiliser d’autres de nos jours ?
+		Mais aujourd’hui, pourquoi le référentiel officiel Français est-il le RGF93 et pas le WGS84 ? Pour ne pas faire comme tout le monde ?
+	RÉPONSE = Parce que le monde bouge !
+		Le RGF93 est compatible avec le ETRS89, un CRS quasiment similaire à celui utilisé par le GPS à ceci près qu’il suit la plaque tectonique eurasienne sur laquelle nous sommes. Laquelle se déplace lentement, d’environ 1cm/an.
+		Donc dans le CRS WGS84 du GPS, les coordonnées d’un point physique changent au fil des ans.
+			NdM : ce point est important !
+			Comme les coordonnées EPSG:4326 sont indépendantes de la tectonique des plaques, un même point d'une plaque (e.g. un clocher d'église) se déplace dans EPSG:4326 !
+			une autre façon de voir les choses = une coordonnée EPSG:4326 est fixe par rapport à la tectonique des plaques
+		Je note les coordonnées du parvis de Notre-Dame en coordonnées GPS, je reviens dans 100 ans : les coordonnées ont changé !
+		Mais si je les note en RGF93, elles restent identiques.
+		NdM : dit autrement :
+			le RÉFÉRENTIEL de RGF93 n'est pas "fixe par rapport à la Terre" comme peut l'être EPSG:4326
+			à la place, il est "fixe par rapport à la plaque Eurasienne"
+	Spatial reference :
+		Maintenant que l’on sait bien ce qu’est un CRS, on passe à la notion de Spatial Reference.
+		Ce n’est pas très compliqué, un spatial reference c’est un CRS plus quelques autres informations qui permettent de vraiment lever toute ambiguïté.
+		On trouve donc dedans :
+			un CRS
+			la précision avec laquelle on peut exprimer des coordonnées (combien de chiffres après la virgule)
+			des tolérances, comme par exemple la tolérance de grappe ou cluster tolerance.
+			l’aire géographique couverte par le spatial reference (la France, l’Europe, le monde,…)
+	SRID
+		Ces spatial reference, il y en a naturellement beaucoup, on leur donne donc un identifiant appelé SRID.
+		Il existe plusieurs standards, un des plus connus est le EPSG (European Petroleum Survey Group).
+		On lira donc par exemple qu’un jeu de données est en EPSG 4326.
+		EPSG est l’autorité, 4326 est le SRID.
+	Exemple = Lambert93 :
+		EPSG:2154
+		AHA ! Quelque chose que j'avais mal compris jusqu'ici : les coordonnées projetées ne servent pas uniquement à représenter le monde sur une carte
+		elles servent également à POSITIONNER les choses dans le monde (vu qu'il y a bijection entre coordonnées projetées et coordonnées géographiques) !
+	Autre question intéressante : quand on passe la souris sur une carte google maps ou mapbox/leaflet, chaque point de la carte est associée à des coordonnées GÉOGRAPHIQUES (lat/long) et non PROJETÉES ?!
+		En réalité, ces services de cartographie en ligne utilisent l’EPSG 3857 qui est bien un projected reference system, donc plat, dont l’unité est le mètre.
+		Mais ces services font sans nous le dire une conversion vers des coordonnées EPSG 4326, les fameuses coordonnées GPS qui elles sont angulaires.
+
+
+NOTES — deuxième meilleur article au vu de mes connaissances 
+	https://lyzidiamond.com/posts/4326-vs-3857
+	NOTE : en fait, l'article est un équilibre tellement parfait entre synthèse et information (pour mon niveau de connaissance actuel) qu'il n'est pas très intéressant de le résumé dans les notes : mieux vaut le lire :
+	TL;DR :
+		post de mapbox pour faire le point sur ces sujets
+		ellipsoïde = modèle de la réalité (il peut y en avoir plusieurs)
+		coordinate systems = comment positionner des choses sur l'ellipsoïde
+		geographic coordinate systems = latitude/longitude
+		projected coordinate systems = E/N ou X,Y
+		EPSG:4326 == WGS84 == coordonnées utilisées par le GPS
+	Introduction
+		maps allow us to communicate about location using a common framework
+		But maps don’t provide just one single system for communicating about locations and measuring distance – there are literally infinite ways to talk about distances and locations on the earth’s surface.
+		These are called coordinate systems and they determine not only how maps look, but also how data is stored and how distance is calculated.
+		In web/mobile mapping, we use two main coordinate systems for our work: EPSG:4326 (WGS 84) and EPSG:3857 (Web Mercator)
+	Geodesy
+		The study of the measuring the earth is called geodesy.
+		----------------------------------------
+		Contrary to some descriptions, the earth is not a sphere, nor is it a spheroid, nor is it an ellipsoid.
+		These approximations can be useful, but in reality [...] the real shape of the earth is too complex to be useful as a reference for measurement.
+		----------------------------------------
+		Instead, we use a reference ellipsoid as an approximation of the surface of the earth.
+		A reference ellipsoid is a mathematically-defined surface that roughly matches the model of the earth
+		----------------------------------------
+		There is not a single canonical ellipsoid that is used to measure the earth at every location
+		Because a reference ellipsoid is an approximation, there are locations where an ellipsoid exactly matches the geoid and there are locations where an ellipsoid is way way off.
+		In some of these locations, a different reference ellipsoid is used that better matches the earth’s surface at those locations.
+	Coordinate systems
+		By defining a reference ellipsoid, we now have a shape on which we can place a coordinate system.
+		A coordinate system defines locations on that surface that can be used as reference points for measurement.
+		This is huge — imagine trying to tell someone how to get to your house without using miles, meters, or any other standardized system of measurement.
+		Imagine trying to assess property values without the concept of acres and square footage.
+		A coordinate system is a way to standardize the way we describe locations on a map.
+		It’s the common understanding that allows a person to go out in the world, measure some stuff, and know with confidence that the measurements they took will show up in the right place on any map that anyone creates with that data.
+		There are two types of coordinate systems: geographic coordinate systems and projected coordinate systems.
+	Geographic coordinate systems
+		Geographic coordinate systems use the three-dimensional model of the earth (ellipsoid) to define specific locations on the surface to create a grid.
+		When we refer to locations using “longitude” (East/West measurement) and “latitude” (North/South measurement), we are using geographic coordinates.
+		Datums, on the other hand, are geographic coordinate systems based on a specific ellipsoid (so a more specific geographic coordinate system), with an origin at a specific location, and the ellipsoid at a specific orientation.
+		These are also called “spatial reference systems” or “coordinate reference systems.”
+		Some of these datums are accurate only in certain locations in the world, as the ellipsoid they’re using is a great fit for the real earth surface in those locations, but may be way way off in other places.
+		Fortunately, as I describe below, you rarely have to worry about this when working with digital data, as most software has tools for detecting datums.
+		To reiterate, this is important because it creates a common system for talking about locations on the planet…
+	Projected coordinate systems
+		A projected coordinate system is also a grid used as a reference for locations on the planet, but it’s a translation of the three-dimensional grid onto a two-dimensional plane (like a paper map or your screen).
+		A projected coordinate system defines how to draw geographic locations from the three-dimensional model on a two-dimensional plane (which is much easier to fold up in your pocket and carry around than a globe)
+	Okay so, what about web maps?
+		The two most relevant coordinate systems to folks who work on web mapping are EPSG:4326 (WGS84) and EPSG:3857 (Pseudo-Mercator).
+	EPSG:4326 (WGS84)
+		The World Geodetic System of 1984 is the geographic coordinate system (the three-dimensional one) used by GPS to express locations on the earth
+		WGS84 is the defined coordinate system for GeoJSON, as longitude and latitude in decimal degrees.
+		For the most part, when you describe a lon/lat coordinate location, it’s based on the EPSG:4326 coordinate system.
+		This is how we store data at Mapbox.
+		There is no way to visualize the WGS84 coordinate system on a two-dimensional plane (map), so most software programs project these coordinates using an equirectangular projection (Plate-Carrée) (Esri=Arcgis uses EPSG:54001).
+	EPSG:3857 (Pseudo-Mercator)
+		The projected Pseudo-Mercator coordinate system takes the WGS84 coordinate system and projects it onto a square.
+		(This projection is also called Spherical Mercator or Web Mercator.)
+		But not all of it – the bounds of Pseudo-Mercator are limited to approximately 85.06º North and South latitude. 
+		This projection was first introduced by Google and is used in almost 100% of web maps
+		the projection uses the WGS84 coordinate system, which uses the WGS84 ellipsoid, but projects the coordinates onto a sphere.
+			Du coup je ne comprends pas bien : une sphere n'étant pas représentable sur une carte 2D, comment le lien se fait-il avec les X et Y souhaités en sortie ?
+			EDIT : un peu plus d'infos dans une autre référence (que j'annote plus bas) :
+				https://alastaira.wordpress.com/2011/01/23/the-google-maps-bing-maps-spherical-mercator-projection/
+			TL;DR : on fait "comme si" les lat/long étaient définies sur une sphère (plutôt qu'un ellipsoïde) avant de les projeter en 2D.
+		This method results in a square-shaped map (which computers really want)
+		This makes EPSG:3857 great for visualizing on computers but not reliable for data storage or analysis.
+		(Fun fact: This is why we store data in EPSG:4326, but display it in EPSG:3857!)
+	Web mapping data
+		For the most part, web maps rely on data stored with WGS84 coordinates (in some programs this is called “unprojected” data) and then visualize the data using Pseudo-Mercator. 
+		sometimes, a mapper will say they want to see their data visualized in the WGS84 projection (or perhaps they refer to it as EPSG:4326). As mentioned above, WGS84 is unprojected — there is no visual representation of that data.
+
+
+NOTES — google maps et OSM utilisent la même projection :
+	https://gis.stackexchange.com/questions/48949/epsg-3857-or-4326-for-googlemaps-openstreetmap-and-leaflet
+		Google Earth is in a Geographic coordinate system with the wgs84 datum. (EPSG: 4326)
+		Google Maps is in a projected coordinate system that is based on the wgs84 datum. (EPSG 3857)
+		The data in Open Street Map database is stored in a gcs with units decimal degrees & datum of wgs84. (EPSG: 4326)
+		The Open Street Map tiles and the WMS webservice, are in the projected coordinate system that is based on the wgs84 datum. (EPSG 3857)
+		So if you are making a web map, which uses the tiles from Google Maps or tiles from the Open Street Map webservice, they will be in Sperical Mercator (EPSG 3857 or srid: 900913) and hence your map has to have the same projection.
+
+
+NOTES — différence entre WGS84 et EPSG:4326 ?
+	https://gis.stackexchange.com/questions/3334/difference-between-wgs84-and-epsg4326
+		4326 is just the EPSG identifier of WGS84.
+		WGS84 comprises a standard coordinate frame for the Earth, a datum/reference ellipsoid for raw altitude data
+
+
+NOTES — quand on reçoit des lat/long sans autres précisions, on reçoit quoi ?
+	https://gis.stackexchange.com/questions/329579/are-coordinates-taken-with-an-handheld-gps-device-inherently-in-espg4326-wgs84
+		idéalement, on ne reçoit jamais des coordonnées "libres", i.e. sans le système de coordonnées qui va avec (car ça n'a pas de sens)
+		mais a priori, quand on reçoit des coordonnées GPS sans plus de précisions, on peut supposer qu'elles sont exprimées en EPSG:4326
+		
+
+
+NOTES — comprendre la projection google/bing maps :
+	https://alastaira.wordpress.com/2011/01/23/the-google-maps-bing-maps-spherical-mercator-projection/
+	I see a lot of people get confused or report problems when attempting to project spatial data to create raster images that line up with the base map layers used in Bing Maps / Google Maps.
+		position du problème = j'essaye de projeter mes données spatiales sur une carte raster, et mes données projetées ne s'accordent pas bien sur les cartes bing/google
+	I’m just talking about how you project geographic coordinate data defined on a 3d model of the world, such as [this = une image du monde 3D]...
+	... onto the flat, square map used as the base map layer in Google Maps / Bing Maps, such as [this = une carte 2D du monde]
+	Rappel des différents codes, correspondant à différentes versions d'une "même" projection  :
+		“EPSG:” 900913
+		EPSG: 3785
+		EPSG: 3857
+	Clarification de cette histoire de projection sur une sphère :
+		In the Google / Bing Maps projection  the underlying geographic coordinates are defined using WGS84 (as in 3857), but projected as if they were defined on a sphere (as in 3785).
+		Donc si je comprends bien, en gros, on fait "comme si" les lat/long étaient définies sur une sphère, avant de les projeter.
+	The problem is that there is no standardised way to represent this “dual”-ellipsoid system, in which a different ellipsoid is used to interpret the geographic coordinates than is used to project them.
+	Different software libraries handle this anomaly in different ways, which explains the differences in the coordinates obtained from using this projection in various tools.
+		du coup, ça explique des erreurs de projection sur une carte google ou bing
+		NdM : est-ce que ça explique qu'un tronçon de route sur une carte OSM ou sur une carte maison n'aboutisse pas exactement au même endroit ?
+	en tant que dev qui veut projeter ses données sur une carte google/bing correctement, je fais comment ?
+		en gros : tout d'abord utiliser EPSG:3857, et également utiliser des outils adaptés (ou des modifications particulières) pour respecter la spécificité des projections google/bing
+
+
+NOTES — notes vrac, quasi-exclusivement issues de wikipedia :
+	référentiel :
+		Référentiel terrestre, il en existe plusieurs
+		(Référentiel comobile avec les plaques  tectoniques, plus précis que ref terrestre. Par exemple, etrs89 est calqué sur la plaque eurasienne)
+	Géoïde
+		https://fr.m.wikipedia.org/wiki/G%C3%A9o%C3%AFde
+		équipotentielle du champ de pesanteur terrestre
+		c'est le zéro de référence pour les mesures d'altitude
+		On définit ainsi le « géoïde » comme étant une surface équipotentielle du champ de pesanteur,
+		choisie arbitrairement, mais très proche du niveau des océans que, par la pensée, nous pouvons prolonger sous les continents.
+	Ellipsoïde
+		https://fr.m.wikipedia.org/wiki/Ellipso%C3%AFde
+		https://fr.m.wikipedia.org/wiki/Ellipso%C3%AFde_de_r%C3%A9volution
+		approximation du Géoïde (trop tarabiscoté pour être utilisé en pratique) : moins précis, mais beaucoup plus simple de travailler avec
+		Ellipsoïde de révolution  = cas particulier de Ellipsoïde, obtenu par rotation d'une ellipse
+	Datum géodésique
+		TL;DR : un datum est simplement ce qu'il faut pour positionner un ellipsoïde par rapport à la Terre.
+		L'ellipsoïde seul ne suffit pas : il est nécessaire de le positionner par rapport à la surface réelle de la Terre.
+		La donnée de l'ellipsoïde et des paramètres de positionnement constitue ce qu'on appelle un datum géodésique à partir duquel pourra être appliquée une projection.
+		Un datum géodésique est donc défini par :
+			la donnée de l'ellipsoïde
+			la position du centre de l'ellipsoïde par rapport au centre de masse de la Terre (de quelques centimètres à plus d'une centaine de mètres)
+			l'orientation des axes de l'ellipsoïde
+		ou, plus concrètement pour un datum local :
+			l'ellipsoïde ;
+			le point fondamental, où l'ellipsoïde tangente le géoïde,
+			l'azimut initial (direction du nord en ce point),
+			le méridien origine (du point de référence),
+			à quoi il convient d'ajouter la projection courante.
+		Il existe de nombreux datums, chacun adapté à un usage particulier, 
+	Surface topographique
+		Surface topographique = endroit ou la terre solide prend fin, et ou commence l'eau ou l'air
+		Trop complexe pour être représentée mathématiquement
+		La surface topographique de la Terre solide est une surface très irrégulière à toutes les échelles, et ne se prête donc pas du tout à une description mathématique ou paramétrique.
+		Cette surface, par rapport à un ellipsoïde de révolution l'approximant le mieux possible, présente des variations de l'ordre de 10 km vers le haut (Himalaya) et vers le bas (fosses océaniques
+		https://fr.m.wikipedia.org/wiki/Figure_de_la_Terre
+	Géodésie
+		https://fr.m.wikipedia.org/wiki/G%C3%A9od%C3%A9sie
+		https://geodesie.ign.fr/
+		La géodésie est la science qui étudie les formes et les dimensions de la terre, mais aussi ses propriétés physiques, gravité, champ de pesanteur
+		et dont les travaux aboutissent à la représentation plane de vastes étendues.
+		Son objectif principal est d’élaborer des systèmes de référence terrestres auxquels tout utilisateur ou créateur de données géoréférencées peut accéder par l’intermédiaire de réseaux.
+		L’adoption et la réalisation de tels systèmes de référence constituent un indispensable outil de normalisation pour l’information géographique et pour le positionnement en général.
+	Cartographie, et lien entre topographie et cartographie (et géodésie)
+		https://fr.m.wikipedia.org/wiki/Topographie
+		https://fr.m.wikipedia.org/wiki/Cartographie
+		ce que j'en comprends : la topographie sert à la cartographie
+			cartographie = topographie + stylisation + astuces de représentation
+		(la topographie, c'est comme la géodésie (= mesure de la terre), mais à petite échelle)
+		extraits :
+			La topographie s'appuie sur la géodésie qui s'occupe de la détermination mathématique de la forme de la Terre
+			(forme et dimensions de la Terre, coordonnées géographiques des points, altitudes, déviations de la verticale...).
+			La topographie s'intéresse aux mêmes quantités, mais à une plus grande échelle, et elle rentre dans des détails de plus en plus fins pour établir des plans et cartes à différentes échelles.
+			La cartographie proprement dite est l'art d'élaborer, de dessiner les cartes, avec souvent un souci artistique et ne doit pas être confondue avec la topographie.
+			La carte géographique n'est pas le territoire. Elle en est tout au plus une représentation ou une “perception”.
+			La carte n’offre aux yeux du public que ce que le cartographe (ou ses commanditaires) veut montrer. Elle ne donne qu'une image tronquée, incomplète, partiale, voire trafiquée de la réalité
+		Le travail du cartographe est un travail de sélection des informations, composé de plusieurs étapes
+		localisateur = carte miniature exposant le contexte géographique élargi du sujet, souvent ajouté dans un coin de la carte
+	Géomatique :
+		https://fr.m.wikipedia.org/wiki/G%C3%A9omatique
+		Geomatique = géographie  + informatique
+		Collecte des données géographique
+		Il s'agit de constituer un référentiel représentant au mieux la réalité de terrain (voir : topographie, géodésie, cartographie, géographie).
+		Les grands producteurs de référentiels français sont :
+			la DGFiP pour le cadastre
+			l'IGN
+			[...]
+			OpenStreetMap
+	Système de référence
+		https://fr.m.wikipedia.org/wiki/G%C3%A9od%C3%A9sie#Syst%C3%A8mes_de_r%C3%A9f%C3%A9rence_c%C3%A9leste_et_terrestre
+		https://fr.m.wikipedia.org/wiki/Syst%C3%A8me_g%C3%A9od%C3%A9sique
+		Un système géodésique est un système de référence permettant d'exprimer les positions au voisinage de la Terre.
+		Les systèmes géodésiques modernes sont très précis, et permettent d'exprimer dans le même système les coordonnées de points situés sur des plaques tectoniques différentes :
+		les mouvements relatifs de ces plaques (jusqu'à plusieurs centimètres par an) ne peuvent plus être négligés...
+		L'ITRS (International Terrestrial Reference System), qui constitue le système géodésique le plus précis à l'échelle mondiale (précision centimétrique), évolue donc en permanence ;
+		chacune de ses réalisations (ITRF), constituée par un réseau de stations terrestres dont les coordonnées et les vitesses de déplacement sont fixées, est ainsi datée :
+		l'ITRF90 correspond à la valeur de ces éléments pour l'époque 1990,0.
+	WGS 84 / WGS84 / EPSG 4326
+		https://fr.wikipedia.org/wiki/G%C3%A9od%C3%A9sie#L'ITRF,_syst%C3%A8me_de_r%C3%A9f%C3%A9rence_mondial_et_le_WGS_84,_son_d%C3%A9riv%C3%A9_op%C3%A9rationnel
+		https://fr.m.wikipedia.org/wiki/WGS_84
+		Ndm : wsg84 est un système géodésique = un repère + un modèle de la Terre (=ellipsoïde) + un système de coordonnées (+ aussi un geoïde, mais moins intéressant pour moi)
+		WGS 84 (World Geodetic System 1984) est un système géodésique mondial.
+		Il est composé d'un système de coordonnées, d'un ellipsoïde de référence (l'ellipsoïde de révolution IAG GRS 80), un géoïde (EGM96)
+		[...]
+		La terre est assimilée à un ellipsoïde de révolution autour de l'axe nord sud, soit une sphère légèrement aplatie au niveau des pôles.
+		[...]
+		Un système géodésique ne doit pas être confondu avec un type de projection cartographique
+		[...]
+		Ce système est référencé 4326 en deux dimensions (X,Y) et 4979 en trois dimensions (X,Y,Z) selon la liste des codes EPSG.
+		NdM : en résumé,  EPSG4326, c'est le SYSTÈME DE COORDONNÉES
+	Coordonnées géographiques
+		https://fr.m.wikipedia.org/wiki/Coordonn%C3%A9es_g%C3%A9ographiques
+		Par coordonnées géographiques (ou encore « repères géographiques ») d'un lieu sur la Terre, on entend un système de trois coordonnées qui sont le plus souvent :
+		la latitude, la longitude et l'altitude (ou l'élévation) par rapport au niveau moyen de la mer (élévation orthométrique)
+		ou par rapport à une surface de référence, en général ellipsoïde (élévation ellipsoïdale).
+		Ces coordonnées géographiques découlent d'un système géodésique qui modélise la forme de la Terre.
+	Point géodésique
+		https://fr.m.wikipedia.org/wiki/Point_g%C3%A9od%C3%A9sique
+		https://fr.m.wikipedia.org/wiki/R%C3%A9seau_g%C3%A9od%C3%A9sique_fran%C3%A7ais
+		Points géodésiques = point de repère  dans le monde réel , de coordonnées  fixées,  qui servent de référence 
+	Système de coordonnées 
+		https://fr.m.wikipedia.org/wiki/Syst%C3%A8me_de_coordonn%C3%A9es_(cartographie)
+		Pour se localiser sur la Terre, il est nécessaire d'utiliser un système géodésique duquel découlent les coordonnées géographiques figurant sur les cartes.
+		Celles-ci peuvent être exprimées soit sous la forme de longitude et latitude (coordonnées dites géographiques), soit en représentation cartographique plane (coordonnées dites en projection).
+		[...]
+		Attention, des coordonnées géographiques n'ont aucun sens si on ne les accompagne pas des informations sur le système géodésique dans lequel elles sont exprimées.
+	Projection :
+		https://fr.m.wikipedia.org/wiki/Projection_cartographique
+		La projection cartographique est un ensemble de techniques géodésiques permettant de représenter une surface non plane (surface de la Terre, d'un autre corps céleste, du ciel, ...)
+		dans son ensemble ou en partie sur la surface plane d'une carte.
+		D'un point de vue mathématique, une projection permet d'établir entre la surface de la Terre et le plan (ou la surface développable) une correspondance telle que :
+		----------------------------------------
+		Pour les cartes du monde, la National Geographic Society et le National Geographic préfèrent aujourd'hui la Projection de Winkel-Tripel[15].
+		Pour une carte de la France métropolitaine, la projection officielle est la Lambert-93 (décret du 26 décembre 2000).
+		----------------------------------------
+		x = f1(φ,λ)  et   y = f2(φ,λ) , où :
+			(x,y) désignent des coordonnées planes
+			φ la latitude
+			λ la longitude
+			f1 et f2 des fonctions qui sont continues partout sur l'ensemble de départ sauf sur un petit nombre de lignes et de points (tels que les pôles).
+		Il existe donc une infinité de solutions. Les mathématiciens ne se sont pas privés d'en trouver, et on en connaît plus de 200.
+		----------------------------------------
+		On commence par choisir, à partir de son géoïde global, un ellipsoïde de révolution représentatif.
+		Une fois un ellipsoïde fixé, on peut choisir le type de projection à appliquer pour obtenir une carte.
+		----------------------------------------
+		différentes projections ont différents avantages/inconvénients :
+			projection équivalente  = conserve localement les aires. Cette représentation est préférée dans les atlas[4] pour respecter les surfaces relatives des différents pays;
+			projection conforme     = conserve localement les angles, donc les formes. La topographie et la géodésie utilisent exclusivement ce type de représentation
+			projection aphylactique = elle n'est ni conforme ni équivalente, mais peut être équidistante, c'est-à-dire conserver les distances sur les méridiens.
+			Une projection ne peut pas être à la fois conforme et équivalente.
+		Un point du globe étant repéré par sa longitude et sa latitude, une représentation cartographique est caractérisée par l'image des méridiens et des parallèles, c'est-à-dire le canevas de la carte.
+		----------------------------------------
+		Projection de Lambert :
+			https://fr.m.wikipedia.org/wiki/Projection_conique_conforme_de_Lambert#Lambert_93
+			Son principal intérêt réside dans son référentiel RGF93, qui est d'une part commun aux voisins européens de la France car fondé sur ETRS89.
+			Ce système a en commun avec le WGS84 - utilisé notamment par le système GPS de positionnement par satellite - l'ellipsoïde de référence IAG GRS80.
+			La projection RGF93/Lambert93 a pour référence EPSG:2154 
+		Beaucoup d'infos également sur ce doc de l'IGN :
+			https://geodesie.ign.fr/contenu/fichiers/projections_cartographiques.pdf
+		Project plate-carrée :
+			https://fr.wikipedia.org/wiki/Projection_cylindrique_%C3%A9quidistante
+			Attention : c'est assez trompeur : la projection ne conserve les distances QUE le long des méridiens.
+			La plate carrée est cependant devenue de-facto un standard car le rendu ne dépend plus du centre choisi. Cependant, on observe un étirement horizontal croissant lorsqu'on s'éloigne de l'équateur.
+	GIS / SIG = Système d'Information Géographique
+		https://fr.m.wikipedia.org/wiki/Syst%C3%A8me_d%27information_g%C3%A9ographique
+		Un système d'information géographique ou SIG est un système d'information conçu pour recueillir, stocker, traiter, analyser, gérer et présenter tous les types de données spatiales et géographiques.
+		L’acronyme SIG est parfois utilisé pour définir les « sciences de l’information géographiques ».
+		Cela se réfère aux carrières ou aux métiers qui impliquent l'usage de SIG et, dans une plus large mesure, qui concernent les disciplines de la géo-informatique (ou géomatique). 
+		Dans un sens plus général, le terme de SIG décrit un système d’information qui intègre, stocke, analyse et affiche l’information géographique.
+		Applications des SIG :
+			https://fr.m.wikipedia.org/wiki/Applications_des_syst%C3%A8mes_d%27information_g%C3%A9ographique
+	SRID
+		https://desktop.arcgis.com/fr/arcmap/10.3/manage-data/using-sql-with-gdbs/what-is-an-srid.htm
+		Un identifiant de référence spatiale (SRID, Spatial Reference Identifier) est un identifiant unique associé à un système de coordonnées, une tolérance et une résolution spécifiques.
+		NdM : permet de référencer un système de coordonnées, qui "va avec" des coordonnées.
+		Note : en base de données, on a les géométries en EPSG:3857 (web mercator) et EPSG:2154 (WGS84)
+		SRID A Spatial Reference System Identifier (SRID) is a unique value used to unambiguously identify projected, unprojected, and local spatial coordinate system definitions.
+		These coordinate systems form the heart of all GIS applications.
+		https://en.wikipedia.org/wiki/Spatial_reference_system
+			A spatial reference system (SRS) or coordinate reference system (CRS) is a coordinate-based local, regional or global system used to locate geographical entities.
+			A SRS commonly defines a specific map projection, as well as transformations between different SRS. 
+			SRS can be referred to using a SRID number, including EPSG codes
+	EPSG
+		https://fr.m.wikipedia.org/wiki/Syst%C3%A8me_de_coordonn%C3%A9es_(cartographie)#Les_codes_EPSG
+		nom officiel (normalisé, plutôt) des systèmes de coordonnées
+		L'EPSG [...] a défini une liste des systèmes de coordonnées géoréférencées et leur a associé des codes pour les identifier.
+		----------------------------------------
+		Un système géodésique peut recevoir plusieurs codes EPSG selon son utilisation.
+		Ainsi, le système géodésique officiel "Réseau Géodésique Français" RGF93, valide en métropole, a pour code EPSG 4171.
+		L'ellipsoïde associé est IAG GRS 1980. Lorsqu'un code EPSG est noté "(géographique 2D)", cela signifie que le système géodésique est réduit à la latitude et à la longitude.
+		Lorsqu'il est noté "(géographique 3D)", cela signifie qu'il gère la latitude, et la longitude, ainsi que la hauteur sur l'ellipsoïde.
+	lien entre SRID et EPSG (ma compréhension) :
+		un SRID permet d'identifer un système de coordonnées
+		les codes EPSG en font partie
+
+
+NOTES — notes vrac, issues du site de l'IGN :
+	https://geodesie.ign.fr/
+		il y a plein de liens utiles sur la page
+		le site semble utiliser SRC (système de référence de coordonnées) et système géodésique de façon équivalente
+	Systèmes géodésiques (https://geodesie.ign.fr/index.php?page=srt) :
+		Systèmes géodésiques
+			Se positionner sur la Terre ou dans un environnement proche, géoréférencer, géolocaliser...
+			Tous ces termes signifient attribuer des coordonnées à un objet dans un repère lié à la Terre.
+			Un tel repère doit donc être défini, et le cas échéant complété d'une représentation de la Terre, pour qu'une action de positionnement puisse être menée.
+			Cependant, l'expression des coordonnées est multiforme et il existe aujourd'hui un grand nombre de systèmes de référence de coordonnées, car la technologie et la législation évoluent !
+		Système de référence terrestre
+			Le Système de référence terrestre international (ITRS) est le système de référence spatiale mondial idéal qui suit le mouvement diurne de la Terre.
+			L'espace physique est alors 'considéré comme' un espace affine euclidien de dimension 3, tel que :
+				L’origine O : proche du centre de gravité de la Terre
+				L’axe OZ : proche de l’axe de rotation de la Terre
+				OXZ : plan méridien origine (NdM : peut varier selon le choix de l'utilisateur : par exemple, on pourra utiliser le méridien de Greenwich ou le méridien de Paris)
+				OXY : plan de l’équateur
+		Lien entre systèmes géodésiques et repères de référence :
+			N.B. : Au XX° siècle, les coordonnées s'exprimaient dans des 'systèmes géodésiques', issus de techniques terrestres (Nouvelle Triangulation de la France, European Datum 50, Fort-Desaix, etc...) ou spatiales (WGS72,WGS84, NAD83, ..)
+			On peut actuellement pour le calcul considérer ces 'systèmes' comme des repères de référence dans la mesure où existent les modèles de transformations de coordonnées
+		Coordonnées cartésiennes géocentriques : X, Y, Z
+			Un point de la croûte terrestre est quasiment fixe dans un repère. Cependant, la position varie à cause :
+				de mouvements globaux = Tectonique des plaques (inférieur à 10 cm par an), rebond postglaciaire (quelques millimètres par an)…
+				de mouvements locaux = Séismes, glissements de terrain...
+				de mouvements périodiques = Marées terrestres (variations inférieure à 30 cm), surcharge océanique (variations inférieure à 20 cm), surcharges atmosphérique, hydrologique (variations centimétriques)
+			Un point M sera donc positionné par ses coordonnées et sa vitesse dans le repère à un instant (t)
+		Coordonnées géographiques
+			A un repère de référence est associé un ellipsoïde de révolution qui est un modèle mathématique de la Terre débarrassée de ses reliefs.
+			Il s’agit approximativement d’une sphère aplatie aux pôles.
+			L’ellipsoïde est centré en O. Son axe de révolution selon le petit axe de l’ellipse méridienne est OZ. Les coordonnées géographiques tridimensionnelles sont associées à l’ellipsoïde.
+				λ : longitude géodésique
+				φ : latitude géodésique
+				h : hauteur au dessus de l’ellipsoïde
+		Coordonnées planes
+			Les coordonnées planes sont utilisées sur les cartes et les plans, dont la réalisation nécessite un système de projection cartographique.
+			Chaque point de la surface terrestre est d’abord projeté sur l’ellipsoïde selon la direction normale.
+			Puis l’ellipsoïde est transformé en surface plane.
+			Les coordonnées associées à cette surface plane sont des coordonnées cartésiennes bidimensionnelles :
+				E (Easting) pour l'abscisse
+				N (Northing) pour l'ordonnée
+			On les calcule en fonction de la longitude λ et de la latitude φ.
+			Ces coordonnées sont également appelées cordonnées en projection ou coordonnées cartographiques.
+			A noter : en topographie ou cartographie, ces coordonnées sont usuellement notées X et Y.
+		Système de référence verticale et altitude
+			L'altitude d'un point de la surface topographique est, de manière très approchée, la distance entre le point et une surface de référence appelée géoïde.
+		Système de coordonnées (CRS)
+			Il existe :
+				De nombreux repères de référence dont les origines peuvent être à plusieurs centaines de mètres les uns des autres( NTF, ED50, RGF93,...)
+				De nombreux ellipsoïdes dont les dimensions peuvent différer de plusieurs centaines de mètres (Clarke 1880, HAYFORD1909, IAG-GRS80,...)
+				De nombreux représentations planes (UTM, Lambert-93, Conique Conforme 9 zones, Lambert Azimuthal Equal Area) ...
+			Aussi, pour identifier un jeu de coordonnées, on utilise des systèmes de coordonnées (CRS: Coordinate Reference System) qui, selon le type de coordonnées, précisent les éléments de définition nécessaires.
+	Géodésie
+		La géodésie est la science qui étudie les dimensions et la forme de la Terre, ainsi que son champ de pesanteur.
+		Son objectif principal est d’élaborer des systèmes de référence terrestres auxquels tout utilisateur de données géoréférencées peut accéder par l’intermédiaire de réseaux.
+	Systèmes de référence de coordonnées
+		Toute localisation, ou positionnement, s’exprime par des coordonnées.
+		Les systèmes de référence de coordonnées (SRC, RIG…) précisent, selon le type de coordonnées, le système de référence, l’ellipsoïde et la projection ainsi que les unités.
+	c'est quoi l'IGN ?
+		L'Institut national de l'information géographique et forestière
+		établissement public à caractère administratif
+		ayant pour mission d'assurer la production, l'entretien et la diffusion de l'information géographique de référence en France1
+		https://www.ign.fr/institut/carte-didentite
+		L’IGN est l’opérateur public de référence pour l’information géographique et forestière en France.
+		produire, de collecter et de diffuser les données géographiques et forestières souveraines indispensables à la mise en œuvre des politiques publiques
+	GLOSSAIRE :
+		L'IGN a un glossaire top (que j'ai crawlé aussi) :
+			https://geodesie.ign.fr/index.php?page=glossaire
+		SUBTOPIC GLOSSAIRE = Coordonnées géographiques géodésiques
+			Elles déterminent la position d'un point sur le modèle d'ellipsoïde de référence. Elles sont au nombre de trois :
+				la latitude géodésique ou ellipsoïdique
+				la longitude géodésique ou ellipsoïdique
+				la hauteur ou élévation au dessus de l'ellipsoïde 
+			latitude et longitude sont projetées par rapport à la surface de l'ellipsoïde
+			Ceci a aussi des infos intéressantes :
+				https://geodesie.ign.fr/contenu/fichiers/coordonnees.pdf
+				La position d’un point dans l’espace peut être exprimée sous forme :
+					de coordonnées cartésiennes géocentriques (utilisant un repère tridimensionnel ayant son origine au centre des masses de la Terre, comme intermédiaire lors de calculs)
+					de coordonnées géographiques (sous la forme : longitude, latitude et hauteur ellipsoïdale)
+					en coordonnées planes (sur une représentation cartographique en projection).
+				note : les coordonnées planes sont E,N (en anglais (Easting, Northing)
+		SUBTOPIC GLOSSAIRE = Ellipsoïde géodésique
+			Surface de révolution engendrée par une ellipse tournant autour de son petit axe, définie par le rayon équatorial et un paramètre d’aplatissement, et sensiblement géocentrique.
+			Note : Il s’agit d’un modèle mathématique du géoïde, c'est-à-dire de la Terre débarrassée de son relief.
+			Il existe de nombreux ellipsoïdes géodésiques.
+			L'ellipsoïde de révolution ("sphère aplatie aux pôles") est un modèle mathématique utilisé pour exprimer des coordonnées géographiques afin d'effectuer des calculs sur une surface proche de celle de la terre.
+		SUBTOPIC GLOSSAIRE = Géodésie spatiale
+			La géodésie spatiale est une science qui utilise les mesures satellitaires pour déterminer la forme de la Terre et ses changements au cours du temps (champ de gravité, géoïde, orientation de la Terre, déformation de la croûte terrestre...).
+		SUBTOPIC GLOSSAIRE = Géoïde
+			Surface équipotentielle du champ de pesanteur coïncidant « au mieux » avec le niveau moyen des océans
+		SUBTOPIC GLOSSAIRE = Géoréférencement
+			Processus d’attribution de coordonnées cartographiques ou géographiques à tout objet de la surface terrestre.
+		SUBTOPIC GLOSSAIRE = Point géodésique
+			Point matérialisé dont les coordonnées (bidimensionnelles ou tridimensionnelles suivant le type de point) sont connues avec précision.
+		SUBTOPIC GLOSSAIRE = Projection cartographique
+			Système de représentation de la surface topographique utilisé pour la réalisation de cartes.
+			Note : L’opération de projection se décompose en général en deux étapes :
+				la projection d’un point de l’espace sur un ellipsoïde géodésique selon la normale à celui-ci ;
+				la représentation mathématique de l’ellipsoïde sur un plan (représentation plane)
+		SUBTOPIC GLOSSAIRE = Rattachement
+			Un rattachement géodésique désigne l'ensemble des opérations (mesures topométriques, calculs) qui permettent de rattacher en coordonnées 1D, 2D ou 3D un point à un ou plusieurs points de référence d'un système géodésique. On définit ainsi la position relative dans l'espace d'un point par rapport à un autre point déjà connu en coordonnées
+		SUBTOPIC GLOSSAIRE = Repère de nivellement
+			Point matérialisé dont l’altitude est déterminée avec précision.
+			Note : Il existe de nombreux types de repères de nivellement, généralement métalliques ; ils donnent accès aux systèmes de référence verticaux
+		SUBTOPIC GLOSSAIRE = Réseau de nivellement
+			Un réseau de nivellement est un ensemble de points constituant la réalisation d’un système de référence vertical et permettant aux utilisateurs d’avoir accès à ce système.
+			Note : Un réseau de nivellement est un type de Repère de Référence Vertical (RRV). La diffusion, en particulier par Internet, de l’altitude des points du réseau, ainsi que des métadonnées associées, permet à l’utilisateur de rattacher ses chantiers dans la référence verticale nationale
+		SUBTOPIC GLOSSAIRE = Réseau Géodésique Français
+			Réseau Géodésique Français, matérialisant le système de référence RGF93.
+			Le RGF est organisé en trois principaux niveaux :
+				le Réseau de Référence Français (RRF), constitué de 23 sites répartis sur l'ensemble de la France métropolitaine ;
+				le Réseau de Base Français (RBF), constitué de 1032 sites uniformément réparti tous les 25 kilomètres en moyenne ;
+				le Réseau de Détail Français (RDF), constitué d'environ 75 000 sites issus de la NTF et des canevas complémentaires, et transformés au moyen d'une grille de transformation
+		SUBTOPIC GLOSSAIRE = SRC
+			Système de Référence de Coordonnées : Métadonnées permettant de préciser, selon le type de coordonnées, 1D, 2D ou 3D, les éléments de définition associés au jeu de coordonnées.
+			Equivalence : Coordinates Reference System (CRS)
+			RIG = Référence Interne Géodésique
+			https://geodesie.ign.fr/contenu/fichiers/src.pdf
+				Le positionnement des points dans l'espace et le temps au voisinage de la Terre peut nécessiter les éléments de définition suivants :
+					le Système de Référence Terrestre
+					l’ellipsoïde géodésique
+					le méridien origine
+					le type de coordonnées (cartésiennes géocentriques, planes, géographiques,…)
+					les unités dans lesquelles sont exprimées les coordonnées
+					la projection cartographique
+					le référentiel altimétrique
+		SUBTOPIC GLOSSAIRE = Système de Référence Terrestre (SRT)
+			Ensemble de conventions définissant l'origine, l'échelle, l'orientation et l'évolution temporelle d'un système de référence spatial en co-rotation avec la Terre dans son mouvement diurne dans l'espace
+			Remarque : Le concept abstrait de SRT est réalisé par le biais d'un repère de référence terrestre qui consiste généralement en un ensemble de points physiques avec des coordonnées déterminées avec précision et éventuellement leur vitesse de changement. Dans le présent document, le repère de référence terrestre est inclus dans l'élément repère de référence géodésique du modèle de données.
+			En anglais, il est appelé TRS (Terrestrial Reference System) et parfois Datum (ce dernier terme étant ambigu).
+			Exemple : ITRS, ETRS89
+		SUBTOPIC GLOSSAIRE = WGS84
+			Système de Référence Terrestre, réalisé par géodésie spatiale par le département de la défense américain, qui est inhérent au Global Positioning System qui l'utilise pour ses éphémérides radiodiffusées.
+			Il existe plusieurs réalisations du WGS84 avec des différences décimétriques. Il est à présent très proche des réalisations ITRF.

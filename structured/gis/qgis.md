@@ -1,3 +1,5 @@
+**C'est quoi ?** Un logiciel permettant de visualiser et manipuler des données SIG.
+
 Contexte = janvier 2022, j'utilise qgis pour visualiser simplement des données au format OSM, sans dépendre d'idEditor, de fonds de carte ou d'autres outils. Mon cahier des charges :
 
 - charger un fichier `.osm.pbf` et visualiser les géométries des nodes/edges
@@ -13,8 +15,10 @@ nice -n 19 ionice -c 3 qgis
 
 Les docs = [user guide](https://docs.qgis.org/3.22/en/docs/user_manual/) et [trainings](https://docs.qgis.org/3.22/en/docs/training_manual/).
 
+
 * [Installation de qgis](#installation-de-qgis)
 * [Comment importer un fichier .osm.pbf ?](#comment-importer-un-fichier-osmpbf-)
+* [Comment importer des shapefiles ?](#comment-importer-des-shapefiles-)
 * [Comment limiter l'import à une bbox ?](#comment-limiter-limport-à-une-bbox-)
 * [Mes utilisations](#mes-utilisations)
    * [Consulter les attributs d'un edge](#consulter-les-attributs-dun-edge)
@@ -22,11 +26,12 @@ Les docs = [user guide](https://docs.qgis.org/3.22/en/docs/user_manual/) et [tra
    * [Retrouver tous les edges d'une liste d'ids donnée](#retrouver-tous-les-edges-dune-liste-dids-donnée)
    * [Retrouver tous les edges d'un type particulier](#retrouver-tous-les-edges-dun-type-particulier)
    * [N'afficher que les edges avec un certain attribut](#nafficher-que-les-edges-avec-un-certain-attribut)
+   * [Sélection de features + accès à leurs attributs](#sélection-de-features--accès-à-leurs-attributs)
    * [Afficher les noms des edges/nodes sur la carte](#afficher-les-noms-des-edgesnodes-sur-la-carte)
-   * [Sélection et attributs des features sélectionnées](#sélection-et-attributs-des-features-sélectionnées)
    * [Exporter les osm_id des features sélectionnées](#exporter-les-osm_id-des-features-sélectionnées)
    * [Exporter un geojson des features sélectionnées](#exporter-un-geojson-des-features-sélectionnées)
    * [Colorier des features d'une façon particulière](#colorier-des-features-dune-façon-particulière)
+   * [Colorier les features sélectionnées d'une façon particulière](#colorier-les-features-sélectionnées-dune-façon-particulière)
 * [Autres notes vrac sur l'UI](#autres-notes-vrac-sur-lui)
 
 # Installation de qgis
@@ -63,6 +68,13 @@ En terme de taille de données, Monaco et Andorre sont chargeables sans souci. L
 Comme qgis utilise GDAL/OGR sous le capot, si qgis n'arrive pas à charger un layer OSM, l'utiliation de `ogrinfo` peut aider à débugger en donnant des détails (c'est du vécu, ça m'a permis de comprendre qu'il fallait parfois désactiver le custom indexing).
 
 Si les données sont petites, c'est parfois pas évident de les trouver sur la carte ; on dirait qu'il y a des fonctions pour zoomer sur le layer, mais je n'arrive pas à les faire marcher, du coup je contourne en ouvrant la table des attributs du layer, et en zoomant sur une feature en particulier.
+
+# Comment importer des shapefiles ?
+
+- Menu > Couche > Ajouter une couche > Ajouter une couche vecteur
+- Dans les jeux de données, choisir un triplet de fichiers `shp + shx + dbf`
+
+Charger un dbf en standalone : comme les fichiers dbf sont de simples base de données, on peut charger un DBF même sans les géométries associées.
 
 # Comment limiter l'import à une bbox ?
 

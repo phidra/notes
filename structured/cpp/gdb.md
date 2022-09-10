@@ -188,7 +188,7 @@ info functions [REGEX]
 
 # connaître le code-source de la frame courante :
 info source
-#    Current source file is /home/pdrabczuk/mappywork/myproject/src/./interface_rpc/common/path_worker.h
+#    Current source file is /home/myself/myproject/src/./interface_rpc/common/path_worker.h
 #    [...]
 
 # lister les fichiers sources dont gdb a connaissance :
@@ -321,7 +321,7 @@ De même, essayer de `delete` l'un des sous-breakpoints avec `delete 7.2` ne mar
 (gdb) info br
     Num     Type           Disp Enb Address            What
     7       breakpoint     keep y   <MULTIPLE>
-    7.1                         y   0x00000000000137f0 in run(int, char const**) at /media/DATA/git_projects/route-engine/src/process_main.cpp:24
+    7.1                         y   0x00000000000137f0 in run(int, char const**) at /media/DATA/git_projects/myproject/src/process_main.cpp:24
     7.2                         y   0x000000000001a9a0 in boost::program_options::basic_command_line_parser<char>::run() at /usr/include/boost/program_options/detail/parsers.hpp:90
 ```
 

@@ -1,0 +1,119 @@
+CES NOTES SONT RESTÉES AU FORMAT OTL !
+
+Contexte = avril 2021, pour faire suite à mes essais de compréhensions de tout un tas de notions liées aux projections cartographiques, je fais des essais avec postgis.
+
+EXPÉRIMENTATIONS — COMMENT SONT STOCKÉES LES DONNÉES DANS UNE BASE POSTGIS :
+	TL;DR : les objets "geometry" de postgis sont associées à un SRID, qui permet d'interpréter les coordonnées.
+	DOC POSTGIS :
+		La création d'une géométrie "correcte" passe par le fait de définir un SRID :
+			https://postgis.net/docs/ST_GeomFromText.html
+		On peut définir des géométries sans SRID, et leur attribuer un SRID après coup :
+			https://postgis.net/docs/ST_MakePoint.html
+			https://postgis.net/docs/ST_SetSRID.html
+	Connexion à la DB :
+		psql -h mysuperhost -U myuser -p 5433 polylines_database
+		polylines_database=# \dt *.*
+			:						List of relations
+			:	   Schema       |          Name           | Type  |  Owner
+			:--------------------+-------------------------+-------+----------
+			: [...]
+			: polylines          | polylines               | table | myuser
+			: public             | spatial_ref_sys         | table | myuser
+			:(63 rows)
+	TABLE = public.spatial_ref_sys :
+		polylines_database=# \d public.spatial_ref_sys
+			:		 Table "public.spatial_ref_sys"
+			:  Column   |          Type           | Modifiers
+			:-----------+-------------------------+-----------
+			: srid      | integer                 | not null
+			: auth_name | character varying(256)  |
+			: auth_srid | integer                 |
+			: srtext    | character varying(2048) |
+			: proj4text | character varying(2048) |
+		polylines_database=# SELECT COUNT(*) FROM public.spatial_ref_sys;
+			:5435
+		polylines_database=# SELECT srid FROM public.spatial_ref_sys;
+			: srid 
+			:------
+			: 2000
+			: 2001
+			: 2002
+			: [...]
+			: 2047
+			: 2048
+			: 2049
+			: [...]
+		NdM: "spatial_ref_sys", c'est donc une table avec tous les srid connus de postgis.
+		polylines_database=# SELECT * FROM public.spatial_ref_sys WHERE srid = 4326;
+			srid = 4326
+			auth_name = EPSG
+			auth_srid = 4326
+			srtext = GEOGCS[
+				"WGS 84",
+				DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],
+				PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],
+				UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],
+				AUTHORITY["EPSG","4326"]
+			] 
+			proj4text =  +proj=longlat +datum=WGS84 +no_defs
+		NdM : "le srid que postgres identifie comme '4326' est "EPSG:4326"
+	TABLE = polylines.polylines :
+		polylines_database=# \d polylines.polylines
+			:			  Table "polylines.polylines"
+			:	Column     |           Type            | Modifiers
+			:---------------+---------------------------+-----------
+			: section_id    | bigint                    | not null
+			: node_src      | bigint                    | not null
+			: node_dst      | bigint                    | not null
+			: [...]
+			: geometry      | geometry(LineString,3857) | not null
+			: geometry_2154 | geometry(LineString,2154) | not null
+		les seuls champs particuliers sont les géométries. Comme ce sont des LineString, on va s'intéresser au premier point :
+			polylines_database=# SELECT ST_StartPoint(geometry) FROM polylines.polylines LIMIT 1;
+				:				   st_startpoint
+				:----------------------------------------------------
+				: 0101000020110F0000BA8FBE2E37613241BDD7AAC9D58F5241
+				:(1 row)
+		Cette chaîne bizarre est la façon dont postgis représente (et stocke, probablement) les géométries. On peut la convertir en WKT, ou afficher directement X et Y :
+			polylines_database=# SELECT ST_AsText(ST_StartPoint(geometry)) FROM polylines.polylines LIMIT 1;
+				:				st_astext                 
+				:------------------------------------------
+				: POINT(1204535.18259524 4865879.15105241)
+				:(1 row)
+			polylines_database=# SELECT ST_X(ST_StartPoint(geometry)), ST_Y(ST_StartPoint(geometry)) FROM polylines.polylines LIMIT 1;
+				:	   st_x       |       st_y
+				:------------------+------------------
+				: 1204535.18259524 | 4865879.15105241
+				:(1 row)
+		Une column de geometry contient également le SRID utilisé pour la représenter, à laquelle on peut accéder :
+			polylines_database=# SELECT ST_SRID(ST_StartPoint(geometry)) FROM polylines.polylines LIMIT 1;
+				: st_srid
+				:---------
+				:	3857
+				:(1 row)
+		On voit que cette colonne est stockée en EPSG:3857, qui sont des coordonnées projetées (ça se voit sur les valeurs des X et Y ci-dessus).
+		À noter que le contenu précis de ce srid peut-être affiché (mais c'est pas très intéressant) :
+			polylines_database=# SELECT * FROM public.spatial_ref_sys WHERE srid=3857;
+		Comment convertir ces coordonnées projetées en coordonnées géographiques ?
+			polylines_database=# SELECT ST_Transform(ST_StartPoint(geometry), 4326) FROM polylines.polylines LIMIT 1;
+				:					st_transform
+				:----------------------------------------------------
+				: 0101000020E61000008138F2AC1BA42540DB51D3C3F1FF4340
+		Comme la commande précédente renvoie une géométrie postgis, je peux en récupérer le SRID (et vérifier que c'est bien celui que je voulais) :
+			polylines_database=# SELECT ST_srid(ST_Transform(ST_StartPoint(geometry), 4326)) FROM polylines.polylines LIMIT 1;
+				: st_srid
+				:---------
+				:	4326
+		Je peux également affiche le point en question, de différentes façons :
+			polylines_database=# SELECT ST_AsText(ST_Transform(ST_StartPoint(geometry), 4326)) FROM polylines.polylines LIMIT 1;
+				:			   st_astext
+				:---------------------------------------
+				: POINT(10.82052364785 39.999565580543)
+			polylines_database=# SELECT ST_X(ST_Transform(ST_StartPoint(geometry), 4326)) as LONGITUDE, ST_Y(ST_Transform(ST_StartPoint(geometry), 4326)) AS LATITUDE FROM polylines.polylines LIMIT 1;
+				:   longitude    |    latitude
+				:----------------+-----------------
+				: 10.82052364785 | 39.999565580543
+			polylines_database=# SELECT ST_Asgeojson(ST_Transform(ST_StartPoint(geometry), 4326)) FROM polylines.polylines LIMIT 1;
+				:						  st_asgeojson
+				:-----------------------------------------------------------------
+				: {"type":"Point","coordinates":[10.82052364785,39.999565580543]}

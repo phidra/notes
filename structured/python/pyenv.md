@@ -177,7 +177,7 @@ D'une façon générale, quand on installe une version donnée de python avec py
 pyenv install 3.7.12
 # Downloading Python-3.7.12.tar.xz...
 # [...]
-# Installed Python-3.7.12 to /home/phijul/.pyenv/versions/3.7.12
+# Installed Python-3.7.12 to /home/myself/.pyenv/versions/3.7.12
 
 python3.7 -c "print('coucou')"
 # pyenv: python3.7: command not found

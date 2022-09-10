@@ -57,7 +57,7 @@ rm -rf out profile.proto ; LD_PRELOAD=/usr/lib/libprofiler.so CPUPROFILE=./profi
 sudo apt install golang-go
 
 # dans le .zshrc :
-export GOPATH="/home/pdrabczuk/.local/go"
+export GOPATH="/home/myself/.local/go"
 export PATH="${PATH}:${GOPATH}/bin"
 
 go get -u github.com/google/pprof
