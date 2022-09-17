@@ -6,7 +6,7 @@
 
 # perf = c'est quoi
 
-Un autre outil de profiling, qui n'est utilisable que sur linux, mais extrêmement puissant.
+Un autre outil de profiling, qui n'est utilisable que sur linux, mais extrêmement puissant ; [leur wiki](https://perf.wiki.kernel.org/index.php/Main_Page)
 
 J'ai surtout utilisé `perf record`, mais il y a d'autres outils :
 
@@ -65,10 +65,9 @@ NOTE : a priori, hotspot est mieux (EDIT juin 2022 : even better : speedscope).
 
 ```sh
 git clone https://github.com/brendangregg/FlameGraph /tmp/FlameGraph
-cd /tmp/FlameGraph
 perf record -F 99 -ag mysuperbinary
-perf script | ../../FlameGraph/stackcollapse-perf.pl | ../../FlameGraph/flamegraph.pl > perfs.svg
-firefox perfs.svg
+perf script | /tmp/FlameGraph/stackcollapse-perf.pl | /tmp/FlameGraph/flamegraph.pl > /tmp/perfs.svg
+firefox /tmp/perfs.svg
 ```
 
 Il vaut mieux ouvrir le résultat SVG avec firefox :
