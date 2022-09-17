@@ -4,10 +4,23 @@
    * [geojson des features dans une bbox](#geojson-des-features-dans-une-bbox)
    * [features dans une bbox avec l'operator &amp;&amp;](#features-dans-une-bbox-avec-loperator-)
    * [les 15 features les plus proches d'un point](#les-15-features-les-plus-proches-dun-point)
+   * [dilatation morphologique](#dilatation-morphologique)
+   * [convex hull + concave hull](#convex-hull--concave-hull)
+   * [Limiter un agrégat de géométries](#limiter-un-agrégat-de-géométries)
 
 # Généralités postgis
 
 http://www.postgis.fr/chrome/site/docs/workshop-foss4g/doc/introduction.html
+
+Version de postgis :
+
+```sql
+SELECT PostGIS_version();
+-- 3.2 USE_GEOS=1 USE_PROJ=1 USE_STATS=1
+
+SELECT PostGIS_full_version();
+-- POSTGIS="3.2.1 5fae8e5" [EXTENSION] PGSQL="120" GEOS="3.7.1-CAPI-1.11.1 27a5e771" SFCGAL="1.3.6" PROJ="Rel. 4.9.3, 15 August 2016" LIBXML="2.9.4" LIBJSON="0.12.1" LIBPROTOBUF="1.2.1" WAGYU="0.5.0 (Internal)" (core procs from "3.1.2 cbe925d" need upgrade) TOPOLOGY (topology procs from "3.1.2 cbe925d" need upgrade) (sfcgal procs from "3.1.2 cbe925d" need upgrade)
+```
 
 postgis = postgres + 3 choses ajoutées :
 
@@ -140,3 +153,77 @@ FROM my_super_schema.my_super_table AS edge, point
 ORDER BY edge.geom <-> (SELECT geom FROM point)
 LIMIT 15;
 ```
+
+## dilatation morphologique
+
+Dilatation de la géométrie d'une feature donnée :
+
+```sql
+SELECT ST_AsGeoJson(ST_Transform(st_buffer(geom, 0.0001), 4326))
+FROM my_super_schema.my_super_table
+WHERE feat_id = 'my-super-uuid-001'
+LIMIT 1;
+```
+
+Utilisation pour filtrer une autre requête (trouver les features qui ne sont PAS recouvertes par une géométrie dilatée) :
+
+```sql
+WITH dilated_geoms AS (
+	SELECT ST_Buffer(geom, 0.00001) AS geom
+	FROM my_super_schema.my_super_table
+	WHERE feature_type = 1234
+)
+SELECT desired.name AS desired_name, desired.geom AS desired_geom
+FROM my_other_schema.my_other_table AS desired
+WHERE
+	NOT EXISTS (
+		-- trouve la première géométrie dilatée qui contient le point
+		SELECT 1
+		FROM dilated_geoms
+		WHERE ST_CoveredBy(desired.geom, dilated_geoms.geom)
+		LIMIT 1
+	)
+;
+```
+
+## convex hull + concave hull
+
+Utilisation de [ST_Collect](https://postgis.net/docs/ST_Collect.html) pour regrouper les géométries de la table.
+
+Convexe :
+
+```sql
+SELECT ST_AsGeoJson(ST_ConvexHull(ST_Collect(geom)))
+FROM my_super_schema.my_super_table
+```
+
+Concave (nécessite un paramètre) :
+
+```sql
+SELECT ST_AsGeoJson(ST_ConcaveHull(ST_Collect(geom), 0.9))
+FROM my_super_schema.my_super_table
+```
+
+## Limiter un agrégat de géométries
+
+Si j'utilise ST_Collect pour agréger les géométries, je ne peux pas utiliser `LIMIT` (qui s'appliquera à l'aggrégat final !).
+
+Ceci ne marche donc PAS :
+
+```sql
+SELECT ST_AsGeoJson(ST_Collect(geom))
+FROM my_super_schema.my_super_table
+WHERE ST_Intersects(ST_MakeEnvelope(10.23925, 39.53793, 28.30078, 48.57478, 4326), geom)
+LIMIT 2000  -- le LIMIT s'applique après le ST_Collect, qui ne renvoie qu'une seule ligne !
+```
+
+
+Contournement = utiliser le LIMIT au préalable:
+
+```sql
+SELECT ST_AsGeoJson(ST_Collect(myalias.geom))
+FROM (SELECT geom FROM my_super_schema.my_super_table LIMIT 2000) myalias
+WHERE ST_Intersects(ST_MakeEnvelope(10.23925, 39.53793, 28.30078, 48.57478, 4326), geom)
+```
+
+Note : l'aliasing de la table est indispensable !
