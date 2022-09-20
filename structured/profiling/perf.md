@@ -5,6 +5,7 @@ La [page de Brendan Gregg](https://www.brendangregg.com/perf.html) donne des one
 * [installation](#installation)
 * [enregistrer un profil](#enregistrer-un-profil)
    * [avec sudo](#avec-sudo)
+   * [enregistrer un profil partiel](#enregistrer-un-profil-partiel)
    * [se passer de sudo](#se-passer-de-sudo)
    * [numéros de lignes](#numéros-de-lignes)
    * [lenteur de perf script](#lenteur-de-perf-script)
@@ -45,6 +46,23 @@ Derrière, il faut postprocesser `perf.data` pour en faire quelque chose, e.g. a
 ```sh
 perf script -i perf.data > /tmp/profile.txt
 # visualiser profile.txt, e.g. avec speedscope
+```
+
+## enregistrer un profil partiel
+
+Profil partiel = on ne record qu'une partie de l'exécution d'une commande.
+
+Cas d'usage = si la commande complète mets trop de temps à s'exécuter, elle génère une quantité de samples trop grande pour `perf script` ou pour `speedscope` → en ne recordant qu'une partie de son exécution, on réduit la quantité de samples.
+
+```sh
+# on exécute la commande :
+./mysupercommand arg1 arg2
+
+# on récupère son PID :
+pgrep mysupercommand
+
+# quand on le souhaite, on enregistre la prochaine minute :
+perf record -F 99 -g --call-graph=dwarf -p <PID> sleep 60
 ```
 
 ## se passer de sudo

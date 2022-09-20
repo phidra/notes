@@ -9,6 +9,16 @@ Notes sur mon workflow de dev
    * [Cheatsheet](#cheatsheet)
    * [Installation](#installation)
    * [Notes à l'usage](#notes-à-lusage)
+* [LSP aka Language Server Protocol](#lsp-aka-language-server-protocol)
+   * [LSP server — python](#lsp-server--python)
+   * [LSP server — C++](#lsp-server--c)
+      * [compile_commands.json](#compile_commandsjson)
+      * [construction de l'index clangd](#construction-de-lindex-clangd)
+   * [LSP client — native neovim client](#lsp-client--native-neovim-client)
+   * [LSP client — ALE DEPRECATED](#lsp-client--ale-deprecated)
+      * [Installation](#installation-1)
+      * [Features et commandes](#features-et-commandes)
+      * [Configuration](#configuration)
 * [JOURNAL](#journal)
    * [Vrac1](#vrac1)
    * [Utilisation de telescope avec nvim](#utilisation-de-telescope-avec-nvim)
@@ -16,14 +26,6 @@ Notes sur mon workflow de dev
    * [Vrac2](#vrac2)
    * [Vrac3](#vrac3)
 * [FUTUR](#futur)
-* [DEPRECATED — ALE](#deprecated--ale)
-   * [Installation](#installation-1)
-   * [Setup python](#setup-python)
-   * [Setup C++](#setup-c)
-      * [compile_commands.json](#compile_commandsjson)
-      * [construction de l'index clangd](#construction-de-lindex-clangd)
-   * [Features et commandes](#features-et-commandes)
-   * [Configuration](#configuration)
 
 # neovim
 
@@ -199,6 +201,216 @@ Les principes de fonctionnement :
     - sorter = ce qui permet d'ordonner les items de la liste en fonction de la chaîne fuzzy que l'utilisateur a tapée
 
 On peut rouvrir telescope dans l'état dans lequel on l'avait laissé : `:lua require('telescope.builtin').resume()`
+
+# LSP aka Language Server Protocol
+
+**C'est quoi ?** : un serveur LSP analyse le code et fournit des infos dessus à un client LSP :
+
+- `clangd` analyse le code
+- après analyse, il sait que la fonction `f` est appelée à tels 3 endroits, et définie à tel autre endroit
+- il communique ça à un client LSP
+- le client LSP expose des commandes du genre "jumper à la définition de f".
+
+## LSP server — python
+
+J'ai testé `pyright` qui fait le taf :
+
+```
+pipx install pyright
+```
+
+Il ne gère pas le formattage, par contre...
+
+Je peux formatter l'ensemble d'un fichier python avec black en ajoutant ceci aux sources null-ls (mais sans pouvoir formatter une seule ligne comme en C++) :
+
+```
+null_ls.builtins.formatting.black,
+```
+
+## LSP server — C++
+
+J'utilise `clangd` :
+
+```
+sudo apt-install clangd-12
+```
+
+Mais ça ne suffit pas, clangd a besoin d'un `compile_commands.json` à la racine du projet :
+
+```
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# si compile_commands.json est généré par cmake dans un répertoire de build :
+ln -s build/compile_commands.json .
+```
+
+**caveat** = si les temps de recompilation (surtout pour des gros fichiers sources mal découpés, comme ceux d'ULTRA) sont assez longs, le temps de réaction du linter pourra être assez lent...
+
+### compile_commands.json
+
+**C'est quoi ?** Problématique = les linters C++ ont besoin de compiler le fichier en cours d'édition **exactement** comme la toolchain de mon projet le fait (e.g. en incluant les bons chemins vers les headers, ou en passant exactement les bonnes options de compilation, telles que le standard C++).
+
+Pour cela, les toolchains peuvent générer une base de données des commandes permettant de compiler chaque fichier = `compile_commands.json`. Exemple de contenu :
+
+```
+{
+   directory :  /media/DATA/git_projects/ULTRA/_build ,
+   command :  /usr/bin/clang++   -I/home/myself/.conan/data/rapidjson/1.1.0/_/_/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include -I/home/myself/.conan/data/fast-cpp-csv-parser/cci.20200830/_/_/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include -I/home/myself/.conan/data/fast-cpp-csv-parser/cci.20200830/_/_/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include/fast-cpp-csv-parser -I/media/DATA/git_projects/ULTRA/Investigations  -Wall -Wextra -Werror -Wunused-parameter -Wno-unused-parameter -Wno-infinite-recursion -Wno-unused-variable -Wno-sign-compare   -O3 -DNDEBUG    -fopenmp -pipe -march=native -O3 -ffast-math -ftree-vectorize -Wfatal-errors -DNDEBUG -std=gnu++17 -o CMakeFiles/build-transfer-graph.dir/media/DATA/git_projects/ULTRA/Custom/Common/polygon.cpp.o -c /media/DATA/git_projects/ULTRA/Custom/Common/polygon.cpp ,
+   file :  /media/DATA/git_projects/ULTRA/Custom/Common/polygon.cpp
+},
+```
+
+Pour cmake, on peut facilement le configurer pour qu'il génère ce `compile_commands.json`, avec une ligne dans le `CMakeLists.txt` :
+
+```
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+```
+
+**Caveat 1** = les linters C++ attendent le fichier à la racine du projet ; or, il est généré par cmake dans le répertoire de build → ne pas hésiter à faire un lien symbolique vers le répertoire de build :
+
+```
+ln -s build/compile_commands.json .
+```
+
+**Caveat 2** = il faut avoir lancé au moins une fois le build pour que `compile_commands.json` existe et puisse être lu par clangd ; tant que ça n'est pas fait pas d'utilisation correcte des features clangd possible.
+
+**Caveat 3** = la plus grosse limitation semble être qu'il gère mal les header-files, car comme ils ne sont pas compilés, il n'y a pas d'entrée les concernant dans `compile_commands.json`.
+
+### construction de l'index clangd
+
+**Question** : l'index de clangd est-il recalculé à chaque nouvelle session, ou réutilisé ?
+
+**Réponse** : l'index est caché et réutilisé, cf. [la doc](https://clangd.llvm.org/design/indexing) :
+
+> Before indexing each file, the index checks for a cached xxx.idx file on disk. After indexing, it writes this file. This avoids reindexing on startup if nothing changed since last time. These files are located in .cache/clangd/index/ next to compile_commands.json. For headers with no CDB, such as the standard library, they are in clangd/index under the user’s cache directory
+
+Je confirme sur mon poste :
+
+```sh
+find /path/to/myproject/.cache/clangd/index -name \*.idx | wc -l
+# 4276
+```
+
+## LSP client — native neovim client
+
+En deux mots, j'ai switché sur le client LSP natif de neovim (cf. mon vimrc).
+
+Quelques notes vrac :
+
+Pour avoir les infos du client LSP :
+
+```
+:LspInfo
+:LspLog
+
+Éventuellement précédé de :
+:lua vim.lsp.set_log_level("debug")
+```
+
+Pour appeler une feature LSP (e.g. `hover`) sans la binder à une commande vim :
+
+```
+:lua vim.lsp.buf.hover()
+```
+
+Pour avoir l'aide sur une fonction LSP :
+```
+:help vim.lsp.buf.rename()
+```
+
+Pour lancer une fonction LSP de façon synchrone e.g. pour attendre que le formattage soit terminé avant de rendre la main lors d'un save :
+
+```
+- Q: How do I run a request synchronously (e.g. for formatting on file save)?
+  A: Use the `_sync` variant of the function provided by |lsp-buf|, if it exists.
+  E.g. code formatting: " Auto-format *.rs (rust) files prior to saving them
+autocmd BufWritePre *.rs lua vim.lsp.buf.formatting_sync(nil, 1000)
+```
+
+## LSP client — ALE DEPRECATED
+
+**EDIT** : j'ai switché sur le client LSP natif de neovim, et je n'utilise donc plus ALE.
+
+**C'est quoi ?** En gros, un plugin vim pour lancer plein de linters sur un fichier de code, et interpréter les résultats. Il joue le rôle de LSP client.
+
+### Installation
+
+Avec vim-plug :
+
+```
+# vimrc :
+Plug 'https://github.com/dense-analysis/ale'
+
+# au runtime :
+:PlugInstall
+```
+
+Une fois ALE installé, il utilisera les linters automatiquement, à condition que ceux-ci soient installés.
+
+Dit autrement : il suffit d'installer un linter pour qu'ALE l'utilise ; par exemple, comme mon poste dispose d'un compilateur, out-of-the-box, ALE compile le fichier en cours de frappe et m'indique les erreurs dynamiquement \o/. En revanche, je ne pourrais utiliser `ALEGoToDefinition` que si j'installe un LSP server C++ comme `clangd`.
+
+### Features et commandes
+
+Note = la plupart des features nécessitent un LSP server. Par exemple, en C++, même si ALE est utile sans serveur LSP (car même dans ce cas, la compilation dynamique fait qu'ALE prévient des erreurs en cours de frappe), on ne pourra utiliser `ALEGoToDefinition` que si on installe un LSP server.
+
+- complétion intelligente avec `Ctrl+n` et `Ctrl+p` en cours de frappe (inactive par défaut)
+- `ALEGoToDefinition` et `Ctrl+t` pour en revenir si besoin
+    - en alternative, on peut utiliser les tags
+    - (avec ma config, `F5` pour générer les tags ; `Ctrl+]` pour jumper, et toujours `Ctrl+t` pour en revenir)
+- `ALEHover` pour jeter un oeil à la définition :
+    - par contre ça ouvre une fenêtre plutôt qu'un balloon, c'est [un problème connu](https://github.com/dense-analysis/ale/issues/2442)
+- `ALEFindReferences` pour lister les appelants d'une fonction
+- `ALESymbolSearch` pour trouver un symbole dans l'index buildé par le LSP
+    - la recherche est fuzzy : si le symbole est `add_costs`, il sera matché par :
+        ```
+        :ALESymbolSearch add_costs
+        :ALESymbolSearch add_co
+        :ALESymbolSearch adco
+        ```
+    - on dirait qu'on ne peut pas utiliser de wildcard (mais c'est inutile car la recherche est fuzzy)
+    - comme ça ne recherche que dans les symboles de l'index, ça ne matche pas avec les contenus des strings, les noms des variables ou les fichiers markdown :+1:
+    - c'est bien plus puissant qu'un grep classique grâce au combo "ça ne regarde que dans les symboles + la recherche est fuzzy"
+- `ALEInfo`  = la commande utilisée pour débugger l'application d'un linter
+    - _pour le fichier courant_, liste les linters disponibles, les linters actifs
+    - logge ce qui va pas dans l'exécution des linters, et la commande utilisée pour linter :
+    ```
+    (executable check - failure) flake8
+    (executable check - failure) pylint
+    (executable check - failure) pyright-langserver
+    ```
+- `ALEDetail` pour avoir plus de détails sur le message de retour du linter
+- `ALERename` pour renommer intelligemment un symbole (plus puissant qu'un sed car ne renomme que les symboles)
+    - attention que les buffers modifiés ne semblent pas enregistrés
+    - en python, ça a l'air de bien fonctionner avec pyright
+    - mais en C++, ça échoue une fois sur deux avec l'erreur `No rename result received from server`
+- `ALEFix` pour laisser ALE fixer du code (le plus souvent : le formatter):
+    - le principe est qu'ALE hardcode des fixers avec lesquels il sait interagir
+    - il faut les activer (possiblement langage par langage) avec `g:ale_fixers`
+    - mais je n'ai pas vraiment réussi à l'utiliser pour C++ ou python cf. le journal
+    - notamment, 1. confirmer que le fixer se lance correctement est pas très intuitif et surtout 2. il faut utiliser la config vim pour passer les options au formatter (ce qui oblige de facto à avoir une config par projet)
+- pour naviguer parmi les erreurs remontées par ALE :
+    ```
+    :help ale-navigation-commands
+    :ALENext     / :ALEPrevious
+    :ALENextWrap / :ALEPreviousWrap
+    :ALEFirst    / :ALELast
+    ```
+- `ALEToggle` pour activer/désactiver ALE, utile car ALE peut parfois être un peu intrusif
+
+### Configuration
+
+Le lint ne se déclenche pas tout de suite mais après un petit délai :
+
+```
+:let g:ale_lint_delay=200    <-- valeur par défaut du delay = 200 ms
+```
+
+La complétion n'est pas active par défaut ; pour l'activer :
+
+```
+let g:ale_completion_enabled = 1
+```
+
+
 
 # JOURNAL
 
@@ -631,157 +843,3 @@ Notamment, j'abandonne le fait d'installer pyright.
     ```
     :'<,'>lua vim.lsp.buf.range_formatting()
     ```
-
-# DEPRECATED — ALE
-
-**C'est quoi ?** En gros, un plugin vim pour lancer plein de linters sur un fichier de code, et interpréter les résultats. Il joue le rôle de LSP client.
-
-## Installation
-
-Avec vim-plug :
-
-```
-# vimrc :
-Plug 'https://github.com/dense-analysis/ale'
-
-# au runtime :
-:PlugInstall
-```
-
-Une fois ALE installé, il utilisera les linters automatiquement, à condition que ceux-ci soient installés.
-
-Dit autrement : il suffit d'installer un linter pour qu'ALE l'utilise ; par exemple, comme mon poste dispose d'un compilateur, out-of-the-box, ALE compile le fichier en cours de frappe et m'indique les erreurs dynamiquement \o/. En revanche, je ne pourrais utiliser `ALEGoToDefinition` que si j'installe un LSP server C++ comme `clangd`.
-
-## Setup python
-
-Du coup, il suffit d'installer un LSP server pour python pour profiter d'ALE en python. Par exemple `pyright` :
-
-```
-pipx install pyright
-```
-
-## Setup C++
-
-Installer `clangd` pour qu'ALE puisse l'utiliser comme LSP server C++ :
-
-```
-sudo apt-install clangd-12
-```
-
-Mais ça ne suffit pas, clangd a besoin d'un `compile_commands.json` à la racine du projet :
-
-```
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-# si compile_commands.json est généré par cmake dans un répertoire de build :
-ln -s build/compile_commands.json .
-```
-
-**caveat** = si les temps de recompilation (surtout pour des gros fichiers sources mal découpés, comme ceux d'ULTRA) sont assez longs, le temps de réaction du linter pourra être assez lent...
-
-### compile_commands.json
-
-**C'est quoi ?** Problématique = les linters utilisés par ALE ont besoin de compiler le fichier en cours d'édition **exactement** comme la toolchain de mon projet le fait (e.g. en incluant les bons chemins vers les headers, ou en passant exactement les bonnes options de compilation, telles que le standard C++).
-
-Pour cela, les toolchains peuvent générer une base de données des commandes permettant de compiler chaque fichier = `compile_commands.json`. Exemple de contenu :
-
-```
-{
-   directory :  /media/DATA/git_projects/ULTRA/_build ,
-   command :  /usr/bin/clang++   -I/home/myself/.conan/data/rapidjson/1.1.0/_/_/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include -I/home/myself/.conan/data/fast-cpp-csv-parser/cci.20200830/_/_/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include -I/home/myself/.conan/data/fast-cpp-csv-parser/cci.20200830/_/_/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include/fast-cpp-csv-parser -I/media/DATA/git_projects/ULTRA/Investigations  -Wall -Wextra -Werror -Wunused-parameter -Wno-unused-parameter -Wno-infinite-recursion -Wno-unused-variable -Wno-sign-compare   -O3 -DNDEBUG    -fopenmp -pipe -march=native -O3 -ffast-math -ftree-vectorize -Wfatal-errors -DNDEBUG -std=gnu++17 -o CMakeFiles/build-transfer-graph.dir/media/DATA/git_projects/ULTRA/Custom/Common/polygon.cpp.o -c /media/DATA/git_projects/ULTRA/Custom/Common/polygon.cpp ,
-   file :  /media/DATA/git_projects/ULTRA/Custom/Common/polygon.cpp
-},
-```
-
-Pour cmake, on peut facilement le configurer pour qu'il génère ce `compile_commands.json`, avec une ligne dans le `CMakeLists.txt` :
-
-```
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-```
-
-**Caveat 1** = les linters lancés par ALE attendent le fichier à la racine du projet ; or, il est généré par cmake dans le répertoire de build → ne pas hésiter à faire un lien symbolique vers le répertoire de build :
-
-```
-ln -s build/compile_commands.json .
-```
-
-**Caveat 2** = il faut avoir lancé au moins une fois le build pour que `compile_commands.json` existe et puisse être lu par clangd ; tant que ça n'est pas fait pas d'utilisation correcte des features clangd possible.
-
-**Caveat 3** = la plus grosse limitation semble être qu'il gère mal les header-files, car comme ils ne sont pas compilés, il n'y a pas d'entrée les concernant dans `compile_commands.json`.
-
-### construction de l'index clangd
-
-**Question** : l'index de clangd est-il recalculé à chaque nouvelle session, ou réutilisé ?
-
-**Réponse** : l'index est caché et réutilisé, cf. [la doc](https://clangd.llvm.org/design/indexing) :
-
-> Before indexing each file, the index checks for a cached xxx.idx file on disk. After indexing, it writes this file. This avoids reindexing on startup if nothing changed since last time. These files are located in .cache/clangd/index/ next to compile_commands.json. For headers with no CDB, such as the standard library, they are in clangd/index under the user’s cache directory
-
-Je confirme sur mon poste :
-
-```sh
-find /path/to/myproject/.cache/clangd/index -name \*.idx | wc -l
-# 4276
-```
-
-## Features et commandes
-
-Note = la plupart des features nécessitent un LSP server. Par exemple, en C++, même si ALE est utile sans serveur LSP (car même dans ce cas, la compilation dynamique fait qu'ALE prévient des erreurs en cours de frappe), on ne pourra utiliser `ALEGoToDefinition` que si on installe un LSP server.
-
-- complétion intelligente avec `Ctrl+n` et `Ctrl+p` en cours de frappe (inactive par défaut)
-- `ALEGoToDefinition` et `Ctrl+t` pour en revenir si besoin
-    - en alternative, on peut utiliser les tags
-    - (avec ma config, `F5` pour générer les tags ; `Ctrl+]` pour jumper, et toujours `Ctrl+t` pour en revenir)
-- `ALEHover` pour jeter un oeil à la définition :
-    - par contre ça ouvre une fenêtre plutôt qu'un balloon, c'est [un problème connu](https://github.com/dense-analysis/ale/issues/2442)
-- `ALEFindReferences` pour lister les appelants d'une fonction
-- `ALESymbolSearch` pour trouver un symbole dans l'index buildé par le LSP
-    - la recherche est fuzzy : si le symbole est `add_costs`, il sera matché par :
-        ```
-        :ALESymbolSearch add_costs
-        :ALESymbolSearch add_co
-        :ALESymbolSearch adco
-        ```
-    - on dirait qu'on ne peut pas utiliser de wildcard (mais c'est inutile car la recherche est fuzzy)
-    - comme ça ne recherche que dans les symboles de l'index, ça ne matche pas avec les contenus des strings, les noms des variables ou les fichiers markdown :+1:
-    - c'est bien plus puissant qu'un grep classique grâce au combo "ça ne regarde que dans les symboles + la recherche est fuzzy"
-- `ALEInfo`  = la commande utilisée pour débugger l'application d'un linter
-    - _pour le fichier courant_, liste les linters disponibles, les linters actifs
-    - logge ce qui va pas dans l'exécution des linters, et la commande utilisée pour linter :
-    ```
-    (executable check - failure) flake8
-    (executable check - failure) pylint
-    (executable check - failure) pyright-langserver
-    ```
-- `ALEDetail` pour avoir plus de détails sur le message de retour du linter
-- `ALERename` pour renommer intelligemment un symbole (plus puissant qu'un sed car ne renomme que les symboles)
-    - attention que les buffers modifiés ne semblent pas enregistrés
-    - en python, ça a l'air de bien fonctionner avec pyright
-    - mais en C++, ça échoue une fois sur deux avec l'erreur `No rename result received from server`
-- `ALEFix` pour laisser ALE fixer du code (le plus souvent : le formatter):
-    - le principe est qu'ALE hardcode des fixers avec lesquels il sait interagir
-    - il faut les activer (possiblement langage par langage) avec `g:ale_fixers`
-    - mais je n'ai pas vraiment réussi à l'utiliser pour C++ ou python cf. le journal
-    - notamment, 1. confirmer que le fixer se lance correctement est pas très intuitif et surtout 2. il faut utiliser la config vim pour passer les options au formatter (ce qui oblige de facto à avoir une config par projet)
-- pour naviguer parmi les erreurs remontées par ALE :
-    ```
-    :help ale-navigation-commands
-    :ALENext     / :ALEPrevious
-    :ALENextWrap / :ALEPreviousWrap
-    :ALEFirst    / :ALELast
-    ```
-- `ALEToggle` pour activer/désactiver ALE, utile car ALE peut parfois être un peu intrusif
-
-## Configuration
-
-Le lint ne se déclenche pas tout de suite mais après un petit délai :
-
-```
-:let g:ale_lint_delay=200    <-- valeur par défaut du delay = 200 ms
-```
-
-La complétion n'est pas active par défaut ; pour l'activer :
-
-```
-let g:ale_completion_enabled = 1
-```
-
