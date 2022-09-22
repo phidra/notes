@@ -108,3 +108,15 @@ Mes raccourcis actuels (possiblement, ce sont mes raccourcis persos et pas ceux 
 - `Ctrl+Alt+F` pour ouvrir browser internet
 - `Ctrl+Alt+H` pour ouvrir un filebrowser
 - `Ctrl+Alt+up/down` pour naviguer entre les bureaux virtuels (et `Shift` pour y déplacer la fenêtre courante)
+
+**Bug** = l'icône du réseau (network-manager) n'apparaît pas toujours dans le systray :
+
+- ça a l'air assez aléatoire au boot
+- c'est embêtant pour activer le VPN
+- contournement = utiliser `nmtui` qui fait le taf pour activer le VPN
+- sinon, le problème discuté [ici](https://askubuntu.com/questions/1292644/ubuntu-20-04-1-lts-networkmanager-not-appearing-in-ubuntu) qui [pointe là](https://askubuntu.com/questions/507310/network-manager-icon-disappeared-14-04/529287#529287) et suggère :
+    ```sh
+    sudo vim /etc/xdg/autostart/nm-applet.desktop
+    # remplacer Exec=nm-applet par
+    Exec=dbus-launch nm-applet
+    ```
