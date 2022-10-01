@@ -1,6 +1,7 @@
 * [Installation](#installation)
 * [Configuration](#configuration)
 * [Cluster](#cluster)
+   * [Retour d'expérience de migration de postgresql 12 à 14](#retour-dexpérience-de-migration-de-postgresql-12-à-14)
 * [Administration vrac](#administration-vrac)
    * [version](#version)
    * [port d'écoute](#port-découte)
@@ -108,6 +109,53 @@ Le paquet `postgresql-common` fournit des tools pour gérer ses clusters postgre
     # /usr/bin/pg_virtualenv
     # /usr/bin/pg_archivecleanup
     ```
+
+## Retour d'expérience de migration de postgresql 12 à 14
+
+- quand j'ai migré de Ubuntu 20.04 à 22.04 (donc de la version 12 à 14 de postgresql), je me suis retrouvé avec deux clusters, l'un en 12 (mon ancien cluster) et l'autre en 14 (le cluster par défaut créé par postgresql14)
+- le cluster actif (`14/main`) répondait sur le port `5433`, comme l'indique `man pg_lsclusters` :
+    > postgresql.conf is automatically adapted to use the next available port, i.  e. the first port (starting from 5432) which is not yet used by an already existing cluster.
+- mon ancien cluster (`12/main`) qui utilisait le port `5432` ne répond plus, il est arrêté. Je ne peux pas le redémarrer (et pour cause : je n'ai plus postgresql12 d'installé !) :
+    ```sh
+    pg_ctlcluster 12 main start
+    # Warning: the cluster will not be running as a systemd service. Consider using systemctl:
+    #   sudo systemctl start postgresql@12-main
+    # Error: Could not create /var/run/postgresql/12-main.pg_stat_tmp: Permission denied
+
+    sudo systemctl start postgresql@12-main
+    # [sudo] Mot de passe de myself :
+    # Job for postgresql@12-main.service failed because the service did not take the steps required by its unit configuration.
+    # See "systemctl status postgresql@12-main.service" and "journalctl -xeu postgresql@12-main.service" for details.
+
+    sudo systemctl status postgresql@12-main.service
+    # [sudo] Mot de passe de myself :
+    # × postgresql@12-main.service - PostgreSQL Cluster 12-main
+    # 	 Loaded: loaded (/lib/systemd/system/postgresql@.service; disabled; vendor preset: enabled)
+    # 	 Active: failed (Result: protocol) since Fri 2022-09-30 09:40:53 CEST; 38min ago
+    # 	Process: 14708 ExecStart=/usr/bin/pg_ctlcluster --skip-systemctl-redirect 12-main start (code=exited, status=1/FAILURE)
+    # 		CPU: 33ms
+    #
+    # sept. 30 09:40:53 pcfixe systemd[1]: Starting PostgreSQL Cluster 12-main...
+    # sept. 30 09:40:53 pcfixe postgresql@12-main[14708]: Error: Could not find pg_ctl executable for version 12
+    # sept. 30 09:40:53 pcfixe systemd[1]: postgresql@12-main.service: Can't open PID file /run/postgresql/12-main.pid (yet?) after start: Operation not permitted
+    # sept. 30 09:40:53 pcfixe systemd[1]: postgresql@12-main.service: Failed with result 'protocol'.
+    # sept. 30 09:40:53 pcfixe systemd[1]: Failed to start PostgreSQL Cluster 12-main.
+    ```
+- en théorie, il est possible de migrer un cluster :
+    ```sh
+    sudo pg_upgradecluster -v 14 12 main
+    ```
+- mais en pratique, il faut les deux versions de postgresql, et comme je n'ai pas de données pertinentes sur mon ancien cluster, et que je n'ai pas envie de voir coexister deux versions concurrentes, je finis par tout dropper et recréer un seul et unique cluster 14 :
+    ```sh
+    sudo pg_dropcluster --stop 14 main
+    sudo pg_dropcluster 12 main
+    sudo pg_createcluster 14 main
+    sudo systemctl start postgresql
+    pg_lsclusters
+    # Ver Cluster Port Status Owner    Data directory              Log file
+    # 14  main    5432 online postgres /var/lib/postgresql/14/main /var/log/postgresql/postgresql-14-main.log
+    ```
+- notamment, je vérifie bien que le nouveau cluster 14 a été créé sur le port `5432`
 
 # Administration vrac
 
