@@ -1,0 +1,37 @@
+Héritage de table :
+	utile quand certaines données sont un subset de données plus générales
+	exemple : on a une table de villes et certaines villes sont aussi une capitale (avec une colonne supplémentaire : state)
+	chaque capitale est une ville, mais chaque ville n'est pas une capitale -> on a bien une relation d'héritage
+
+USE CASE 1 = villes et capitales :
+	Création des tables :
+		CREATE TABLE cities (postal_code INT);
+		CREATE TABLE capitals (state CHAR(15)) INHERITS (cities);  -- state est une colonne additionnelle
+	L'ajout d'une ligne à la table parente ne modifie pas la table fille :
+		INSERT INTO cities VALUES (92160);
+		SELECT * FROM cities;  -- renvoie 92160
+		SELECT * FROM capitals;  -- ne renvoie rien
+	L'ajout d'une ligne à une table fille l'ajoute également à la table parente (c'est l'intérêt : une capitale EST UNE ville) :
+		INSERT INTO capitals VALUES (75001, 'France');
+		SELECT * FROM cities;  -- renvoie 92160 + 75001
+		SELECT * FROM capitals;  -- renvoie 75001
+	On peut toutefois ne lister que les lignes qui sont uniquement dans la table parente et pas la fille :
+		SELECT * FROM ONLY cities;  -- renvoie 92160 uniquement
+
+USE CASE 2 = table parente qui concatène automatiquement les données des tables filles :
+	pourquoi :
+		on peut créer plusieurs tables différentes, toutes héritant d'une même table sans ajouter de colonne additionnelle
+		ça permet d'avoir une table parente qui est en quelque sorte la concaténation des tables filles
+		dans le pipeline de données, ça permet d'insérer des lignes dans les tables pouet_1 et pouet_2...
+		... tout en ayant la table pouet (sans suffixe) qui contient automatiquement l'ensemble des lignes, sans distinction de contrainte
+	Création des tables :
+		CREATE TABLE nodes (id INT);
+		CREATE TABLE nodes1 () INHERITS (nodes);  -- pas de colonne additionnelle
+		CREATE TABLE nodes2 () INHERITS (nodes);  -- pas de colonne additionnelle
+		CREATE TABLE nodes3 () INHERITS (nodes);  -- pas de colonne additionnelle
+	Insertion dans chacune des filles :
+		INSERT INTO nodes1 VALUES (100);
+		INSERT INTO nodes2 VALUES (200);
+		INSERT INTO nodes3 VALUES (300);
+	Et pouf, la table parente a toutes les entrées :
+		SELECT * FROM nodes;  -- 100 + 200 + 300

@@ -1,0 +1,62 @@
+Aggregate expressions :
+	Référence :
+		https://www.postgresql.org/docs/9.5/sql-expressions.html#SYNTAX-AGGREGATES
+	Les aggregate expressions calculent une valeur à partir d'un set de lignes :
+		SELECT array_agg(bill_id) FROM bills;
+			:	   array_agg
+			:-----------------------
+			: {1,2,3,4,5,6,7,7,8,9}
+			:(1 row)
+		SELECT SUM(bill_amount) FROM bills;
+			: sum
+			:------
+			: 2515
+			:(1 row)
+	On voit que le retour est une seule ligne, qui comporte une seule colonne, soit une unique valeur = le résultat de l'aggrégation.
+	Pour les aggrégations pour lesquels c'est pertinents, on peut ordonner les valeurs avant d'agréger :
+		SELECT array_agg(bill_id ORDER BY bill_id DESC) FROM bills;
+			:	   array_agg
+			:-----------------------
+			: {9,8,7,7,6,5,4,3,2,1}
+	À noter : pour filtrer sur une aggrégation, on n'utilise pas WHERE mais HAVING :
+		SELECT node_from, node_to
+		FROM sections
+		GROUP BY node_from, node_to
+		HAVING COUNT(*) > 1
+
+Arrays de test :
+	Création d'un array (pour tester) :
+		SELECT ARRAY[19, 29, 42, 44]
+	Utile pour tester des syntaxes / fonctions qui ne s'appliquent qu'aux arrays :
+		SELECT (ARRAY[19, 29, 42, 43])[1:2]   -- subscripting, renvoie [19,29]
+		SELECT UNNEST(ARRAY[19, 29, 42, 43])  -- unnesting (renvoie 4 lignes)
+
+Syntaxe ambigüe:
+	Mon problème  avec ces expressions = je trouve que la syntaxe est ambigue :
+		TL;DR : la syntaxe suivante renvoie selon les cas soit une liste de lignes, soit une seule valeur (l'aggrégation) :
+			SELECT mon_aggregation(ma_colonne) FROM ma_table;
+		Exemple de cas où l'aggrégation renvoie une liste de lignes :
+			SELECT lower(customer_name) FROM bills;
+				:	  lower
+				:-----------------
+				: hsbc
+				: bnp
+				: bnp
+				: bnp
+				: lcl
+				: lcl
+				: lcl
+				: lcl
+				: labanquepostale
+				: societegenerale
+		Exemple de cas où l'aggrégation renvoie un scalaire, l'aggrégation :
+			SELECT string_agg(customer_name, '+') FROM bills;
+				:string_agg
+				:------------------------------------------------------------------
+				: HSBC+BNP+BNP+BNP+LCL+LCL+LCL+LCL+LaBanquePostale+SocieteGenerale
+		Je m'attendrais plutôt à ce que des syntaxes différentes produisent des résultats différentes :
+			syntaxe pour produire une liste de lignes :
+				SELECT mon_aggregation(ma_colonne) FROM bills;
+			syntaxe pour produire un scalare d'aggrégation :
+				mon_aggregation(SELECT ma_colonne FROM bills);
+		Mais bon, j'imagine qu'il va falloir que je m'y fasse...

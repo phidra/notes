@@ -1,0 +1,70 @@
+TL;DR :
+	on peut créer un index sur une colonne d'une table pour accélérer les recherches.
+		https://www.postgresql.org/docs/9.1/indexes-types.html
+		https://www.postgresql.org/docs/9.1/sql-createindex.html
+	Lister les index :
+		SELECT * FROM pg_indexes WHERE schemaname='ch' AND tablename='sections';
+	Voir si un index est utilisé pour une requête :
+		EXPLAIN SELECT int_id FROM myschema.mytable WHERE int_id=12345001760070;
+	Ajouter un index :
+		CREATE INDEX ON myschema.mytable(int_id);
+
+Exemple :
+	SELECT int_id FROM myschema.mytable WHERE int_id=12345001760070;
+		8 minutes 52 pour s'exécuter, j'ai choisi exprès l'une des dernières sections
+	Que dit le explain :
+		EXPLAIN SELECT int_id FROM myschema.mytable WHERE int_id=12345001760070;
+			"Seq Scan on sections  (cost=0.00..2699597.54 rows=563569 width=8)"
+			"  Filter: (int_id = '12345001760070'::bigint)"
+			----------------------------------------
+			Il itère séquentiellement sur les 25 millions de sections !
+		EXPLAIN SELECT int_id FROM myschema.mytable WHERE id=1709999;
+			"Index Scan using sections_pkey on sections  (cost=0.57..4.58 rows=1 width=8)"
+			"  Index Cond: (id = 1709999)"
+			----------------------------------------
+			Si je requête par "id" plutôt que par "int_id", il fait un "index scan" au lieu d'itérer séquentiellement.
+		----------------------------------------
+	Comment savoir si j'ai un index :
+		SELECT * FROM pg_indexes -- éventuellement WHERE schemaname = 'ch' AND tablename = 'sections';
+		----------------------------------------
+		"sections_pkey";"CREATE UNIQUE INDEX sections_pkey ON myschema.mytable USING btree (id)"
+		----------------------------------------
+		on a donc un index sur "id" mais pas sur "int_id"
+	Taille de la table avant index :
+		SELECT COUNT(*) FROM myschema.mytable;
+			25410444
+		SELECT pg_size_pretty(pg_relation_size('myschema.mytable'));
+			"10083 MB"
+		SELECT pg_size_pretty(pg_total_relation_size('myschema.mytable'));
+			"13 GB"
+			13912449024
+	Comment ajouter un index ?
+		CREATE INDEX ON myschema.mytable(int_id);
+		----------------------------------------
+		manifestement, il indexe toutes les lignes dès l'exécution de la commande
+		cependant, il n'a pris que 57 secondes pour exécuter l'index
+	Taille de la table AVANT index :
+		SELECT COUNT(*) FROM myschema.mytable;
+			25410444
+		SELECT pg_size_pretty(pg_relation_size('myschema.mytable'));
+			"10083 MB"
+		SELECT pg_size_pretty(pg_total_relation_size('myschema.mytable'));
+			"13 GB"
+			13912449024
+	Requête après ajout de l'index ?
+		SELECT int_id FROM myschema.mytable WHERE int_id=12345001222222;
+			13 ms... y'a pas photo !
+	Explain après ajout de l'index ?
+		EXPLAIN SELECT int_id FROM myschema.mytable WHERE int_id=12345001222222;
+			"Bitmap Heap Scan on sections  (cost=1683.09..208364.58 rows=127052 width=8)"
+			"  Recheck Cond: (int_id = '12345001222222'::bigint)"
+			"  ->  Bitmap Index Scan on sections_int_id_idx  (cost=0.00..1651.33 rows=127052 width=0)"
+			"        Index Cond: (int_id = '12345001222222'::bigint)"
+	Taille de la table APRÈS index :
+		SELECT COUNT(*) FROM myschema.mytable;
+			25410444  -- ça n'a pas changé, ce qui est logique
+		SELECT pg_size_pretty(pg_relation_size('myschema.mytable'));
+			"10083 MB" -- ça n'a pas changé, ce qui est logique vu que pg_relation_size ignore les indexs
+		SELECT pg_size_pretty(pg_total_relation_size('myschema.mytable'));
+			"13 GB"  -- ça n'a pas changé EN APPARENCE (à cause de l'arrondi), en réalité, on a gagné 544 Mio
+			14483226624

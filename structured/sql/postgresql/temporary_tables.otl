@@ -1,0 +1,75 @@
+KEYPOINTS :
+	usage = les tables temporaires sont un moyen d'avoir un espace de travail temporaire isolé
+	Les tables temporaires sont :
+		bien séparées : deux sessions différentes peuvent utliser des tables temporaires du même nom, elles ne se marcheront pas dessus
+		détruites une fois la session terminée
+		créées dans un schéma temporaire (pg_temp_2)
+		invisibles depuis une autre session, et inaccessibles (même si on essaye de préciser leur schéma)
+	Ça reste des tables au sein d'un schéma -> on ne peut pas créer deux tables temporaires du même nom au sein de la meme session.
+
+
+RÉFÉRENCES :
+	https://www.postgresql.org/docs/12/sql-createtable.html
+		Temporary tables exist in a special schema, so a schema name cannot be given when creating a temporary table.
+		The name of the table must be distinct from the name of any other table, sequence, index, view, or foreign table in the same schema.
+		----------------------------------------
+		If specified, the table is created as a temporary table.
+		Temporary tables are automatically dropped at the end of a session, or optionally at the end of the current transaction (see ON COMMIT below).
+		Existing permanent tables with the same name are not visible to the current session while the temporary table exists, unless they are referenced with schema-qualified names.
+		Any indexes created on a temporary table are automatically temporary as well.
+	https://www.postgresqltutorial.com/postgresql-temporary-table/
+
+
+HANDS-ON :
+	Dans un premier terminal, ouvrir une session, et créer une table temporaire :
+		sudo su - postgres
+		postgres@mymachine$ psql
+		postgres=# \dt
+			:No relations found.
+		postgres=# CREATE TEMP TABLE pouet (age INT, name VARCHAR);
+			:CREATE TABLE
+		postgres=# INSERT INTO pouet VALUES (42, 'captain');
+			:INSERT 0 1
+		postgres=# INSERT INTO pouet VALUES (1000, 'mojotree');
+			:INSERT 0 1
+		postgres=# SELECT * FROM pouet;
+			: age  |   name
+			:------+----------
+			:   42 | captain
+			: 1000 | mojotree
+			:(2 rows)
+		postgres=# \dt
+			:		  List of relations
+			:  Schema   | Name  | Type  |  Owner
+			:-----------+-------+-------+----------
+			: pg_temp_2 | pouet | table | postgres
+			:(1 row)
+		postgres=# CREATE TEMP TABLE pouet (age INT, name VARCHAR);
+			:ERROR:  relation "pouet" already exists
+	Dans un second terminal, créer une deuxième session, avec une table temporaire du même nom :
+		sudo su - postgres
+		postgres@mymachine$ psql
+		postgres=# \dt
+			:No relations found.
+		postgres=# CREATE TEMP TABLE pouet (age INT, name VARCHAR);
+			:CREATE TABLE
+		postgres=# INSERT INTO pouet VALUES (2, 'baby');
+			:INSERT 0 1
+		postgres=# SELECT * FROM pouet;
+			: age | name
+			:-----+------
+			:   2 | baby
+			:(1 row)
+		postgres=# \dt
+			:		  List of relations
+			:  Schema   | Name  | Type  |  Owner
+			:-----------+-------+-------+----------
+			: pg_temp_3 | pouet | table | postgres
+			:(1 row)
+		postgres=# SELECT * FROM pg_temp_2.pouet;
+			:ERROR:  cannot access temporary tables of other sessions
+		postgres=# SELECT * FROM pg_temp_3.pouet;
+			: age | name
+			:-----+------
+			:   2 | baby
+			:(1 row)

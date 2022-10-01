@@ -1,0 +1,69 @@
+Une bonne référence :
+	https://selectstarsql.com/
+
+SQL : comment faire une structure ternaire :
+	BESOIN = utiliser une structure ternaire (condition ? value_if_true : value_if_false)
+	----------------------------------------
+	SELECT
+		CASE WHEN (node_from < node_to) THEN node_from ELSE node_to END AS lowest,
+		CASE WHEN (node_from < node_to) THEN node_to ELSE node_from END AS biggest,
+		CASE WHEN (node_from < node_to) THEN 'from_to' ELSE 'to_from' END AS description
+	FROM myschema.mytable;
+
+SQL : application = compter la proportion de lignes matchant un pattern :
+	façon 1 = BAD = en deux passes, l'une pour les lignes matchant le pattern, l'autre pour les lignes complètes :
+		WITH
+			innocents AS (SELECT COUNT(*) AS nb_innocents FROM executions WHERE last_statement LIKE '%innocent%'),
+			everybody AS (SELECT 1.0 * COUNT(*) AS nb_all FROM executions)
+		SELECT nb_innocents / nb_all
+		FROM innocents, everybody
+		;
+	façon 2 = GOOD = en une seule passe, grâce à un COUNT sur un CASE WHEN :
+		SELECT
+			COUNT(CASE WHEN last_statement LIKE '%innocent%' THEN 1 ELSE NULL END)
+			/
+			(1.0 * COUNT(*))
+		FROM executions;
+
+SQL: requêter avec binary mask :
+	BESOIN = requêter les sections qui respectent la contrainte du masque binaire "2048"
+	----------------------------------------
+	SELECT s.int_id
+	FROM myschema.mytable AS s
+	WHERE (s.constraints & 2048 = 2048);
+
+SQL : caster des valeurs :
+	exemple 1 = pour convertir une longueur flottante en mètres, en longueur flottante en cm :
+		SELECT (lengh_m * 100)::INTEGER AS length_cm FROM mysupertable;
+	exemple 2 = pour découper la représentation décimale d'un entier comme une chaîne (ici, extraire le "250" de "12345009065213") :
+		SELECT DISTINCT SUBSTRING(int_id::text from 2 for 3) FROM myschema.mytable;
+
+SQL : définir une constante à utiliser dans un select (ou comme ici dans un WITH):
+	https://www.postgresql.org/docs/9.5/queries-values.html
+	WITH filtered AS (
+		SELECT * FROM
+		(VALUES (12345009065212), (12345009065213), (12345000000006))  -- les parenthèses "unitaires" sont obligatoires !
+		AS t  -- quand on utilise VALUES, l'alias est obligatoire (même si on ne l'utilise pas)
+	)
+	SELECT * FROM myschema.mytable s WHERE s.id IN (SELECT * FROM filtered);
+
+SQL : connaître la taille d'une database :
+	SELECT pg_size_pretty(pg_database_size('mydatabasename'));
+
+
+SQL : faire des requêtes en plusieurs étapes avec WITH (aka Common Table Expressions) :
+	BESOIN = j'aimerais faire une requête qui nécessite une (ou plusieurs) autres requêtes préalables.
+		par exemple, ici, j'aimerais trouver toutes les sections qui ont le même node_from que la section demandée
+	----------------------------------------
+	WITH
+	-- STEP 1 = je récupère le node_from de la section :
+		intermediary_nodes AS (SELECT node_from FROM myschema.mytable WHERE int_id=12345009065213)
+	-- STEP N = on pourrait mettre d'autres étapes (faisant référence à la première si nécessaire)
+	-- requête finale = je trouve toutes les autres sections qui ont le même node_from :
+		SELECT int_id FROM myschema.mytable WHERE node_from=(SELECT node_from FROM intermediary_nodes)
+	;
+
+SQL : valeur NULL :
+	'' et 0 ne sont pas considérées comme NULL
+	dans les clauses WHERE, la nullité se teste avec IS (NOT) NULL
+	SELECT (0 IS NOT NULL), ('' IS NOT NULL), (NULL IS NULL)

@@ -1,0 +1,8 @@
+Lorsqu'on a beaucoup d'inserts à faire, c'est souvent plus rapide de dumper un CSV, et de le charger :
+	Exemple 1 : si on veut remplir une table vide :
+		COPY target_table FROM 'path/to/my/csv/file.csv';
+	Exemple 2 : si on veut ajouter des éléments à une table pré-existante :
+		CREATE TEMP TABLE tmp_table ...;  -- same schema as target_table
+		COPY tmp_table FROM 'path/to/my/csv/file.csv';
+		INSERT INTO target_table SELECT * FROM tmp_table;
+

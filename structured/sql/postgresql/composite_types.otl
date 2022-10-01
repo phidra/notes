@@ -1,0 +1,77 @@
+CONTEXTE = je cherche à utiliser ST_DumpPoints, ce qui nécessite de comprendre les types composites et les SRF.
+
+Notes sur les types composites :
+	TL;DR : les types composites sont similaires aux namedtuples. Ils ont des quirks de syntaxe et d'utilisation qu'il faut connaître.
+		(du coup, c'est logique que ST_DumpPoints renvoie un type composite : il faut voir les choses comme "la fonction renvoie un tuple")
+	Nécessité des parenthèses :
+		https://www.postgresql.org/docs/13/rowtypes.html#ROWTYPES-ACCESSING
+		En gros, lorsqu'on fait :
+			SELECT x.field1, x.field2 FROM table;
+		Le nom "x" est habituellement une TABLE, et x.field1 récupère la valeur de la colonne "field1" dans cette table pour la row donnée.
+		On le voit dans le message d'erreur renvoyé :
+			SELECT pouet.path FROM (SELECT ST_DumpPoints(geom) AS pouet FROM import.osm_ways) AS subquery;
+				ERROR:  missing FROM-clause entry for table "pouet"
+				LINE 6: SELECT pouet.path FROM (SELECT ST_DumpPoints(geom) AS pouet ...
+							   ^
+			Le message d'erreur indique explicitement qu'il considère que "pouet" est une TABLE, alors qu'on veut qu'il soit interprété comme une VALEUR (instance d'un type composante)
+		Nous, ce qu'on veut, c'est que x représente une VALEUR (en l'occurence, instance d'un type composite, donc autorisant le subscripting).
+		C'est pas hyper intuitif (je trouve), mais pour passer ce message au parseur SQL, il faut mettre entre parenthèse ce qui doit représenter la "valeur". Par exemple :
+			SELECT (pouet).path FROM (SELECT ST_DumpPoints(geom) AS pouet FROM import.osm_ways) AS subquery;
+			SELECT (subquery.pouet).path FROM (SELECT ST_DumpPoints(geom) AS pouet FROM import.osm_ways) AS subquery;
+		On a alors indiqué explicitement que ce qu'il y a entre parenthèse ("pouet", ou son équivalent explicite "subquery.pouet") est bien une VALEUR = une colonne dans la table, pour la row donnée.
+			(et comme cette valeur est d'un type composite, on a le droit de la subscripter)
+
+POC d'utilisation de types composites :
+	STEP 1 = pour pouvoir les manipuler simplement, je fais une fonction renvoyant une variable d'un type composite :
+		DROP TYPE person_tuple CASCADE;
+		CREATE TYPE person_tuple AS (firstname text, age int, is_sith bool);
+		----------------------------------------
+		CREATE FUNCTION give_me_a_person(int) RETURNS person_tuple
+			AS $$
+			-- returning either Luke, Leia or Anakin, depending on argument :
+			BEGIN
+				IF     $1::int % 3 = 0  THEN  RETURN ('Luke'::text, 25, FALSE);
+				ELSEIF $1::int % 3 = 1  THEN  RETURN ('Leia'::text, 25, FALSE);
+				ELSE                          RETURN ('Anakin'::text, 42, TRUE);
+				END IF;
+			END
+			$$
+			LANGUAGE 'plpgsql';
+		----------------------------------------
+		SELECT expected, give_me_a_person(num) FROM (VALUES (1, 'leia'), (2, 'anakin'), (3, 'luke')) AS t (num, expected);
+	STEP 2 = on peut alors travailler avec les variables de type composites :
+		accéder aux champs :
+			WITH subquery AS (SELECT expected, give_me_a_person(num) AS person FROM (VALUES (1, 'leia'), (2, 'anakin'), (3, 'luke')) AS t (num, expected))
+			SELECT (person).firstname, (person).is_sith FROM subquery;
+		manipulation des champs :
+			WITH subquery AS (SELECT expected, give_me_a_person(num) AS person FROM (VALUES (1, 'leia'), (2, 'anakin'), (3, 'luke')) AS t (num, expected))
+			SELECT (person).firstname::text || ' is ' || (CASE WHEN (NOT (person).is_sith) THEN 'not a sith...' ELSE 'a sith, DANGER !' END) AS person_status FROM subquery;
+			----------------------------------------
+			person_status(text)
+			"Leia is not a sith..."
+			"Anakin is a sith, DANGER !"
+			"Luke is not a sith..."
+	STEP 3 = unpacking  a.k.a  différence entre UNE SEULE colonne namedtuple contenant 3 champs vs. TROIS COLONNES :
+		la façon de unpacker une variable qui a un type composite est d'utiliser la syntaxe "variable.*" :
+		requête non-unpackée :
+			SELECT expected, give_me_a_person(num) AS person FROM (VALUES (1, 'leia'), (2, 'anakin'), (3, 'luke')) AS t (num, expected);
+			----------------------------------------
+			expected(text) ; person(person_tuple)
+			"leia"         ; "(Leia,25,f)"
+			"anakin"       ; "(Anakin,42,t)"
+			"luke"         ; "(Luke,25,f)"
+		requête unpackée "à la main" :
+			WITH subquery AS (SELECT expected, give_me_a_person(num) AS person FROM (VALUES (1, 'leia'), (2, 'anakin'), (3, 'luke')) AS t (num, expected))
+			SELECT expected, (person).firstname, (person).age, (person).is_sith FROM subquery;
+			----------------------------------------
+			expected(text) ; firstname(text) ; age(integer) ; is_sith(boolean)
+			"leia"         ; "Leia"          ; 25           ; f
+			"anakin"       ; "Anakin"        ; 42           ; t
+			"luke"         ; "Luke"          ; 25           ; f
+		requête unpackée grâce à la syntaxe (field).*  (équivalente à la requête précédente) :
+			SELECT expected, (give_me_a_person(num)).* AS person FROM (VALUES (1, 'leia'), (2, 'anakin'), (3, 'luke')) AS t (num, expected);
+			----------------------------------------
+			expected(text) ; firstname(text) ; age(integer) ; is_sith(boolean)
+			"leia"         ; "Leia"          ; 25           ; f
+			"anakin"       ; "Anakin"        ; 42           ; t
+			"luke"         ; "Luke"          ; 25           ; f

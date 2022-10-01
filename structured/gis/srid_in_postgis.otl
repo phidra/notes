@@ -62,7 +62,7 @@ EXPÉRIMENTATIONS — COMMENT SONT STOCKÉES LES DONNÉES DANS UNE BASE POSTGIS 
 			:			  Table "polylines.polylines"
 			:	Column     |           Type            | Modifiers
 			:---------------+---------------------------+-----------
-			: section_id    | bigint                    | not null
+			: int_id        | bigint                    | not null
 			: node_src      | bigint                    | not null
 			: node_dst      | bigint                    | not null
 			: [...]

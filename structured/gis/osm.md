@@ -35,7 +35,7 @@ Donnée "referentially complete" = tous les objets référencés par d'autres ob
     - liste ordonnée des trois types d'éléments de base pour documenter une... relation (!) entre eux
     - exemples :
         - route = un agrégat de toutes les ways la constituant pourra représenter l'A6
-        - turn restriction = un agrégat de 2 ways pourra représenter une prohibition à 2 tronçons
+        - turn restriction = un agrégat de 2 ways pourra représenter une manœuvre interdite à 2 tronçons
         - multipolygon ) pour représenter une surface à trou
     - la signification de la relation est encodée dans un tag "type"
     - certains éléments jouent un rôle particulier dans la relation, et ont alors un "role" (e.g. from + to pour une turn restriction)

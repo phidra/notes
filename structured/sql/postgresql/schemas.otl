@@ -1,0 +1,15 @@
+Les schémas :
+	références :
+		https://www.postgresql.org/docs/9.1/static/ddl-schemas.html
+			Schemas are analogous to directories at the operating system level, except that schemas cannot be nested.
+		https://www.tutorialspoint.com/postgresql/postgresql_schema.htm
+			A schema is a named collection of tables.
+	c'est quoi :
+		Je pensais (à tort) que les databases contenaient des tables.
+		Mais en fait, il y a un niveau d'indirection supplémentaire : les schémas.
+		En gros, les databases contiennent des schémas, qui contiennent des tables (et d'autres objets, comme des fonctions).
+	comment le créer :
+		CREATE SCHEMA IF NOT EXISTS graph;
+	les schémas jouent le rôle de namespaces (deux schémas différents peuvent contenir une table de même nom)
+	l'intérêt par rapport au fait d'utiliser des bases différentes, c'est qu'un user connecté sur une seule base peut accéder à plusieurs schémas
+

@@ -1,0 +1,11 @@
+VRAC :
+	Lorsqu'un SELECT requête une grosse partie d'une table (> 5 à 10%), postgresql utilisera une recherche séquentielle plutôt qu'un index :
+		https://stackoverflow.com/questions/5203755/why-does-postgresql-perform-sequential-scan-on-indexed-column
+	Bitmap heap scan = tier les lignes à récupérer en fonction de leur page (physique) sur le disque dur, puis ne lire les pages physiques qu'une fois :
+		https://stackoverflow.com/questions/6592626/what-is-a-bitmap-heap-scan-in-a-query-plan
+	Bitmap index scan suivi de bitmap heap scan :
+		on utilise l'index pour connaître les lignes à récupérer
+		puis, on utilise le heap scan pour récupérer efficacement les lignes en question (en ne chargeant les pages physiques qu'une fois)
+	une fois un index créé, on peut réordonner physiquement les données sur le disque pour les regrouper en fonction de cet index :
+		https://www.postgresql.org/docs/current/sql-cluster.html
+		(à noter que c'est une opération locale : si on rajoute d'autres lignes, il faudra relancer le cluster)

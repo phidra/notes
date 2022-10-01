@@ -1,0 +1,57 @@
+CONTEXTE = je cherche à utiliser ST_DumpPoints, ce qui nécessite de comprendre les types composites et les SRF.
+
+Références :
+	https://postgis.net/docs/ST_DumpPoints.html
+	https://www.postgresql.org/docs/13/functions-srf.html
+
+Notes et POC sur les Set Returning Functions (=SRF) :
+	TL;DR : c'est une fonction qui génère PLUSIEURS rows.
+		SELECT * FROM  (SELECT my_srf(x, y))  produira PLUSIEURS lignes de résultats.
+	https://www.postgresql.org/docs/13/functions-srf.html
+	POC avec "generate_series" comme exemple :
+		Exemple simple montrant qu'un seul appel à la fonction génère plusieurs lignes :
+			SELECT * FROM generate_series(42,45) AS value;
+			----------------------------------------
+			value(integer)
+			42
+			43
+			44
+			45
+		Setup d'un exemple plus évolué (se rapprochant de ST_DumpPoints) :
+			CREATE TABLE pairs (name TEXT, start INT, finish INT);
+			INSERT INTO pairs VALUES ('coucou', 3, 5), ('pouet', 12, 15), ('another', 42, 43), ('yetanother', 100, 101);
+			SELECT * FROM pairs;
+				"coucou"     ; 3   ; 5
+				"pouet"      ; 12  ; 15
+				"another"    ; 42  ; 43
+				"yetanother" ; 100 ; 101
+		Suite de l'exemple plus évolué, où pour UNE SEULE row dans la table pairs, PLUSIEURS lignes sont produites au final (tout comme pour ST_DumpPoints) :
+			SELECT name, start, finish, generate_series(start, finish) AS the_serie FROM pairs;
+				name(text)   ; start(integer) ; finish(integer) ; the_serie(integer)
+				"coucou"     ; 3              ; 5               ; 3
+				"coucou"     ; 3              ; 5               ; 4
+				"coucou"     ; 3              ; 5               ; 5
+				"pouet"      ; 12             ; 15              ; 12
+				[...]
+				"another"    ; 42             ; 43              ; 43
+				"yetanother" ; 100            ; 101             ; 100
+				"yetanother" ; 100            ; 101             ; 101
+		Point d'attention : si je LIMIT sans précaution, je limite sur la série générée (et pas sur les lignes dans la table "pairs" de base) :
+			SELECT name, start, finish, generate_series(start, finish) AS the_serie FROM pairs LIMIT 2;
+				name(text) ; start(integer) ; finish(integer) ; the_serie(integer)
+				"coucou"   ; 3              ; 5               ; 3
+				"coucou"   ; 3              ; 5               ; 4
+		Dit autrement, le SELECT sur les subquery renverra une ROW par item de generate_series (d'où le nom peut-être de "set returning function").
+		Mon modèle mental de "on a une ligne de résultat produite par ligne de la table passée en input" est donc faux dans le cas des SRF, qui produisent PLUSIEURS lignes de résultat par ligne en input :
+		Pour limiter sur les paires de base, il faut que je fasse une subquery préalable AVANT de l'utiliser pour générer les séries :
+			WITH first_2 AS (SELECT * FROM pairs LIMIT 2)
+			SELECT name, start, finish, generate_series(start, finish) AS the_serie FROM first_2;
+				name(text) ; start(integer) ; finish(integer) ; the_serie(integer)
+				"coucou"   ; 3              ; 5               ; 3
+				"coucou"   ; 3              ; 5               ; 4
+				"coucou"   ; 3              ; 5               ; 5
+				"pouet"    ; 12             ; 15              ; 12
+				"pouet"    ; 12             ; 15              ; 13
+				"pouet"    ; 12             ; 15              ; 14
+				"pouet"    ; 12             ; 15              ; 15
+

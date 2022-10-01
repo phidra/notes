@@ -1,0 +1,50 @@
+WINDOW FUNCTIONS - VRAC (à trier / mieux organiser) :
+	Références :
+		https://www.postgresql.org/docs/9.6/sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS
+		https://www.postgresql.org/docs/9.6/tutorial-window.html
+		https://www.postgresql.org/docs/9.6/functions-window.html
+	Principe général :
+		comme pour GROUP BY, on calcule des choses sur plusieurs lignes
+		mais à la différence de GROUP BY, on renvoie tout de même chaque ligne individuellement dans la réponse
+	Exemples de données :
+		une table des pouets, avec une ligne par section, il faut 2 sections (= 2 lignes) pour représenter une pouet
+		pouet_id ; section   ; seq ; length
+		0        ; 123450012 ; 0   ; 45
+		0        ; 123450018 ; 1   ; 102
+		1        ; 123450335 ; 0   ; 12
+		1        ; 123450077 ; 1   ; 19
+		2        ; 123450880 ; 0   ; 8876
+		2        ; 123450112 ; 1   ; 3453
+	Exemple = calculer le pourcentage (en distance) que représente chaque section dans la pouet :
+		SELECT
+			section,
+			length::FLOAT / SUM(length) OVER (PARTITION BY pouet_id) AS percentage,
+			pouet_id
+		FROM myschema.mytable
+	Point important : le OVER (et donc la window function) est propre à une COLONNE du résultat de la query :
+		du coup, la clause AS s'applique à la colonne, comme dans l'exemple ci-dessus
+		du coup, on peut utiliser plusieurs window functions différentes pour la même query:
+			SELECT
+				section,
+				length::FLOAT / SUM(length) OVER (PARTITION BY pouet_id) AS percentage,
+				pouet_id - SUM(length) OVER (PARTITION BY pouet_id) AS corrected_id
+			FROM myschema.mytable
+		et si la window est la même, on peut même la "mutualiser" en la définissant une seule fois en fin de query :
+			SELECT
+				section,
+				length::FLOAT / SUM(length) OVER mywindow AS percentage,
+				pouet_id - SUM(length) OVER mywindow AS corrected_id
+			FROM myschema.mytable
+			WINDOW mywindow AS (PARTITION BY pouet_id)
+	Partition vs. window frame :
+		La partition indique quelles sont les lignes qu'on regroupe, mais la window frame permet de n'en considérer qu'une partie.
+		Quelques exemples :
+			SELECT field OVER () FROM table;                                -- defautl partition = toute la table / default window = toute la partition
+			SELECT field OVER (PARTITION BY node) FROM table;               -- default window = toute la partition
+			SELECT field OVER (PARTITION BY node ORDER BY seq) FROM table;  -- default window = du début de la partition jusqu'à la ligne courante
+	Si une table contient des valeurs, on peut avec une requête en extraire les deltas ligne à ligne :
+		SELECT
+			object_id,
+			LAST_VALUE(price) OVER mywindow - FIRST_VALUE(price) OVER mywindow
+			FROM prices
+		WINDOW mywindow AS (ROWS BETWEEN 1 PRECEDING AND CURRENT ROW)

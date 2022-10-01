@@ -1,0 +1,33 @@
+SQL = clauses WHERE sur les chaînes de caractères :
+	Doc officielle :
+		https://www.postgresql.org/docs/8.3/functions-matching.html
+	Quelle comparaison utiliser ?
+		https://dba.stackexchange.com/a/10696
+	Attention, il faut utiliser single quotes uniquement :
+		SELECT s.id FROM sections AS s WHERE s.name = 'John Doe';
+	Pour exprimer une différence, l'opérateur est "<>" :
+		SELECT s.id FROM sections AS s WHERE s.name <> 'John Doe';
+	Pour tester l'appartenance à un groupe :
+		SELECT s.id FROM sections AS s WHERE s.name IN ('John Doe', 'Jane Dane');
+	LIKE : pour les comparaisons simples :
+		~~    = LIKE
+		~~*   = ILIKE
+		!~~   = NOT LIKE
+		!~~*  = NOT ILIKE
+		----------------------------------------
+		%   = joker : zéro, un ou plusieurs caractères quelconques
+		_   = joker unitaire : exactement un caractère quelconque
+		si aucun joker n'est précisé, la clause LIKE est équivalente à l'opérateur =
+		NOT LIKE = contraire de LIKE
+		ILIKE = case-insensitive LIKE (attention, LIKE est standard, ILIKE est spécifique à postgres)
+		----------------------------------------
+		SELECT s.id FROM sections AS s WHERE s.name LIKE '%Doe';      -- matche les noms finissant par Doe
+		SELECT s.id FROM sections AS s WHERE s.name LIKE 'John D_e';  -- matche "John Doe" et "John Dae"
+		SELECT s.id FROM sections AS s WHERE s.name NOT LIKE '%Doe';  -- matche tous les noms ne finissant pas par "Doe"
+	REGEX : pour les comparaisons complexes :
+		~   = matcher la regex donnée
+		~*  = idem, mais case-insensitive
+		!~  = tout sauf ce qui matche
+		!~* = idem, mais case-insensitive
+		----------------------------------------
+		SELECT s.id FROM sections AS s WHERE s.name ~* '.*doe$';      -- matche les noms finissant par Doe, DOE, doe

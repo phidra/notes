@@ -1,0 +1,59 @@
+RÉFÉRENCES :
+	http://openclassrooms.com/courses/introduction-aux-jointures-sql
+
+RÉSUMÉ ET DÉFINITIONS :
+	Une jointure consiste à récupérer en une seule requête des infos de deux tables.
+		par exemple, si on a une table Persons (avec un id) et une table Addresses (référençant la table des personnes avec une foreign key sur l'id)...
+		... on pourra récupérer en une seule requête les noms, prénoms, et adresse des personnes
+		ici, le critère de jointure sera quelque chose comme :
+			ON (person.id = address.person_id)
+	Bonne façon de voir les choses :
+		Supposons la requête suivante :
+			SELECT ...
+			FROM table1 JOIN table2 ON condition
+			WHERE ...
+		Ici, la bonne façon de voir les choses est de voir la clause suivante :
+			FROM table1 JOIN table2 ON condition
+		Comme UNE SEULE grande table "virtuelle", qui contient des infos des deux tables jointes.
+		Dit autrement, conceptuellement (i.e. dans sa tête), on ne sépare pas la clause FROM de la clause JOIN
+	Jointure interne
+		sélectionner l'ensemble des lignes des 2 tables satisfaisant un critère.
+		Pour chaque table, seules les lignes satisfaisant le critère de jointure sont renvoyées
+	Jointure externe
+		on ajoute à la jointure interne toutes les lignes d'une table (soit celle de gauche, soit celle de droite) même si elles n'ont pas respecté le critère
+	Alias :
+		Jointures : pour simplifier les références aux tables, on peut leur donner des "noms locaux" :
+			SELECT a.id, b.bug_id FROM mantis_bug_table a, mantis_bug_history_table b WHERE (b.bug_id = a.project_id);
+
+ÉQUIVALENCE :
+	Les 3 requêtes suivantes sont équivalentes :
+		sans utiliser explicitement le mot-clé JOIN :
+			SELECT s.int_id, s.node_from, s.node_to, closed.reverse
+			FROM myschema.mytable s, myschema.othertable closed
+			WHERE (s.node_from=12345017900470 AND s.node_to=12345018186387 AND s.int_id=closed.int_id);
+		avec un NATURAL JOIN :
+			SELECT closed.int_id, s.node_from, s.node_to, closed.reverse
+			FROM myschema.mytable s NATURAL JOIN myschema.othertable closed
+			WHERE (s.node_from=12345017900470 AND s.node_to=12345018186387 AND s.int_id=closed.int_id);
+		avec un INNER JOIN et la condition ON :
+			SELECT closed.int_id, s.node_from, s.node_to, closed.reverse
+			FROM myschema.mytable s INNER JOIN myschema.othertable closed
+			ON (s.int_id=closed.int_id)
+			WHERE (s.node_from=12345017900470 AND s.node_to=12345018186387);
+
+
+SELF-JOIN (auto-jointures)
+	C'est un cas un peu particulier de jointure, sur la même table :
+		SELECT s1.int_id AS section_from, s1.node_to AS linking_node, s2.int_id AS section_to
+		FROM myschema.mytable s1, myschema.mytable s2
+		WHERE (s1.node_to = s2.node_from AND s1.int_id != s2.int_id);
+	(à noter que la syntaxe suivante est équivalente, ce que je vérifie avec EXPLAIN) :
+		SELECT s1.int_id AS section_from, s1.node_to AS linking_node, s2.int_id AS section_to
+		FROM myschema.mytable s1 LEFT OUTER JOIN myschema.mytable s2
+		ON s1.node_to = s2.node_from
+		WHERE (s1.int_id != s2.int_id);
+	Utilité :
+		Les self-join peuvent être utiles quand une table se référence elle-même.
+		Par exemple, quand on veut récupérer DEUX entrées d'une table dans la même requête.
+		Ici, on veut récupérer DEUX sections dans la table des sections (celles qui sont liées par linking_nodes) en une requête.
+		Un autre exemple peut-être de récéuprer d'une table général "Persons" une personne et son père (une personne référençant son père).

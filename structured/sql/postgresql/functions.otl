@@ -1,0 +1,42 @@
+Exemple de fonction SQL :
+	:CREATE OR REPLACE FUNCTION is_of_interest(tags hstore) RETURNS boolean AS
+	:$BODY$                           -- https://www.postgresql.org/docs/13/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING
+	:BEGIN                            -- https://www.postgresql.org/docs/13/plpgsql-structure.html
+	:-- IF...THEN...END IF            -- https://www.postgresql.org/docs/13/plpgsql-control-structures.html#PLPGSQL-CONDITIONALS
+	:-- tags operator (e.g. a -> b)   -- https://www.postgresql.org/docs/13/hstore.html#id-1.11.7.25.6
+	:
+	:IF tags -> 'foot' = 'no' THEN
+	:RETURN FALSE;
+	:END IF;
+	:
+	:IF tags -> 'tunnel' = 'yes' THEN
+	:RETURN tags -> 'highway' IN ('pedestrian', 'steps', 'footway');
+	:END IF;
+	:
+	:IF tags ? 'toll' THEN
+	:RETURN tags -> 'toll' = 'yes';
+	:END IF;
+	:
+	:RETURN FALSE;
+	:
+	:END;
+	:$BODY$
+	:LANGUAGE  plpgsql IMMUTABLE;
+
+Exemple de requête l'utilisant :
+	:WITH subquery AS (
+	:	SELECT
+	:		osm_id,
+	:		tags,
+	:		ST_DumpPoints(ST_Transform(geom, 4326)) AS point
+	:	FROM import.osm_ways
+	:	WHERE is_of_interest(tags)
+	:)
+	:SELECT
+	:	osm_id AS way_id,
+	:	(tags -> 'oneway' = 'yes') AS is_oneway,
+	:	LENGTH(tags::text) AS tags_length,
+	:	(point).path[1] AS index,
+	:	ST_X((point).geom),
+	:	ST_Y((point).geom)
+	:FROM subquery;

@@ -1,0 +1,100 @@
+WIP : reprendre et pérenniser ces notes.
+
+
+Où et comment sont stockées les données postgres :
+	Référence :
+	https://www.postgresql.fastware.com/blog/where-and-how-is-your-data-actually-stored-on-disk
+	Création de la base et connexion :
+		sudo su - postgres
+		psql
+		CREATE DATABASE mytest;
+		\c mytest;
+	Création et remplissage de la table :
+		CREATE TABLE mytable (name VARCHAR(100), age INT);
+		INSERT INTO mytable VALUES ('Luke', 25);
+		INSERT INTO mytable VALUES ('Leia', 25);
+		INSERT INTO mytable VALUES ('Anakin', 45);
+	Localisation des données :
+		SELECT oid AS object_id, datname AS database_name FROM pg_database;
+			: object_id | database_name 
+			:-----------+---------------
+			:	 	 1  | template1
+			:	  12414 | template0
+			:	  12419 | postgres
+			:	  16419 | mytest
+		SHOW data_directory;
+			/var/lib/postgresql/9.5/main
+		SELECT pg_relation_filepath('mytable');
+			base/16419/16420
+		SELECT current_setting('block_size');
+			8192  # la taille des pages est de 8 kio
+		du -sb /var/lib/postgresql/9.5/main/base/16419/16420
+			8192  # le fichier fait tout pile 8 kio, taille des pages postgres
+		hd -c -n 8192 /var/lib/postgresql/9.5/main/base/16419/16420
+			[le contenu binaire, et notamment à la fin mes chaînes Luke, Leia et Anakin]
+
+Avant création de l'index :
+	pg_size_pretty(pg_total_relation_size('mytable'));
+		8192 bytes
+Création de l'index :
+	CREATE INDEX myindex ON mytable (age);
+Après création de l'index :
+	pg_size_pretty(pg_total_relation_size('mytable'));
+		24 kB
+
+SELECT pg_relation_filepath('myindex');
+	base/16419/16423
+du -sb /var/lib/postgresql/9.5/main/base/16419/16420
+	16384  # l'index occupe deux blocs
+
+
+SELECT pg_relation_filepath('myschema.mybase');
+"base/16385/1422504442"
+
+SELECT pg_size_pretty(pg_relation_size('myschema.mybase'));
+"4560 MB"
+
+ls -lh /mnt/data/postgresql/9.5/main/base/16385/1422504442*
+-rw------- 1 postgres postgres 1,0G nov.   7  2018 /mnt/data/postgresql/9.5/main/base/16385/1422504442
+-rw------- 1 postgres postgres 1,0G nov.   7  2018 /mnt/data/postgresql/9.5/main/base/16385/1422504442.1
+-rw------- 1 postgres postgres 1,0G nov.   7  2018 /mnt/data/postgresql/9.5/main/base/16385/1422504442.2
+-rw------- 1 postgres postgres 1,0G nov.   7  2018 /mnt/data/postgresql/9.5/main/base/16385/1422504442.3
+-rw------- 1 postgres postgres 465M nov.   7  2018 /mnt/data/postgresql/9.5/main/base/16385/1422504442.4
+-rw------- 1 postgres postgres 1,2M nov.   7  2018 /mnt/data/postgresql/9.5/main/base/16385/1422504442_fsm
+-rw------- 1 postgres postgres  72K nov.   7  2018 /mnt/data/postgresql/9.5/main/base/16385/1422504442_vm
+
+4560−(4×1024) = 464
+On retrouve bien 4 fichiers d'1Gio, et un fichier de ~464 Mio
+
+----------------------------------------
+
+SELECT pg_size_pretty(pg_total_relation_size('myschema.mybase'));
+"9611 MB"
+
+Les index font presque doubler la taille des données (il faut dire qu'il y en a ... 14 ! Taille moyenne de chaque index = 360 Mio)
+
+----------------------------------------
+
+SELECT pg_relation_filepath('myschema.mybase');
+"base/16385/1422504541"
+
+ls -lh /mnt/data/postgresql/9.5/main/base/16385/1422504541*
+-rw------- 1 postgres postgres 298M nov.   7  2018 /mnt/data/postgresql/9.5/main/base/16385/1422504541
+
+L'index sur les t_jnctid est pas très gros...
+
+----------------------------------------
+
+SELECT pg_relation_filepath('myschema.mybase');
+"base/16385/1422504553"
+
+ls -lh /mnt/data/postgresql/9.5/main/base/16385/1422504553*
+-rw------- 1 postgres postgres 766M nov.   7  2018 /mnt/data/postgresql/9.5/main/base/16385/1422504553
+
+L'index sur les géométries est bien plus grand.
+
+----------------------------------------
+
+On peut tout à fait connaître la taille (et localisation) d'un index :
+SELECT pg_size_pretty(pg_relation_size('polylines.idx_country'));
+SELECT pg_relation_filepath('polylines.idx_country'));
