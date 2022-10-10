@@ -72,6 +72,7 @@ git ls-remote https://github.com/lviennot/hub-labeling/ | grep refs/heads/master
 **tags** : sysadmin
 
 ```sh
+# nécessite d'être ROOT
 pmap -x <pid>
 ```
 
