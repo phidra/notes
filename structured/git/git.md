@@ -1,6 +1,10 @@
 **WORK IN PROGRESS** : je suis en train de transférer mes anciennes notes privées vers ce repo public -> ces notes correspondent juste à la portion que j'ai transférée.
 
+* [Misc](#misc)
 * [Worktree](#worktree)
+* [Revert](#revert)
+   * [Revert un commit classique](#revert-un-commit-classique)
+   * [Revert un commit de merge](#revert-un-commit-de-merge)
 * [Modifier l'historique](#modifier-lhistorique)
    * [Modifier la date d'un commit](#modifier-la-date-dun-commit)
    * [Modifier un commit](#modifier-un-commit)
@@ -14,6 +18,8 @@
    * [Stasher le working dir actuel](#stasher-le-working-dir-actuel)
    * [Consulter les stashs](#consulter-les-stashs)
    * [Appliquer et/ou supprimer un stash](#appliquer-etou-supprimer-un-stash)
+* [Remotes](#remotes)
+* [LFS](#lfs)
 
 # Misc
 
@@ -58,6 +64,89 @@ NOTE : le répertoire qui acceuille le worktree "secondaire" peut-être n'import
 
 - dans le repo (dans ce cas, attention à l'ajouter au `.gitignore` ; par exemple pour le répertoire de publication de [mon blog](https://phidra.github.io/blog/))
 - ailleurs, par exemple dans `/tmp` !
+
+# Revert
+
+Permet d'annuler un commit A, en créant un nouveau commit B comportant un diff opposé à A (l'annulation du commit est donc inscrite dans l'historique, ce qui peut ou non être ce qu'on veut faire).
+
+## Revert un commit classique
+
+```sh
+# reverter un commit arbitraire :
+git revert <commit-id>
+
+# E.g. annuler le dernier commit :
+git revert HEAD
+```
+
+## Revert un commit de merge
+
+**TL;DR** :
+
+- identifier dans le commit de merge quels sont les numéros des deux branches parentes :
+    ```sh
+    git log -1 <commit-de-merge>
+    # commit bb5ee6580d99f081e4f941109764951a47ae4291
+    # Merge: d213e1968 c2bd4d214        <------  le commit n°1 est d213e1968 (l'autre est n°2)
+    # Author: My Self <my@self.fr>
+    # Date:   Sat Sep 17 16:17:05 2022 +0200
+    ```
+- faire un revert du commit de merge, en passant `-m X` où X est le numéro de parent **qu'on veut garder** (i.e. on ne veut PAS reverter X, on veut reverter l'autre parent)
+    ```sh
+    git revert -m 1 <commit-de-merge>
+    ```
+- éventuellement, vérifier que le nouveau commit de revert créé par la commande précédente annule bien les modifs souhaitées :
+    ```sh
+    git show HEAD
+    ```
+
+Plus en détail : conceptuellement, reverter un commit de merge est plus compliqué qu'un commit classique, puisqu'on n'a pas un diff dont on pourrait construire l'opposé : un commit de merge est un commit "vide" qui n'a d'intérêt que d'avoir deux parents, i.e. de "réunir" deux branches.
+
+En pratique, si on veut reverter un commit de merge, c'est souvent qu'on veut annuler le merge d'une branche dans une autre. Exemple concret : on a une branche `master`, une feature-branch `mywork`, et on a fait :
+
+```sh
+git checkout master  # on suppose qu'on est sur master
+git merge --no-ff mywork
+```
+
+Le merge de `mywork` en `--no-ff` a créé un commit de merge `C`.
+
+Maintenant, on veut annuler le merge de `mywork`, et retrouver un état de `master` comme si on n'avait pas mergé `mywork`. La commande suivante va créer un commit de revert `R` qui annulera tous les diffs de `mywork` :
+
+```sh
+git checkout master  # on suppose qu'on est sur master
+git revert -m 1 <hash-du-commit-de-merge-C>  # un commit de revert R est créé
+```
+
+Explications :
+
+- le principe va être d'annuler complètement tous les diffs introduits par l'une des deux branches du merge
+- la partie importante est `-m 1` : c'est ce qui permet d'indiquer qu'on veut **garder** les commits du premier parent du merge
+- pour connaître les "numéros" des deux parents du merge :
+    ```sh
+    git log -1 <commit-de-merge>
+    # commit bb5ee6580d99f081e4f941109764951a47ae4291
+    # Merge: d213e1968 c2bd4d214        <------  le commit n°1 est d213e1968 (l'autre est n°2)
+    ```
+- (apparemment, en général, quand on merge une feature-branch sur un tronc, le tronc se trouve n°1 et la feature-branch est n°2)
+- si besoin, on peut consulter les commits parents pour être sûr de bien identifier les branches :
+    ```sh
+    git show --name-status d213e1968
+    git show --name-status c2bd4d214
+    ```
+
+
+Plus de détails avec `git revert --help` :
+
+> -m parent-number, --mainline parent-number \
+>    Usually you cannot revert a merge because you do not know which side of the merge should be considered the mainline. This option specifies the parent number (starting from 1) of the mainline and allows revert to reverse the change relative to the specified parent.
+>
+>    Reverting a merge commit declares that you will never want the tree changes brought in by the merge. As a result, later merges will only bring in tree changes introduced by commits that are not ancestors of the previously reverted merge. This may or may not be what you want.
+
+La dernière phrase m'interpelle (possiblement, elle empêchera de "remerger" la branche après éventuelles corrections) mais je n'ai pas encore creusé.
+
+
+Le man pointe aussi vers un howto, qui se trouve être [revert-a-faulty-merge.txt](https://github.com/git/git/blob/d420dda0576340909c3faff364cfbd1485f70376/Documentation/howto/revert-a-faulty-merge.txt) (idem, j'ai pas creusé)
 
 # Modifier l'historique
 
