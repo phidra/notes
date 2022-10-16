@@ -3,6 +3,7 @@
 * [grepper un process](#grepper-un-process)
 * [récupérer l'id de commit de master sur un repo distant](#récupérer-lid-de-commit-de-master-sur-un-repo-distant)
 * [mesurer la RAM consommée par un process](#mesurer-la-ram-consommée-par-un-process)
+* [envoyer une touche littérale dans le terminal](#envoyer-une-touche-littérale-dans-le-terminal)
 
 # imagemagick pour calculer la différence entre deux images
 
@@ -79,3 +80,11 @@ pmap -x <pid>
 La deuxième colonne indique en kio le _Resident Set Size_ = RSS (= l'ensemble de la RAM physique actuellement utilisée par le process, including la RAM qui est partagée avec d'autres process comme les libs partagées).
 
 En alternative, `htop` indique aussi tout ça (mais avec une précision un peu moindre).
+
+# envoyer une touche littérale dans le terminal
+
+**tags** : terminal
+
+`Ctrl+V` suivi de la touche à envoyer.
+
+E.g. sous vim, je veux une tabulation, mais l'éditeur est configuré pour les convertir en espaces.
