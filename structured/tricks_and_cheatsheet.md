@@ -1,6 +1,7 @@
 * [imagemagick pour calculer la différence entre deux images](#imagemagick-pour-calculer-la-différence-entre-deux-images)
 * [plotter avec sqliteviz des valeurs loggées avec timestamp](#plotter-avec-sqliteviz-des-valeurs-loggées-avec-timestamp)
 * [grepper un process](#grepper-un-process)
+* [retrouver un process à partir de son pid](#retrouver-un-process-à-partir-de-son-pid)
 * [récupérer l'id de commit de master sur un repo distant](#récupérer-lid-de-commit-de-master-sur-un-repo-distant)
 * [mesurer la RAM consommée par un process](#mesurer-la-ram-consommée-par-un-process)
 * [envoyer une touche littérale dans le terminal](#envoyer-une-touche-littérale-dans-le-terminal)
@@ -57,6 +58,20 @@ Bonus = si je veux plotter des _différences de timestamp_ entre deux lignes de 
 
 ```sh
 pgrep -f myprocessname -a
+```
+
+# retrouver un process à partir de son pid
+
+**tags** : sysadmin
+
+```sh
+# version longue :
+ps -o command= -p PID
+# /full/path/to/myprocess with args --and --options
+
+# version courte :
+ps -o comm
+# myprocess
 ```
 
 # récupérer l'id de commit de master sur un repo distant
