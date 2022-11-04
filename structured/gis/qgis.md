@@ -156,6 +156,12 @@ Les caveats :
 
 ### Ajout via le gestionnaire de BDD
 
+Il faut préalablement créer la connexion :
+
+- Couche > Gestionnaire des Sources de Données (Ctrl+L)
+- PostgreSQL
+- Créer la connexion
+
 qgis embarque un client SQL, le "gestionnaire de base de données", qui joue le même genre de rôle que pgadmin.
 
 On peut l'utiliser pour ajouter une couche sur le résultat d'une requête qui comporte une colonne géométrique :
