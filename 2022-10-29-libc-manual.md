@@ -15,6 +15,17 @@
    * [Memory](#memory)
       * [Memory concepts](#memory-concepts)
       * [Memory-mapped IO](#memory-mapped-io)
+         * [Explications dans la page Memory Concepts](#explications-dans-la-page-memory-concepts)
+         * [Explications dans la page de manuel dédiée](#explications-dans-la-page-de-manuel-dédiée)
+         * [mmap](#mmap)
+         * [munmap](#munmap)
+         * [msync](#msync)
+         * [mremap](#mremap)
+         * [madvise](#madvise)
+         * [shared_memory shm_open](#shared_memory-shm_open)
+         * [shared_memory shm_unlink](#shared_memory-shm_unlink)
+         * [shm_open n'est rien d'autre qu'un open dans un tmpfs](#shm_open-nest-rien-dautre-quun-open-dans-un-tmpfs)
+         * [System-V shared_memory](#system-v-shared_memory)
       * [Autres notes en vrac sur la mémoire](#autres-notes-en-vrac-sur-la-mémoire)
       * [Autres extraits du manuel](#autres-extraits-du-manuel)
    * [Processes](#processes)
@@ -89,9 +100,12 @@ RAS : on `free` pour désallouer (avec le caveat décrit ci-dessus), mais on ne 
 
 ### Memory-mapped IO
 
+#### Explications dans la page Memory Concepts
+
+Excellent résumé du memory-mapping dans [la page Memory Concepts](https://www.gnu.org/software/libc/manual/2.36/html_node/Memory-Concepts.html) :
+
 > Memory-mapped I/O is another form of dynamic virtual memory allocation. Mapping memory to a file means declaring that the contents of certain range of a process’ addresses shall be identical to the contents of a specified regular file. The system makes the virtual memory initially contain the contents of the file, and if you modify the memory, the system writes the same modification to the file. Note that due to the magic of virtual memory and page faults, there is no reason for the system to do I/O to read the file, or allocate real memory for its contents, until the program accesses the virtual memory.
 
-Excellent résumé du memory-mapping :
 - `mmap` dit "tel plage d'addresses virtuelles" a une relation un-pour-un avec tel fichier
 - lorsque le programme lit les addresses virtuelles, il lit le contenu du fichier
 - lorsque le programme écrit les addresses virtuelles, l'OS écrit les modifications dans le fichier sur le disque
@@ -102,6 +116,176 @@ Excellent résumé du memory-mapping :
 - dans l'autre sens, lorsque le programme essaye d'ÉCRIRE dans les addresses virtuelles mmappées, l'OS fera des I/O pour transférer ce qu'on écrit dans le fichier sur le disque.
 - attention toutefois, ça peut ne pas e faire quand on le souhaite, cf. [man msync](https://man7.org/linux/man-pages/man2/msync.2.html) :
     > msync() flushes changes made to the in-core copy of a file that was mapped into memory using mmap(2) back to the filesystem. Without use of this call, there is no guarantee that changes are written back before munmap(2) is called.
+
+#### Explications dans la page de manuel dédiée
+
+Par ailleurs, il y a [une page du manuel dédiée aux memory-mapped I/O](https://www.gnu.org/software/libc/manual/2.36/html_node/Memory_002dmapped-I_002fO.html) avec plein de trucs intéressants :
+
+> On modern operating systems, it is possible to mmap (pronounced “em-map”) a file to a region of memory. When this is done, the file can be accessed just like an array in the program. This is more efficient than read or write, as only the regions of the file that a program actually accesses are loaded. Accesses to not-yet-loaded parts of the mmapped region are handled in the same way as swapped out pages.
+
+La libc mets en avant ceci comme intérêt principal = charger le contenu du fichier "à la demande" plutôt qu'intégralement.
+
+> Since mmapped pages can be stored back to their file when physical memory is low, it is possible to mmap files orders of magnitude larger than both the physical memory and swap space. The only limit is address space.
+
+Du coup, une memory page peut-être backée par le disque ou la RAM selon les besoins, et même alterner entre les deux → on peut donc charger morceau par morceau un énorme fichier, plus gros que la RAM disponible.
+
+> Memory mapping only works on entire pages of memory. Thus, addresses for mapping must be page-aligned, and length values will be rounded up. To determine the default size of a page the machine uses one should use:
+    ```
+    size_t page_size = (size_t) sysconf (_SC_PAGESIZE);
+    ```
+
+C'est un détail important : les adresses qu'on souhaite mmapper doivent être alignées sur une page mémoire.
+
+#### mmap
+
+> `void * mmap (void *address, size_t length, int protect, int flags, int filedes, off_t offset)` \
+> The mmap function creates a new mapping, connected to bytes (offset) to (offset + length - 1) in the file open on filedes. A new reference for the file specified by filedes is created, which is not removed by closing the file.
+
+Plusieurs trucs intéressants ici
+- on crée un mapping entre des addresses virtuelles et un fichier
+- comme `mmap` attend un file_descriptor, c'est que mmap travaille sur un fichier DÉJÀ ouvert préalablement par `open`
+- c'est pas hyper-clair, mais on dirait que mmapper le fichier crée une référence sur le file_descriptor (et que celle-ci peut leaker si on oublie de la relâcher avant de quitter le programme)
+- plus bas, il est dit que fermer le fichier n'invalide pas le mapping
+
+Concernant la protection de la mémoire, il s'agit de savoir si on peut lire la mémoire, écrire dessus ou les deux (voire aucun des deux), comme décrit [sur cette autre page](https://www.gnu.org/software/libc/manual/2.36/html_node/Memory-Protection.html)
+
+Les flags peuvent contenir plein de trucs utiles (e.g. `MAP_HUGETLB`) mais le point principal, c'est que l'un des deux flags `MAP_PRIVATE` ou `MAP_SHARED` doit obligatoirement être passé :
+
+> MAP_PRIVATE This specifies that writes to the region should never be written back to the attached file. Instead, a copy is made for the process, and the region will be swapped normally if memory runs low. No other process will see the changes.
+
+NdM = ma compréhension, c'est que ça sert à un process pour se créer un genre de buffer pour son usage perso ? Comme un genre d'alternative à un malloc/new ?
+
+> MAP_SHARED This specifies that writes to the region will be written back to the file. Changes made will be shared immediately with other processes mmaping the same file. Note that actual writing may take place at any time. You need to use msync, described below, if it is important that other processes using conventional I/O get a consistent view of the file.
+
+Ici aussi plusieurs trucs intéressants :
+- déjà, ce qu'on écrit dans la mémoire finit par être persisté dans le fichier (peut être utile pour persister la donnée mmappée)
+- les autres process qui mappent le même fichier pourront lire une modification que j'écris aussitôt qu'elle est écrite (pas besoin d'attendre qu'elle soit synchronisée avec le disque)
+- en revanche, pour qu'un autre process qui n'a pas mmappé le fichier (i.e. qui souhaite lire le fichier sur disque de façon traditionnelle) puisse lire ce que j'écris, il faut attendre... "plus tard" (et si nécessaire, on peut forcer explicitement ce "plus tard" à "tout de suite" avec `msync`)
+
+#### munmap
+
+> `Function: int munmap (void *addr, size_t length)` \
+> munmap removes any memory maps from (addr) to (addr + length). length should be the length of the mapping.
+
+`munmap` défait un précédent mappint (je laisse de côté les cas particuliers).
+
+#### msync
+
+> `Function: int msync (void *address, size_t length, int flags)` \
+> When using shared mappings, the kernel can write the file at any time before the mapping is removed. To be certain data has actually been written to the file and will be accessible to non-memory-mapped I/O, it is necessary to use this function.
+
+Cet appel est nécessaire si un process veut que les modifications qu'il a lui-même apportées à un fichier mmappé (écriture sur la mémoire) soient accessibles par le monde extérieur = un autre process.
+
+(c'est inutile dans le cas des shared_memory, vu que de ce que j'en comprends, les shared_memory ne sont rien d'autre que des mmap sur des fichiers dans un tmpfs)
+
+#### mremap
+
+> `Function: void * mremap (void *address, size_t length, size_t new_length, int flag)` \
+> This function can be used to change the size of an existing memory area.
+
+NdM : on dirait que ça permet d'agrandir une région mmappée, mais d'un autre côté, on a plus bas :
+
+> This function is only available on a few systems. Except for performing optional optimizations one should not rely on this function. 
+
+Du coup, quel serait l'alternative pour agrandir une région mmappée ? Pas clair...
+
+#### madvise
+
+> `Function: int madvise (void *addr, size_t length, int advice)` \
+> This function can be used to provide the system with advice about the intended usage patterns of the memory region starting at addr and extending length bytes. 
+
+Plein de trucs cools, permettant au kernel d'optimiser ses IO, e.g. :
+
+- `MADV_RANDOM` The region will be accessed via random page references. The kernel should page-in the minimal number of pages for each page fault.
+- `MADV_SEQUENTIAL` The region will be accessed via sequential page references. This may cause the kernel to aggressively read-ahead, expecting further sequential references after any page fault within this region.
+
+#### shared_memory shm_open
+
+> `Function: int shm_open (const char *name, int oflag, mode_t mode)` \
+> This function returns a file descriptor that can be used to allocate shared memory via mmap. \
+> Unrelated processes can use same name to create or open existing shared memory objects.
+
+Plusieurs processus peuvent se mettre d'accord en avance de phase sur le fichier à utiliser, avant même la création de la shared-mem.
+
+> A name argument specifies the shared memory object to be opened. In the GNU C Library it must be a string smaller than NAME_MAX bytes starting with an optional slash but containing no other slashes.
+
+Typiquement, un nom pourrait être `/pouet`, qui crééera probablement la shared_memory en tant que fichier mmappé dans `/dev/shm/pouet` (où `/dev/shm` est un tmpfs, donc tout en RAM).
+
+> shm_open returns the file descriptor on success or -1 on error. On failure errno is set.
+
+Attention à bien vérifier qu'il n'y a pas eu d'erreur !
+
+#### shared_memory shm_unlink
+
+> `Function: int shm_unlink (const char *name)` \
+> This function is the inverse of shm_open and removes the object with the given name previously created by shm_open. \
+> shm_unlink returns 0 on success or -1 on error. On failure errno is set.
+
+Fonction à appeler symétriquement à shm_open.
+
+#### shm_open n'est rien d'autre qu'un open dans un tmpfs
+
+**DISCLAIMER** : ce point n'est pas directement dans le manuel de la libc, mais autant centraliser mes notes sur le partage de mémoire entre différents processes avec `mmap`.
+
+`shm_open` est simplement un `open` sur un fichier choisi automatiquement par l'OS dans un tmpfs en RAM plutôt sur disque dur : https://www.sololearn.com/Discuss/2785097/shared-memory-with-mmap-shm_open-vs-open
+
+> The difference between them is shm_open must put the file in the tmpfs(temporary file storage or virtual storage) file system which removes the extra i/o overheads as the data is not being written in a physical file and thus would be much faster than opening and using mmap() on a regular file.
+>
+> Now of-course one can also use open() to create a file in tmpfs (for example "/dev/shm" in LINUX) to get exactly same results as that with shm_open() 
+
+Autre ressource sur le même sujet = https://stackoverflow.com/questions/24875257/why-use-shm-open/24875686#24875686
+
+> If you open and mmap() a regular file, data will end up in that file. \
+> If you just need to share a memory region, without the need to persist the data, which incurs extra I/O overhead, use shm_open().
+
+Dit autrement : il est tout à fait possible de partager de la mémoire entre deux process en utilisant `mmap` sur un fichier _classique_ sur disque-dur (plutôt que dans un `tmpfs`), et dans ce cas, on peut tout à fait se passer de `shm_open`, et utiliser `open` à la place.
+
+#### System-V shared_memory
+
+**DISCLAIMER** : ce point n'est pas directement dans le manuel de la libc, mais autant centraliser mes notes sur le partage de mémoire entre différents processes avec `mmap`.
+
+Attention, en plus de `shm_open` il existe une autre façon de créer une shared_memory : `shmget`, de System-V (qui est [une variante d'UNIX](https://fr.wikipedia.org/wiki/UNIX_System_V)).
+
+Le **TL;DR** est donné par `man shm_overview`, il faut utiliser `shm_open` et pas `shmget` :
+
+> System V shared memory (shmget(2), shmop(2), etc.) is an older shared memory API. \
+> POSIX shared memory provides a simpler, and better designed interface; on the other hand POSIX shared memory is somewhat less widely available (especially on older systems) than System V shared memory.
+
+[Cette autre page](https://comp.os.linux.development.apps.narkive.com/sPuJ4fI1/shmget-vs-shm-open) est un peu moins péremptoire, mais va plutôt dans le même sens. En gros, avec l'appel POSIX, on peut "nommer" la shared_memory (et donc la retrouver dans un autre process avec un nom convenu à l'avance), ce qui n'est pas le cas avec shmget :
+
+> shm_open() allows multiple un-related processes to access the same shared memory - since it can be accessed by a well know name. \
+> shmget() requires some way for the creating process to give the 'key' used to create the memory to other processes so they can access it. sometimes the creating process writes the 'key' to a well known file name so that other un-related processes can read the key.
+>
+> if the creating process only needs to share the memory with child processes created via fork(), then shmget() is ok; otherwise, shm_open() is often used.
+
+La façon de lister les shared_memory est donc incompatible entre les deux API !
+
+Pour lister les segments de mémoire partagée, on utilise `ipcs -m`, ou `ipcs -m -p` pour connaître le process qui a créé la shared-mem. Si le process créateur existe encore, on peut donc lister les shared-mem SYSTEM-V et leur process créateur avec :
+
+```sh
+ipcs -m -p |grep myself|awk -F"myself" '{print $2}'|cut -d" " -f 6|sort -u | xargs ps -o comm= -p
+# ibus-ui-gtk3
+# xfwm4
+# xfce4-panel
+# xfdesktop
+# panel-1-whisker
+# panel-5-notific
+# panel-9-pulseau
+# xfce4-notifyd
+# nm-applet
+# gnome-terminal-
+# firefox
+```
+
+A contrario, `man shm_open` :
+
+> On successful completion shm_open() returns a new file descriptor referring to the shared memory object.
+
+On voit donc qu'avec `shm_open`, les shared_memory sont identifiées par un fichier et connaître les actuelles shared_memory revient à lister ces fichiers : si l'utilisateur a utilisé la localisation par défaut `/dev/shm`, il suffit de :
+
+```
+ls -lh /dev/shm
+```
 
 
 ### Autres notes en vrac sur la mémoire
