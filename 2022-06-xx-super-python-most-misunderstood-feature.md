@@ -5,7 +5,6 @@
 - **auteur** = [James MURPHY](https://mcoding.io/about-james-murphy) = mathématicien et codeur C++/python avec un background dans la finance
 - **date de publication** = 2022-03-15
 - **source** = [sa chaîne youtube](https://www.youtube.com/c/mCodingWithJamesMurphy/about)
-
 - **tags** = language>python ; topic>super ; level>intermediate
 
 **TL;DR** : quelques misconceptions et explications sur `super` (qui ne renvoie **pas** la classe parente)
