@@ -1,4 +1,4 @@
-#  Python slots and object layout explained 
+# Python slots and object layout explained
 
 
 - **url** = https://www.youtube.com/watch?v=Iwf17zsDAnY
