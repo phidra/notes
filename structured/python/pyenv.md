@@ -22,7 +22,10 @@ La doc est sur [le github du projet](https://github.com/pyenv/pyenv), et le [tut
 # TL;DR
 
 - `pyenv install` pour installer une version de python en particulier (dans le répertoire pyenv) ; _attention_, même installée, une version de python ne sera PAS utilisable sans passer par `global / local / shell`
-- `pyenv [global / local / shell]` pour utiliser une version gérée par pyenv en tant que python [système / du projet courant / du shell courant]
+- `pyenv [global / local / shell]` pour utiliser une version gérée par pyenv en tant que python [système / du projet courant / du shell courant]. Notamment :
+    - `pyenv global system` : la version `system` est accessible globalement
+    - `pyenv global system 3.8.10 3.9.12` : sont accessibles globalement les versions system, 3.8 et 3.9
+    - `pyenv global` : pour voir les versions accessibles globalement
 - `pyenv version` pour connaître la version actuellement utilisée (et `pyenv versions` pour connaître celles dispos sur la machine)
 - quand on utilise pyenv, `which python` pointe _toujours_ sur le shim ; il faut utiliser `pyenv which python` pour voir sur quoi pointe le shim lui-même.
 - `pyenv rehash` pour créer un shim inexistant (e.g. un `entry_point` créé dans un venv) et supprimer les shims inutiles
