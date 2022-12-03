@@ -5,8 +5,8 @@
    * [spurious wakeup](#spurious-wakeup)
    * [lost wakeup](#lost-wakeup)
 * [Utilisation standard pour éviter les problèmes](#utilisation-standard-pour-éviter-les-problèmes)
+   * [Précisions additionnelles sur l'utilisation en C++](#précisions-additionnelles-sur-lutilisation-en-c)
 * [Infos complémentaires](#infos-complémentaires)
-
 
 # C'est quoi une condition-variable aka CV ?
 
@@ -96,6 +96,132 @@ while (!stop_waiting()) {
 ```
 
 Comme on doit obligatoirement vérifier un flag (ou une donnée) partagé(e) entre le thread producteur et le thread consommateur — ce flag représentant la **condition** qui doit être à `True` pour que le réveil soit réel — les CV sont **obligatoirement** utilisées avec un lock permettant de protéger ce flag partagé.
+
+## Précisions additionnelles sur l'utilisation en C++
+
+Contexte de ces précisions a posteriori : en décembre 2022, je m'intéresse aux mécanismes de communication IPC, et notamment à [boost::interprocess](https://www.boost.org/doc/libs/1_80_0/doc/html/interprocess/synchronization_mechanisms.html), qui permet d'utiliser des condition-variables entre plusieurs process.
+
+En préambule, on suppose que les deux process se partagent :
+
+- `the_cv` = une [condition-variable](https://www.boost.org/doc/libs/1_80_0/doc/html/boost/interprocess/named_condition.html) pour envoyer/recevoir les notifications
+- `is_notified` = un bool (partagé en shared-memory !) indiquant qu'une notification a été envoyée :
+    - initialisé à `false`
+    - l'envoyeur de la notif le passera à `true` lorsqu'il enverra la notif
+    - le récepteur de la notif le resettera à `false` lorqu'il aura reçu la notif
+- `the_mutex` = un [mutex](https://www.boost.org/doc/libs/1_80_0/doc/html/boost/interprocess/named_mutex.html) empêchant les race-condition (notamment entre le check du bool et le `wait` de la CV)
+
+```cpp
+using namespace boost::interprocess;
+named_mutex the_mutex(open_or_create, "mutex_name");
+named_condition the_cv(open_or_create, "cv_name");
+// is_notified est un bool partagé en shared-memory, initialisé à false
+```
+
+L'utilisation canonique est alors, **pour le process qui attend la notification** :
+
+```cpp
+{
+    scoped_lock<named_mutex> lock(the_mutex);
+    while (!is_notified) {
+        the_cv.wait(lock);
+    }
+    is_notified = false;  // pas indispensable = "reset" pour être prêt à recevoir d'autres notifications
+}
+// lorsqu'on atteint ce stade, on a été notifié par l'envoyeur
+```
+
+Et **pour le process qui envoie la notification** :
+
+```cpp
+{
+    scoped_lock<named_mutex> lock(the_mutex);
+    is_notified = true;
+    the_cv.notify_one();
+}
+// lorsqu'on atteint ce stade, on a notifié le récepteur
+```
+
+En fait, le bon modèle mental à avoir, c'est plutôt de considérer que c'est `is_notified` qui indique si oui ou non on est notifié (et non pas le réveil ou encore l'appel à `notify_one`, vu qu'il peut y avoir des spurious wakeup... voire pas de wakeup du tout si `notify_one` a été appelé avant `wait`).
+
+Et ce `is_notified` est protégé par un mutex, ce qui garantit qu'on ne loupe pas l'info :
+
+- soit le récepteur est en train de checker le flag (dans ce cas, le mutex force le notifieur à attendre avant de muter le flag)
+- soit le notifieur est en train de muter le flag (dans ce cas, le mutex force le récepteur à attendre avant de constater que le flag a été muté)
+
+Côté récepteur, cf. [la doc de condition_variable.wait](https://en.cppreference.com/w/cpp/thread/condition_variable/wait) :
+
+- on commence par locker le mutex, pour deux raisons :
+    - pour éviter les data-race en accédant à `is_notified` (l'intérêt n'apparaît pas de façon flagrante quand ce flag est un simple bool, mais le flag pourrait être plus complexe)
+    - pour empêcher la modification de `is_notified` entre sa vérification par le `while`, et l'appel à `wait`
+    - en effet, sinon, on pourrait avoir l'enchaînement suivant :
+        - le récepteur checke `is_notified` dans le `while` ; comme il est à `false`, il rentre dans la boucle
+        - entretemps, le notifieur passe `is_notified` à `true`, puis appelle `notify_one`
+        - le récepteur appelle `wait`, et commence à attendre un `notify_one`... qui n'arrivera jamais, puisqu'il a **déjà** été effectué entre le check du flag et le `wait`
+    - (et si jamais le mutex est déjà locké quand on essaye de le locker nous-même, c'est que le notifieur est en train de notifier — ou bien qu'un autre récepteur est en train de checker ; l'unlock va arriver vite)
+- dans le cas le plus simple, `is_notified` est à `false` au moment du check, et on appelle `wait` ; à ce stade, on est toujours sous la protection du mutex locké
+- `wait` unlock le mutex et endort le process courant (en une seule opération atomique) → c'est un keypoint : tant que le process `wait`, il ne garde pas le mutex locké
+- plus tard, quand `wait` reçoit la notification (ou un spurious wakeup), il se réveille et locke le mutex (toujours en une seule opération atomique)
+- on repasse alors dans le while :
+    - si le réveil est spurious, `is_notified` est à `false`, et on recommence : le `wait` nous rendort et unlock le mutex
+    - si le réveil est réel, `is_notified` est obligatoirement à `true`, on sort de la boucle ; la destruction du `scoped_lock` unlocke le mutex fraîchiement réacquis, et on continue notre traitement : **on a été notifié**
+
+
+Côté envoyeur, c'est plus simple :
+
+- on locke le mutex (si jamais le mutex est déjà locké, c'est que le récepteur est en train de checker ; ça devrait être rapide)
+- sous la protection du mutex, on switch le flag `is_notified` à `true` (ce qui est le "vrai" signal indiquant qu'on notifie, mais comme à ce stade, on n'a pas encore unlocké le mutex, personne ne peut le savoir)
+- toujours sous la protection du mutex, on `notify_one` : ça débloque le `wait`, mais comme celui-ci essaye immédiatement (et même atomiquement) de locker le mutex, il va mécaniquement attendre que le notifieur ait unlocké le mutex
+- on a bien effectué notre couple {switcher le flag + notifier} "en même temps" (i.e. dans la même section critique) → on délocke le mutex (ce qui permet au récepteur de repasser dans son while, de checker le flag, et de constater qu'il est notifié)
+- note : quel est l'intérêt du lock côté notifieur ?
+    - principal intérêt = s'assurer qu'on ne peut muter `is_notified` que quand le récepteur est dans de bonnes conditions pour le savoir (notamment, il ne faut surtout pas muter `is_notified` quand le récepteur est entre le check de `is_notified` et le `wait`)
+    - de plus, éviter les data-race quand on mute `is_notified` (même si c'est pas flagrant dans le cas simple où le flag est un simple bool...)
+    - enfin, s'assurer que switcher le flag et appeler `notify_one` ont lieu en même temps, cf. détails ci-dessous
+
+Le point important, en lien avec le modèle-mental suggéré plus haut, c'est donc :
+
+> on n'appelle pas `notifiy_one` sans avoir passé `is_notified` à `true`
+
+_Question_ : quid des spurious-wakeups ?
+
+- pas grave : si `wait` est réveillé, même à tort, il a réacquis le mutex
+- le notifieur ne peut donc pas notifier (car le couple "je mute `is_notified` + j'appelle `notify_one`" est protégé par le mutex)
+- le récepteur va donc se contenter de repasser dans la boucle `while`, et se rendormir immédiatement (en unlockant le mutex)
+
+_Question_ : faut-il de la synchro additionnelle entre les process pour s'assurer de n'appeler `notify_one` qu'APRÈS qu'on ait appelé `wait` préalablement ?
+
+- non ! Même si le notifieur fait tout son cycle avant même que le récepteur débute le sien, le système fonctionne toujours parfaitement
+- en effet, côté notifieur, on va :
+    - locker le mutex
+    - passer `is_notified` à `true`
+    - appeler `notify_one` (ce qui sera sans effet, car aucun `wait` n'aura encore été appelé)
+    - unlocker le mutex
+- et côté récepteur, on va :
+    - locker le mutex
+    - constater que `is_notified` est _déjà_ à `true`
+    - considérer qu'on a été notifiés... sans même avoir à utiliser la CV pour appeler `wait` (d'où le fait que la "vraie" notification, c'est plutôt le flag)
+- du coup, la seule chose qui se passe dans ce cas, c'est que le notifieur appelle `notify_one` pour rien (vu que personne ne `wait`) et que le récepteur n'a pas l'occasion d'appeler `wait`
+
+_Question_ : pourquoi l'appel à `notify_one` est-il protégé par le mutex ?
+
+- le TL;DR, c'est qu'on pourrait se permettre de sortir `notify_one` de la section critique sans provoquer de race-condition, mais qu'il vaut mieux éviter car ça peut poser problèmes dans certains as.
+- plus en détail, [cette réponse stack-overflow](https://stackoverflow.com/questions/17101922/do-i-have-to-acquire-lock-before-calling-condition-variable-notify-one/17102100#17102100) indique pourquoi on peut notifier en dehors de la section critique :
+    - en préambule, si l'appel à `notify_one` (en dehors de la section critique, donc) a lieu avant le réveil du `wait`, tout se passe comme s'il avait été fait dans la section critique, donc ça ne change rien
+    - si `wait` a été réveillé (par un spurious-wakeup, donc) AVANT appel à `notify_one` (mais après unlock du mutex par le notifieur), alors le récepteur va passer dans le while, constater que le flag `is_notified` a été switché
+    - le récepteur va donc shunter le prochain wait, et considérer qu'il a été notifié (alors même qu'à ce stade, `notify_one` n'a pas encore été appelé)
+    - côté notifieur, quand finalement on appelle `notify_one`, ça ne sert plus à rien (pas bien grave), car le récepteur se considère déjà notifié + il n'y a plus personne qui `wait`
+- et [cette autre réponse à la même question](https://stackoverflow.com/questions/17101922/do-i-have-to-acquire-lock-before-calling-condition-variable-notify-one/52950485#52950485) donne un excellent exemple des problèmes qui peuvent arriver si on sort `notify_one` de la section critique :
+    - si `notify_one` n'est pas dans la section-critique, il peut être appelé alors que le thread récepteur se considère déjà notifié
+    - or, peut-être que le thread récepteur, une fois notifié, va détruire la condition-variable `the_cv`
+    - du coup, au moment où finalement on appelle `the_cv.notifiy_one`, l'objet `the_cv` a été détruit !
+    - (et ce problème ne peut pas arriver si on garde `the_cv.notify_one()` dans la section critique, car le récepteur ne peut vérifier s'il a été notifié qu'en lockant le mutex pour accéder à `is_notified`)
+- comme ça ne mange (presque) pas de pain de notifier dans la section critique, autant garder la rule-of-thumb de le faire...
+    - ("presque", car la première réponse dit que ça peut être un peu moins efficace, et pointe vers [ce lien](https://stackoverflow.com/questions/16889063/pthread-mutex-pthread-mutex-unlock-consumes-lots-of-time) que je n'ai pas regardé)
+
+_Question_ : du coup, comme le `wait` et le `notify_one` peuvent être appelés dans n'importe quel ordre, pas besoin de synchroniser les process pour qu'ils communiquent via une CV ?
+
+- j'ai l'impression que si : on doit obligatoirement partager le flag `is_notified` entre les process en shared-memory avant toute utilisation d'une CV (vu que c'est ce flag la "vraie" notification)
+- or, pour partager des trucs en shared-memory, on dirait qu'il faut de la synchro préalable entre les process, e.g. pour construire un payload dans une shared-memory, et ne débloquer un process récepteur que quand le payload est construit
+- (dans mes POCs, j'ai utilisé une message queue posix pour cette synchro, mais on peut aussi ne démarrer le notifieur et le récepteur qu'une fois le payload construit, ou bien se reposer sur des fichiers sur disque)
 
 # Infos complémentaires
 
