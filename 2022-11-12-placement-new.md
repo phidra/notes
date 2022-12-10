@@ -1,6 +1,5 @@
 # placement new
 
-
 - **url** = https://h-deb.clg.qc.ca/Sujets/Divers--cplusplus/new_positionnel.html
 - **type** = article
 - **auteur** = [Patrice ROY](https://h-deb.clg.qc.ca/) professeur Montréalais, qui en plus d'être *très* pédagogique, de faire partie du [Working Group normalisant le C++](http://www.open-std.org/jtc1/sc22/wg21/), est super gentil :-)
