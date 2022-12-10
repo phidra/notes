@@ -26,6 +26,7 @@ La doc est sur [le github du projet](https://github.com/pyenv/pyenv), et le [tut
     - `pyenv global system` : la version `system` est accessible globalement
     - `pyenv global system 3.8.10 3.9.12` : sont accessibles globalement les versions system, 3.8 et 3.9
     - `pyenv global` : pour voir les versions accessibles globalement
+    - `pyenv shell --unset` : pour annuler un `pyenv shell`
 - `pyenv version` pour connaître la version actuellement utilisée (et `pyenv versions` pour connaître celles dispos sur la machine)
 - quand on utilise pyenv, `which python` pointe _toujours_ sur le shim ; il faut utiliser `pyenv which python` pour voir sur quoi pointe le shim lui-même.
 - `pyenv rehash` pour créer un shim inexistant (e.g. un `entry_point` créé dans un venv) et supprimer les shims inutiles
