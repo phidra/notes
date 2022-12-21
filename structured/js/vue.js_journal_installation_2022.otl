@@ -1,0 +1,109 @@
+CONTEXTE = mai 2022, je joue avec vue.js comme framework frontend, ces notes correspondent au journal d'installation.
+	(je les garde pour le moment car elles peuvent encore être utiles)
+
+JOURNAL INSTALLATION :
+	j'ai bien node et npm installés sur mon poste, et ils ont l'air d'avoir été installés avec le package-manager system :
+		type npm
+			npm is /usr/bin/npm
+		npm --version
+			6.14.4
+		dpkg -l npm
+			ii  npm            6.14.4+ds-1ubuntu2 all          package manager for Node.js
+		----------------------------------------
+		type node
+			node is /usr/bin/node
+		node --version
+			v10.19.0
+		dpkg -l nodejs
+			ii  nodejs         10.19.0~dfsg-3ubuntu1 amd64        evented I/O for V8 javascript - runtime executable
+	je ne peux pas installer vue :
+		npm init vue@latest
+			npx : 1 installé(s) en 1.385s
+			/home/myself/.npm/_npx/118308/lib/node_modules/create-vue/outfile.cjs:5681
+			  const isFeatureFlagsUsed = typeof (argv.default ?? argv.ts ?? argv.jsx ?? argv.router ?? argv.pinia ?? argv.tests ?? argv.vitest ?? argv.cypress ?? argv.eslint) === "boolean";
+															   ^
+			SyntaxError: Unexpected token ?
+				at Module._compile (internal/modules/cjs/loader.js:723:23)
+				at Object.Module._extensions..js (internal/modules/cjs/loader.js:789:10)
+				at Module.load (internal/modules/cjs/loader.js:653:32)
+				at tryModuleLoad (internal/modules/cjs/loader.js:593:12)
+				at Function.Module._load (internal/modules/cjs/loader.js:585:3)
+				at Function.Module.runMain (internal/modules/cjs/loader.js:831:12)
+				at startup (internal/bootstrap/node.js:283:19)
+				at bootstrapNodeJSCore (internal/bootstrap/node.js:623:3)
+	je ne peux pas mettre à jour npm :
+		npm install -g npm
+			/home/myself/.local/bin/npm -> /home/myself/.local/lib/node_modules/npm/bin/npm-cli.js
+			/home/myself/.local/bin/npx -> /home/myself/.local/lib/node_modules/npm/bin/npx-cli.js
+			npm WARN notsup Unsupported engine for npm@8.10.0: wanted: {"node":"^12.13.0 || ^14.15.0 || >=16"} (current: {"node":"10.19.0","npm":"6.14.4"})
+			npm WARN notsup Not compatible with your version of node/npm: npm@8.10.0
+	ma version semble dater de deux ans :
+		https://www.npmjs.com/package/npm/v/6.14.4
+		6.14.4 • Public • Published 2 years ago
+	du coup, je choisis de mettre à jour node, en suivant cette méthode :
+		https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-20-04-fr
+		https://github.com/nodesource/distributions#deb
+		curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+		sudo apt install nodejs
+		sudo apt autoremove
+	à l'issue de l'installation, quelles versions j'ai :
+		node -v
+			v16.15.0
+		npm -v
+			8.5.5
+	avec des versions suffisamment récentes de nodejs/npm, je peux installer vue :
+		npm init vue@latest
+		Need to install the following packages:
+			create-vue@latest
+		Ok to proceed? (y) y
+		Vue.js - The Progressive JavaScript Framework
+			✔ Project name: … vue-project
+			✔ Add TypeScript? … No / Yes
+			✔ Add JSX Support? … No / Yes
+			✔ Add Vue Router for Single Page Application development? … No / Yes
+			✔ Add Pinia for state management? … No / Yes
+			✔ Add Vitest for Unit Testing? … No / Yes
+			✔ Add Cypress for both Unit and End-to-End testing? … No / Yes
+			✔ Add ESLint for code quality? … No / Yes
+		Scaffolding project in /media/DATA/git_projects/pocs/js/vue/vue02_basics_with_build_tools/vue-project...
+		Done. Now run:
+			cd vue-project
+			npm install
+			npm run dev
+	à noter que dans le répertoire créé par "npm init", il y a un fichier caché gitignore (e.g. pour gitignorer node_modules/ ou dist/)
+	npm me dit qu'il n'est pas tout à fait à jour -> je le mets à jour (surtout pour éviter les warnings) :
+		npm notice
+		npm notice New minor version of npm available! 8.5.5 -> 8.10.0
+		npm notice Changelog: https://github.com/npm/cli/releases/tag/v8.10.0
+		npm notice Run npm install -g npm@8.10.0 to update!
+		npm notice
+	mise à jour de npm :
+		npm install -g npm@8.10.0
+		(quitter le terminal et le relancer)
+		npm -v
+			8.10.0
+	du coup, j'installe le projet :
+		npm install
+		on dirait que tout ce que ça fait, c'est de :
+			remplir le répertoire node_modules (qui correspond à mon environnement virtuel, j'imagine = l'endroit qui stocke les modules et leurs dépendances)
+			créer le fichier "package-lock.json" (qui semble stocker les versions des dépendances)
+	et je le lance :
+		npm run dev
+		ça lance un process bloquant, qui m'indique l'URL où aller requêter le serveur :
+			http://localhost:3000/
+	finalement, je le builde :
+		npm run build
+		ça se contente de créer un répertoire dist/, qui contient l'app bundlée :
+			tree dist
+			dist
+			├── assets
+			│   ├── index.28e3a8fa.js
+			│   ├── index.f3fa6de6.css
+			│   └── logo.da9b9095.svg
+			├── favicon.ico
+			└── index.html
+		par contre, je ne peux pas l'utiliser directement à cause de la politique CORS, il me faut un serveur :
+			cd dist
+			python -m SimpleHTTPServer
+			firefox localhost:8000/
+
