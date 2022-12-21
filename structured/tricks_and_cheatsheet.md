@@ -5,6 +5,8 @@
 * [récupérer l'id de commit de master sur un repo distant](#récupérer-lid-de-commit-de-master-sur-un-repo-distant)
 * [mesurer la RAM consommée par un process](#mesurer-la-ram-consommée-par-un-process)
 * [envoyer une touche littérale dans le terminal](#envoyer-une-touche-littérale-dans-le-terminal)
+* [mélanger les lignes d'un fichier](#mélanger-les-lignes-dun-fichier)
+* [sauter à la ligne dans une commande zsh multiligne de l'historique](#sauter-à-la-ligne-dans-une-commande-zsh-multiligne-de-lhistorique)
 
 # imagemagick pour calculer la différence entre deux images
 
@@ -103,3 +105,24 @@ En alternative, `htop` indique aussi tout ça (mais avec une précision un peu m
 `Ctrl+V` suivi de la touche à envoyer.
 
 E.g. sous vim, je veux une tabulation, mais l'éditeur est configuré pour les convertir en espaces.
+
+# mélanger les lignes d'un fichier
+
+**tags** : terminal, unix-tool
+
+`shuf` pour mélanger les lignes d'un fichier
+
+Utile pour tirer au hasard des lignes de logs :
+
+```sh
+# 5 logs au hasard :
+shuf logs.txt | head --lines=5
+```
+
+# sauter à la ligne dans une commande zsh multiligne de l'historique
+
+**tags** : terminal, zsh
+
+Quand on rappelle une commande de l'historique zsh et qu'on veut l'éditer, si cette commande est multiligne, `Entrée` l'exécute au lieu d'insérer un saut de ligne.
+
+Solution = `Escape` puis `Entrée`.
