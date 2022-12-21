@@ -109,5 +109,10 @@ Analyse du projet installé automatiquement par "npm init" :
     -qu'on peut utiliser un composant comme du pseudo-html
     -qu'on peut passer des données au composant
 
-**CONCLUSION** = si je me donne la peine de regarder d'un peu plus près, ce petit bout de code a déjà plein de trucs intéressants !
+À noter que pour servir `dist/`, je dois passer par un serveur web (plutôt que de charger directement les fichiers avec le browser via `file:///`) à cause de la politique CORS :
 
+```
+python3 -m http.server --directory=dist/ 8787
+```
+
+**CONCLUSION** = si je me donne la peine de regarder d'un peu plus près, ce petit bout de code a déjà plein de trucs intéressants !
