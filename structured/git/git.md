@@ -23,11 +23,50 @@
 
 # Misc
 
+## contourner un certificat manquant
 
 Si un git push/pull échoue à cause d'un certificat manquant, le quick-and-dirty contournement est `GIT_SSL_NO_VERIFY` :
 
 ```sh
 GIT_SSL_NO_VERIFY=1 git push
+```
+
+## commit parent de deux branches
+
+Afficher le hash du commit parent le plus récent de deux branches (i.e. le dernier commit avant que les branches ne divergent) :
+
+```sh
+git merge-base BRANCH1 BRANCH2
+```
+
+## afficher un champ particulier d'un commit
+
+```sh
+git show b6296d75b2865eeb5c18dd7627fb5f3a8399d89f --pretty='format:%ai'
+2021-09-24 08:51:39 +0000
+```
+
+Grepper `placeholders` dans `git help show` pour savoir comment afficher tel ou tel champ.
+
+## lister des branches distantes ou locales
+
+```sh
+git for-each-ref PATTERN
+# BRANCHES LOCALES = git for-each-ref refs/heads
+# BRANCHES REMOTE QUE J'AI PULL LOCALEMENT = git for-each-ref refs/remotes/origin
+# branche distantes... ?
+```
+
+## lister les infos des branches distantes
+
+Comment lister les infos des branches distantes (date, auteur, nom de branche) :
+
+```sh
+git ls-remote --heads origin|cut -f1 > INPUT
+while read line
+    do
+    git log -1 --format='format:%ai  %d === %an%n' $line
+    done < INPUT | sort
 ```
 
 # Worktree
