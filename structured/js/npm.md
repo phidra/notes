@@ -61,6 +61,7 @@
 - `npm install -g MONPAQUET` = installer `MONPAQUET` globalement :
     - à le même effet en pratique que `pipx install `MONPAQUET`
     - à n'utiliser que pour des outils indépendants des projets (e.g. `http-server`)
+    - **attention** : quand on installe des trucs globalement, mieux vaut le faire SANS `sudo` (grâce à la config `set prefix` vers un chemin local à l'user, cf. ci-dessous)
 - `npm uninstall MONPAQUET`
 - `npm help KEYWORD` = e.g. `npm help install`
 - `npm run SCRIPT` = lancer le script définit dans `package.json`, p.ex. :
