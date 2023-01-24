@@ -72,10 +72,10 @@ Les deux sont deux APIs différentes pour parler au core unique de vue.js Option
 
 ## bootstrap d'un projet vue.js avec npm init
 
-À noter que dans le répertoire créé par `npm init`, il y a un fichier caché `.gitignore` (e.g. pour gitignorer `node_modules/` ou `dist/`).
 
-Analyse du projet installé automatiquement par "npm init" :
+Analyse du projet installé automatiquement par `npm init vue@latest` :
 
+- à noter que dans le répertoire créé, il y a un fichier caché `.gitignore` (e.g. pour gitignorer `node_modules/` ou `dist/`)
 - définit des sous-composants dans `src/components/`
     - `components/HelloWorld.vue`
     - `components/TheWelcome.vue`
