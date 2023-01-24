@@ -106,8 +106,8 @@ Analyse du projet installé automatiquement par "npm init" :
     </template>
     ```
 - le p'tit bout de code ci-dessus montre :
-    -qu'on peut utiliser un composant comme du pseudo-html
-    -qu'on peut passer des données au composant
+    - qu'on peut utiliser un composant comme du pseudo-html
+    - qu'on peut passer des données au composant
 
 À noter que pour servir `dist/`, je dois passer par un serveur web (plutôt que de charger directement les fichiers avec le browser via `file:///`) à cause de la politique CORS :
 
