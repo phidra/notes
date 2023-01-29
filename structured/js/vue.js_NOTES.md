@@ -1,0 +1,145 @@
+* [Templates](#templates)
+   * [mustache tag](#mustache-tag)
+   * [v-xxxx directives](#v-xxxx-directives)
+   * [v-bind](#v-bind)
+   * [synthèse du binding](#synthèse-du-binding)
+   * [écouter des DOM events](#écouter-des-dom-events)
+* [Reactivity](#reactivity)
+   * [data](#data)
+   * [methods](#methods)
+   * [le rendu du DOM n'est pas instantané](#le-rendu-du-dom-nest-pas-instantané)
+   * [Synthèse](#synthèse)
+
+# Templates
+
+https://vuejs.org/guide/essentials/template-syntax.html
+
+## mustache tag
+
+```html
+<span>Message: {{ msg }}</span>
+```
+
+> The mustache tag will be replaced with the value of the msg property from the corresponding component instance. It will also be updated whenever the msg property changes.
+
+**NDM =** RAS, si ce n'est 1. que `msg` sera réactif (le DOM sera mis à jour quand `msg` sera modifié), et 2. que `msg` peut être indifféremment une *data* (ou une *computed*) appartenant au composant, ou bien une *prop* passée par le parent.
+
+## v-xxxx directives
+
+```html
+<p>Using v-html directive: <span v-html="supercontent"></span></p>
+```
+
+> The v-html attribute you're seeing is called a directive. Directives are prefixed with v- to indicate that they are special attributes provided by Vue, and as you may have guessed, they apply special reactive behavior to the rendered DOM. Here, we're basically saying "keep this element's inner HTML up-to-date with the supercontent property on the current active instance."
+
+Directives = commencent par `v-`, et triggent le re-rendu du DOM quand leur expression change.
+
+Les arguments des directives (e.g. l'id d'attribut pour `v-bind` ou l'event écouté pour `v-on`) peuvent être définis dynamiquement :
+
+```html
+<a v-on:[eventName]="doSomething"> ... </a>
+
+<!-- shorthand -->
+<a @[eventName]="doSomething">
+```
+
+Les directives peuvent avoir des *modifiers* :
+
+```html
+<form @submit.prevent="onSubmit">...</form>
+```
+
+![directive syntax](./vue.js_DIRECTIVE_SYNTAX.png)
+
+## v-bind
+
+`v-bind` permet d'utiliser une prop/data/computed du composant comme ATTRIBUT d'une balise (plutôt que comme CONTENU)
+
+```html
+<div v-bind:id="dynamicId">some irrelevant content</div>
+```
+
+> Because v-bind is so commonly used, it has a dedicated shorthand syntax:
+
+```html
+<div :id="dynamicId">some irrelevant content</div>
+```
+
+On peut binder plusieurs attributs d'un coup :
+
+```html
+<div v-bind="objectOfAttrs">some irrelevant content</div>
+```
+
+On peut binder des expressions plutôt que de simples variables :
+
+```
+{{ number + 1 }}
+{{ ok ? 'YES' : 'NO' }}
+{{ message.split('').reverse().join('') }}
+<div :id="`list-${id}`"></div>
+```
+
+> Caveat : Each binding can only contain one single expression. An expression is a piece of code that can be evaluated to a value. A simple check is whether it can be used after return.
+
+## synthèse du binding
+
+En résumé :
+
+- **{{ mustache }}** = utiliser une prop/data en tant que CONTENU `textContent` d'une balise (donc text-only)
+- **v-html** = utiliser une prop en tant que CONTENU `innerHTML` d'une balise (attention au XSS !)
+- **v-bind** (aka `:`) = utiliser une prop comme contenu d'un ATTRIBUT d'une balise
+- dans les trois cas, il y a binding : quand la prop/data référencée change, le rendu dans le DOM sera mis à jour
+
+## écouter des DOM events
+
+`v-on` permet d'appeler une méthode du composant comme callback sur un event (un event du DOM, ou un event émis par un enfant)
+
+```html
+<a v-on:click="doSomething"> ... </a>
+
+<!-- shorthand -->
+<a @click="doSomething"> ... </a>
+```
+
+# Reactivity
+
+https://vuejs.org/guide/essentials/reactivity-fundamentals.html
+
+## data
+
+> With Options API, we use the data option to declare reactive state of a component. The option value should be a function that returns an object. Vue will call the function when creating a new component instance, and wrap the returned object in its reactivity system. Any top-level properties of this object are proxied on the component instance (this in methods and lifecycle hooks):
+
+L'état du composant est stocké dans son attribut `data`, cet état est réactif.
+
+La réactivité (binding au DOM : on re-rend le DOM quand la propriété est modifiée) est gérée à l'initialisation du composant.
+
+## methods
+
+> To add methods to a component instance we use the methods option. This should be an object containing the desired methods: Vue automatically binds the `this` value for methods so that it always refers to the component instance.
+
+**NDM** : les méthodes du composant peuvent être utilisées comme si le composant était un objet.
+
+> Just like all other properties of the component instance, the methods are accessible from within the component's template. Inside a template they are most commonly used as event listeners:
+
+```html
+<button @click="increment">{{ count }}</button>
+```
+
+## le rendu du DOM n'est pas instantané
+
+> When you mutate reactive state, the DOM is updated automatically. However, it should be noted that the DOM updates are not applied synchronously. Instead, Vue buffers them until the "next tick" in the update cycle to ensure that each component updates only once no matter how many state changes you have made.
+
+## Synthèse
+
+Début de synthèse sur l'Options API :
+
+- `data` = état (réactif) propre au composant
+- `props` = état (réactif) du composant, passé par le parent
+- `methods` = méthodes du composant
+- `computed` = état du composant, résultant d'un calcul automatique à partir d'autres data/props du composant
+- `components` = les sous-composants utilisés par le composant
+- `watchers` = les callbacks sur des props qui changent (conceptuellement, ça correspond au fait que le parent "signale" l'enfant)
+
+
+
