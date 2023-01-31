@@ -10,6 +10,7 @@
    * [analyser la version installée — npm](#analyser-la-version-installée--npm)
    * [analyser la version installée — node](#analyser-la-version-installée--node)
    * [nvm](#nvm)
+   * [n](#n)
 
 # Concepts
 
@@ -339,3 +340,15 @@ Je conserve tout de même mes notes d'installation/utilisation :
     node --version
     # v18.2.0
     ```
+
+## n
+
+Un autre outil que j'ai utilisé = [n](https://www.npmjs.com/package/n).
+
+D'un côté il nécessite déjà npm, mais de l'autre il permet d'avoir simplement un npm récent sur un debian based :
+
+```sh
+apt install npm                         # installe une vieille version de npm
+npm cache clean -f && npm install -g n  # installe n
+n stable                                # installe une version récente de npm
+```
