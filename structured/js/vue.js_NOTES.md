@@ -9,6 +9,7 @@
    * [methods](#methods)
    * [le rendu du DOM n'est pas instantané](#le-rendu-du-dom-nest-pas-instantané)
    * [Synthèse](#synthèse)
+* [Props vs data](#props-vs-data)
 
 # Templates
 
@@ -141,5 +142,44 @@ Début de synthèse sur l'Options API :
 - `components` = les sous-composants utilisés par le composant
 - `watchers` = les callbacks sur des props qui changent (conceptuellement, ça correspond au fait que le parent "signale" l'enfant)
 
+# Props vs data
 
+Si on considère que le composant vue est un objet, les `data` sont ses attributs ; ils sont réactifs (i.e. ils triggent le re-rendu du DOM lorsque modifiés).
 
+De ce que j'en comprends, les `props` jouent deux rôles :
+
+- permettre à un parent de paramétrer un enfant
+- permettre à un parent de partager un de ses états avec un enfant ; la prop chez l'enfant est alors une référence (réactive aussi) vers l'attribut du parent.
+
+Chez le composant enfant, `props` et `data` sont tous deux accessibles via `this` ; du coup les deux ne peuvent pas avoir le même nom.
+
+Pour passer une prop d'un **Parent** vers un **Child** :
+
+- côté **Child** :
+    ```html
+    <template>
+      <p> Look, this is my parent's prop : {{ mysuperprop }}</button>
+    </template>
+    <script>
+    export default {
+      props: {
+        mysuperprop: String
+      }
+    };
+    </script>
+    ```
+- côté **Parent** :
+    ```html
+    <template>
+        <Child mysuperprop="Pouet"/>
+    </template>
+    <script>
+    import Child from "./components/Child.vue";
+    export default {
+      name: "App",
+      components: {
+        Child
+      }
+    };
+    </script>
+    ```
