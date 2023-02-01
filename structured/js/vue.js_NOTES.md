@@ -10,6 +10,7 @@
    * [le rendu du DOM n'est pas instantané](#le-rendu-du-dom-nest-pas-instantané)
    * [Synthèse](#synthèse)
 * [Props vs data](#props-vs-data)
+* [Communication entre composants](#communication-entre-composants)
 
 # Templates
 
@@ -183,3 +184,24 @@ Pour passer une prop d'un **Parent** vers un **Child** :
     };
     </script>
     ```
+
+# Communication entre composants
+
+Communiquer (dans les deux sens) entre un parent et un enfant est assez facile :
+
+- le parent et le parent peuvent partager des données via les `props` passées par le parent
+- le parent peut trigger une callback chez l'enfant si celui-ci `watch` des props
+- l'enfant peut trigger une callback chez le parent en émettant des messages
+
+Communiquer de sibling à sibling est déjà un peu plus compliqué ; e.g. il faut qu'un sibling n°1 émette un event en direction du parent + que le parent redescende l'info au sibling n°2.
+
+Communiquer entre des composants plus éloignés (e.g. petit-enfant à grand-parent) est encore plus compliqué... Plusieurs pistes possibles :
+
+- chaîner les events dans toute la hiérarchie (chaque parent écoute l'event de son enfant et le renvoie à son propre parent ; ou idem avec les props) ; danger = [prop-drilling](https://vuejs.org/guide/components/provide-inject.html#prop-drilling) = on pollue toute la hiérarchie intermédiaire juste pour faire communiquer les deux composants extrêmaux
+- utiliser `inject` et `provide` ([lien](https://vuejs.org/guide/components/provide-inject.html)) pour qu'un parent communique avec les descendants
+- utiliser un **event-bus** ([vue n'en propose pas](https://v3-migration.vuejs.org/breaking-changes/events-api.html#event-bus) mais redirige sur des libairies, comme [mitt](https://github.com/developit/mitt)) = un broker centralisé auprès duquel des composants peuvent s'abonner à des messages ou en publier (risque = le couplage entre les composants est moins clair, on ne sait plus qui communique avec qui)
+- utiliser un store = global state managment tel que [pinia](https://pinia.vuejs.org/) ; à ce stade, j'ai du mal à ne pas considérer ça comme un anti-pattern, où on ne sait plus qui dépend de qui
+
+À noter qu'[une page de la doc vue](https://vuejs.org/guide/components/events.html#emitting-and-listening-to-events) mentionne explicitement cette question de la communication entre composants lointains :
+
+> Unlike native DOM events, component emitted events do not bubble. You can only listen to the events emitted by a direct child component. If there is a need to communicate between sibling or deeply nested components, use an external event bus or a global state management solution.
