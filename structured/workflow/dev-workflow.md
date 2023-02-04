@@ -291,6 +291,23 @@ find /path/to/myproject/.cache/clangd/index -name \*.idx | wc -l
 # 4276
 ```
 
+**Question** : où est l'index clangd ?
+
+**Réponse** : j'en ai trouvé dans de multiples endroits :
+
+```
+~/.cache/clangd
+myproject/src/.cache/clangd
+myproject/.cache/clangd
+myproject/clangd
+myproject/src/.clangd
+```
+
+Voir aussi [cette doc](https://releases.llvm.org/10.0.0/tools/clang/tools/extra/docs/clangd/Installation.html#background-indexing), qui dit :
+> the index is saved to the .clangd/index in the project root
+>
+> index shards for common headers e.g. STL will be stored in $HOME/.clangd/index
+
 ## LSP client — native neovim client
 
 En deux mots, j'ai switché sur le client LSP natif de neovim (cf. mon vimrc).
@@ -301,7 +318,12 @@ Pour avoir les infos du client LSP :
 
 ```
 :LspInfo
+
 :LspLog
+NOTE : les logs LSP sont tous conservés (au lieu d'être clear régulièrement).
+On se mange donc un énorme fichier dans :
+    ~/.cache/nvim/lsp.log
+
 
 Éventuellement précédé de :
 :lua vim.lsp.set_log_level("debug")
