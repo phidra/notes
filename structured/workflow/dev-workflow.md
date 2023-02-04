@@ -25,6 +25,7 @@ Notes sur mon workflow de dev
    * [Installation sur le vieux PC](#installation-sur-le-vieux-pc)
    * [Vrac2](#vrac2)
    * [Vrac3](#vrac3)
+   * [Nouveau problème avec clangd = il ne trouve pas libc++](#nouveau-problème-avec-clangd--il-ne-trouve-pas-libc)
 * [FUTUR](#futur)
 
 # neovim
@@ -722,6 +723,94 @@ Ce journal correspond à mon travail sur le petit PC pour avoir une utilisation 
 J'abandonne le fait que mon workflow soit 100% utilisable sur le petit PC portable, qui est vraiment trop vieux pour que le jeu en vaille la chandelle...
 
 Notamment, j'abandonne le fait d'installer pyright.
+
+## Nouveau problème avec clangd = il ne trouve pas libc++
+
+Problème : en gros, clangd n'arrive pas à utiliser libc++ (et soulève donc des erreurs sur de simples inclusions de headers standards comme `<ctime>`).
+
+Pourquoi a-t-elle disparu ? mystère... peut-être parce que j'ai upgradé des trucs ? peut-être qu'elle n'a jamais vraiment marché depuis que je suis passé en 22.04 ? Par ailleurs, clang++ arrivait très bien à compiler mon code alors même que je n'avais pas de libc++ sur mon système (peut-être que clang++ arrive à utiliser libstdc++, mais pas clangd ?)
+
+Note qui peut servir = on a tous les outils LLVM dans ce package : https://apt.llvm.org/
+
+Analyse = qu'est-ce que j'ai sur mon poste ?
+
+```sh
+dpkg -l|grep -i clangd
+# ii  clangd:amd64                              1:14.0-55~exp2                             amd64        Language server that provides IDE-like features to editors
+# ii  clangd-12                                 1:12.0.1-19ubuntu3                         amd64        Language server that provides IDE-like features to editors
+# ii  clangd-14                                 1:14.0.0-1ubuntu1                          amd64        Language server that provides IDE-like features to editors
+
+clangd --version
+# Ubuntu clangd version 14.0.0-1ubuntu1
+# Features: linux+grpc
+# Platform: x86_64-pc-linux-gnu
+
+apt-cache policy clangd-14
+# clangd-14:
+#   Installé : 1:14.0.0-1ubuntu1
+#   Candidat : 1:14.0.0-1ubuntu1
+#  Table de version :
+#  *** 1:14.0.0-1ubuntu1 500
+# 		500 http://fr.archive.ubuntu.com/ubuntu jammy/universe amd64 Packages
+# 		100 /var/lib/dpkg/status
+
+lsb_release -a
+# No LSB modules are available.
+# Distributor ID:	Ubuntu
+# Description:	Ubuntu 22.04.1 LTS
+# Release:	22.04
+# Codename:	jammy
+```
+
+Tenté ceci, sans que ça fasse de différence (a priori, car toutes les versions avaient une priorité équivalente) :
+
+```sh
+clangd --version
+#Ubuntu clangd version 14.0.0-1ubuntu1
+#Features: linux+grpc
+#Platform: x86_64-pc-linux-gnu
+
+sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-14 100
+# update-alternatives: avertissement: forçage de la réinstallation de l'alternative /usr/bin/clangd-12 car le groupe de liens clangd est cassé
+# clangd --version
+# Ubuntu clangd version 12.0.1-19ubuntu3
+
+sudo apt install libc++-14-dev libc++1-14 libc++abi-14-dev libc++abi1-14
+# [sudo] Mot de passe de myself :
+# Lecture des listes de paquets... Fait
+# Construction de l'arbre des dépendances... Fait
+# Lecture des informations d'état... Fait
+# Les paquets suivants ont été installés automatiquement et ne sont plus nécessaires :
+#   libflashrom1 libftdi1-2 libgoogle-perftools4 libllvm13:i386 libtcmalloc-minimal4
+# Veuillez utiliser « sudo apt autoremove » pour les supprimer.
+# Les paquets supplémentaires suivants seront installés :
+#   libunwind-14 libunwind-14-dev
+# Les paquets suivants seront ENLEVÉS :
+#   libgoogle-perftools-dev libunwind-dev
+# Les NOUVEAUX paquets suivants seront installés :
+#   libc++-14-dev libc++1-14 libc++abi-14-dev libc++abi1-14 libunwind-14 libunwind-14-dev
+# 0 mis à jour, 6 nouvellement installés, 2 à enlever et 6 non mis à jour.
+# Il est nécessaire de prendre 1 469 ko dans les archives.
+# Après cette opération, 1 635 ko d'espace disque supplémentaires seront utilisés.
+# Souhaitez-vous continuer ? [O/n]
+```
+
+Au final, sans que j'en sois sûr à 100% car j'ai essayé plein de trucs, ce qui semble corriger le problème, c'est de choisir manuellement la version 14 de clangd :
+
+
+```sh
+sudo update-alternatives --config clangd
+# _Il existe 3 choix pour l'alternative clangd (qui fournit /usr/bin/clangd).
+# _  Sélection   Chemin              Priorité  État
+# _------------------------------------------------------------
+# _  0            /usr/bin/clangd-14   100       mode automatique
+# _  1            /usr/bin/clangd-12   100       mode manuel
+# _* 2            /usr/bin/clangd-14   100       mode manuel
+# _  3            /usr/bin/clangd-15   100       mode manuel
+# _Appuyez sur <Entrée> pour conserver la valeur par défaut[*] ou choisissez le numéro sélectionné :
+```
+
+Toutes les versions étaient à une priorité de 100, j'ai choisi manuellement clangd-14 comme prioritaire.
 
 # FUTUR
 
