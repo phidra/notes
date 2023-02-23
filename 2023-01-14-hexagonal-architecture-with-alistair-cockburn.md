@@ -41,6 +41,7 @@ TODO
 
 Mon avis sur une limitation = 
     - NdM : et on voit là une limitation du pattern à mes yeux = beaucoup de la valeur ajoutée de l'app finale, celle qui est réellement utilisée par les utilisateur en utilisant les adapters-de-prod, peut se retrouver dans l'implémentation des adapters-de-prod.
+    - exemple : la valeur ajoutée peut être dans le fait de binder un ctrl+clic sur la map au déplacement du marqueur source
 
 ---
 
@@ -78,29 +79,27 @@ Mon avis sur une limitation =
     - et utiliser des adapters-de-test pour le testing de l'application ne permettra pas de tester la valeur ajoutée par ces adapters-de-prod.
     - d'où le point important qu'il a souligné = les adapters ne doivent pas contenir de code métier (vu que le code des adapters ne sera pas — ou pas facilement — testable)
 - 26:20 à gauche, l'app expose un protocole = la façon de l'utiliser. À droite, l'app requiert une interface particulière.
-- 27:00 réponse à une misconception commune = en fait, les ports sont de simples interfaces ? Non ! Il monte un schéma contre-exemple (pas très clair). Un point important semble être que l'interface est au milieu. Il parle de [l'anti-corruption layer de Eric EVANS](https://learn.microsoft.com/en-us/azure/architecture/patterns/anti-corruption-layer), ce que j'en comprends, c'est que l'anti-corruption layer est une interface (avec les bénéfices que ça engendre = découplage de ce qu'il y a de part et d'autre de l'interface), mais que ce n'est PAS un port, puisqu'un port est une interface avec le monde extérieur, et que l'anti-corruption layer est une interface entre deux morceaux du monde intérieur (qui apporte des bénéfices différents = indépendance vis-à-vis de la façon dont on interagit avec le monde extérieur). Dit autrement : l'anti-corruption layer n'est pas un port, car il y a du métier à droite de l'interface → la partie à droite de l'interface n'est pas le monde extérieur → l'interface n'est pas un port, CQFD.
+- 27:00 réponse à une misconception commune = en fait, les ports sont de simples interfaces ?
+    - Non ! En contre-exemple, il parle de l'anti-corruption layer de Eric EVANS en montrant un schéma :
     ![anti-corruption layer is not a port](./2023-01-14-hexagonal-architecture-with-alistair-cockburn_SCREENSHOT2.jpg)
-- 28:30 toute définition de fonction EST une interface... mais n'est pas obligatoirement un port !
-- ce qui définit un port selon lui, c'est le fait de vouloir swapper ce qu'il y a derrière avec autre chose. (Et même quand on est certain de ne jamais vouloir swapper ce qu'il y a derrière, on voudra quand même le swapper pour les test cases)
-
-REPRENDRE LA MISE EN FORME ICI
-
-- 29:30 retour au schéma contre-exemple = où placer les tests ? (Ndm : je suppose qu'il entend par là : on drive l'application avec un main de test ,(ndm : d'où le nom "testdriver", comme dans sélénium testdriver !), où introduire un test double qui implémente l'interface ?) Si on les mets au milieu, là où est l'interface entre le système et l'aggregator, on a trop de code non testé à droite. Si on les mets à la fois au milieu et à droite, on a trop de tests qui font la même chose à deux niveaux différents. Si on ne mets les tests qu'à droite, c'est qu'on n'utilise pas l'interface comme quelque chose derrière quoi on peut swapper... Donc que par définition ce n'est pas un port. Ndm = la conclusion, c'est qu'il y a un lien fort entre le fait que l'interface soit un port avec le fait qu'on puisse swapper ce qu'il y a derrière pour autre chose... On en revient au fait qu'il y a trop de métier derrière l'interface dans son contre exemple (ndm : du coup le problème de son contre exemple ,c'était bien qu'il y avait du métier à droite de l'interface)
-
-30:00 donc, TOUTES LES INTERFACES NE SONT PAS DES PORTS. Le signe distinctif qu'une interface est un port, c'est : "on n'as pas besoin de tester ce qu'il y a derrière". (Ndm : on en revient à : pas de métier à droite de l'interface : dans le cas de son contre exemple, si on ne teste pas l'aggregator, on prend un risque ! Et il faut donc un jeu de test séparé pour l'aggregator)
-
-30:45 ça ressemble à clean architecture, apparemment = protéger l'intérieur de l'application (ndm = le métier) des détails, des delivery mechanisms (ndm : j'interprète ceci comme "le moyen de livrer le résultat de l'App à l'utilisateur"... Exemple : pour un viewer, on peut "livrer le résultat sous forme d'une polyline leaflet, ou d'un texte.)
-
-31:00 et pour l'intérieur de l'App ? Ça n'est pas le boulot de l'archi hexagonale de dire comment organiser son app en interne ! Son boulot, c'est de la découpler du monde extérieur.
-
-Todo = regarder ce que fait/dit Juan Manuel garrido de Paz, qui a beaucoup implémenté l'archi hexagonale, donc si pourra en dire plus sur l'intérieur de l'app
-
-35:00 éléphant carpaccio exercice (pour découper un problème en plusieurs petits morceaux)
-
-38:00 Il recommande d'aller voir hexagonal me de Juan manual (et c'est vrai que ça a l'air top !)
-
-https://jmgarridopaz.github.io/content/articles.html
-
+    - Ce que j'en comprends à la lecture [d'un article sur le sujet](https://learn.microsoft.com/en-us/azure/architecture/patterns/anti-corruption-layer), l'anti-corruption layer est une interface interne à l'application pour découpler un morceau (typiquement moderne) de l'appli d'un autre morceau (possiblement, deprecated), d'où le nom : grâce à cette interface, le morceau moderne n'est pas corrompu par le morceau deprecated.
+    - une telle interface a certes des bénéfices (découplage de ce qu'il y a de part et d'autre de l'interface), mais ce n'est PAS un port, puisqu'un port est une interface **avec le monde extérieur**, et que l'anti-corruption layer est une interface entre deux morceaux internes à l'app.
+    - le port est une interface aussi, mais elle apporte des bénéfices différents = indépendance vis-à-vis de la façon dont on interagit avec le monde extérieur
+    - Dit autrement : l'anti-corruption layer n'est pas un port, car il y a du métier à droite de l'interface → la partie à droite de l'interface n'est donc pas le monde extérieur → l'interface n'est donc pas un port, CQFD.
+- 28:30 un autre point de vue d ans le même genre = toute définition de fonction EST une interface... mais n'est pas obligatoirement un port !
+- ce qui définit un port selon lui, c'est le fait de vouloir swapper ce qu'il y a derrière avec autre chose. (Et quand bien même on serait certains de ne jamais vouloir swapper ce qu'il y a derrière, on voudrait quand même le faire pour les test cases)
+- 29:30 retour au schéma contre-exemple :
+    - problématique = où placer les tests ?
+    - (NdM : je suppose qu'il entend par là : on drive l'application avec un main de test, d'où le nom "testdriver", comme dans sélénium testdriver !)
+    - où introduire un test double qui implémente l'interface ?
+    - Si on les mets au milieu, là où est l'interface entre le système (partie gauche) et l'aggregator (le layer d'anti-corruption), on a trop de code métier non testé à droite.
+    - Si on les mets à la fois au milieu et à droite, on a trop de tests qui font la même chose à deux niveaux différents.
+    - Si on ne mets les tests qu'à droite, c'est qu'on n'utilise pas l'interface comme quelque chose derrière quoi on peut swapper... Donc que par définition ce n'est pas un port.
+    - NdM = la conclusion, c'est qu'il y a un lien fort entre le fait que l'interface soit un port avec le fait qu'on puisse swapper ce qu'il y a derrière pour autre chose sans modifier le métier de l'application... On en revient au fait qu'un port est une interface derrière laquelle ce qu'il y a n'est PAS notre application, alors que dans son contre-exemple, il y a trop de métier derrière l'interface.
+- 30:00 donc, TOUTES LES INTERFACES NE SONT PAS DES PORTS. Le signe distinctif qu'une interface est un port, c'est : "on n'a pas besoin de tester ce qu'il y a derrière". (NdM : on en revient à : pas de métier à droite de l'interface : dans le cas de son contre exemple, si on ne teste pas l'aggregator, on prend un risque ! Et il faut donc un jeu de test séparé pour l'aggregator)
+- 30:45 il y a des accointances entre clean architecture et hexagonal architecture = protéger l'intérieur de l'application (NdM = le métier) des détails, des _delivery-mechanisms_ (NdM : j'interprète cette expression comme "le moyen de livrer le résultat de l'app à l'utilisateur"... Exemple : pour un viewer, on peut "livrer le résultat" sous forme d'une polyline leaflet, ou d'un texte)
+- 31:00 et comment organiser l'intérieur de l'app ? Ça n'est pas le boulot de l'archi hexagonale de dire comment organiser son app en interne ! Son boulot, c'est de la découpler du monde extérieur. Il recommande d'aller voir [le travail de Juan Manuel GARRIDO DE PAZ](https://jmgarridopaz.github.io/content/articles.html) (EDIT : et j'ai commencé à le skimmer, c'est vrai qu'il a l'air excellent !) qui a beaucoup implémenté l'archi hexagonale, et rentre beaucoup plus que lui dans les considérations d'organisation interne de l'app.
+- 35:00 il mentionne l'exercice _elephant carpaccio_ (pour découper un gros problème en petits morceaux)
 
 ----------------------------------------
 ----------------------------------------
