@@ -20,7 +20,7 @@ Une excellente vidéo qui donne la philosophie derrière l'architecture ports-an
 - un **adapter** est une implémentation concrète d'un port :
     - exemples à gauche : un adapter pour driver l'application via une GUI, un autre pour driver l'application via un test automatique, ...
     - exemples à droite : un adapter pour utiliser une DB réelle, un autre pour utiliser une in-memory database pour les tests unitaires
-- ce qui est représenté à l'intérieur de l'hexagone, c'est le coeur de l'application et ses ports (mais pas les adapters, même si "la vraie application" complète est consituée aussi d'un adapter réel pour chacun de ses ports)
+- ce qui est représenté à l'intérieur de l'hexagone, c'est le coeur de l'application et ses ports (mais pas les adapters ; même si "la vraie application" complète est également consituée d'un adapter réel pour chacun de ses ports)
 - la clé, c'est que toute interaction avec le monde extérieur doit faire l'objet d'un port :
     - en production, l'app utilise des adapters de prod (e.g. un adapter GUI drive l'app, et un adapter postgreSQL implémente le port d'accès aux données)
     - mais le coeur de l'application (l'hexagone) reste testable avec des adapters de test : un adapter automated-script drive alors l'app, et un adapater InMemoryDB implémente le port d'accès aux données
