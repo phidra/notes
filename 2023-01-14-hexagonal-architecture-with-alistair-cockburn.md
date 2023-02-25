@@ -7,8 +7,6 @@
 - **source** = le live de [Rodrigo BRANAS](https://www.youtube.com/@RodrigoBranas/about), un dev portugais intéressé par des sujets de quality.
 - **tags** = language>agnostic ; topic>architecture ; level>intermediate
 
-TODO = revenir reformuler le paragraphe concernant l'anti-corruption layer (et éventuellement en toucher un mot dans mes notes de synthèse ?)
-
 Une excellente vidéo qui donne la philosophie derrière l'architecture ports-and-adapters a.k.a hexagonal-architecture. Je tente un résumé des principes :
 
 - les interactions d'une app avec le monde extérieur sont de deux types :
@@ -32,16 +30,16 @@ Une excellente vidéo qui donne la philosophie derrière l'architecture ports-an
 - du coup, ce qui différencie droite et gauche, c'est plutôt **qui drive** = qui initie la conversation :
     - **driver side** = les ports à gauche sont utilisés **à l'initiative du monde extérieur** pour communiquer avec l'app
     - **driven side** = les ports à droite sont utilisés **à l'initiative de l'app** pour communiquer avec le monde extérieur
-
-Par ailleurs, il mentionne un mec qui a fait un site super
-
-TODO
-TODO
-TODO
-
-Mon avis sur une limitation = 
-    - NdM : et on voit là une limitation du pattern à mes yeux = beaucoup de la valeur ajoutée de l'app finale, celle qui est réellement utilisée par les utilisateur en utilisant les adapters-de-prod, peut se retrouver dans l'implémentation des adapters-de-prod.
-    - exemple : la valeur ajoutée peut être dans le fait de binder un ctrl+clic sur la map au déplacement du marqueur source
+- différence entre un port est une interface :
+    - un port est une interface, mais toutes les interfaces ne sont pas des ports : ce qui caractérise un port, c'est d'être une **interface avec le monde extérieur**
+    - exemple de l'anti-corruption layer, qui est une interface au milieu de l'application, mais qui n'est pas un port
+    - pour qu'une interface soit un port, on ne doit pas avoir de métier derrière l'interface
+    - typiquement, dans les tests unitaires, l'interface port sera implémentée par des test-doubles, donc si on avait du métier derrière, celui-ci ne serait pas testé
+- il recommande d'aller voir [le travail de Juan Manuel GARRIDO DE PAZ](https://jmgarridopaz.github.io/content/articles.html) qui détaille les considérations d'organisation interne de l'app.
+- NdM = une limitation de l'archi que je soupçonne :
+    - une partie de la valeur ajoutée de l'app finale, celle qui est réellement utilisée par les utilisateur en utilisant les adapters-de-prod, peut se retrouver dans l'implémentation des adapters-de-prod
+    - par exemple, de la valeur ajoutée peut être dans l'UI : le fait de binder un ctrl+clic sur une map à un déplacement de marker source
+    - autre exemple (supposé), de la valeur ajoutée peut se trouver dans une requête SQL craftée et optimisée avec amour
 
 ---
 
