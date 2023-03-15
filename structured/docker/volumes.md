@@ -53,6 +53,17 @@ Quelques notes complémentaires :
     docker run --rm -it --mount type=volume,source=myvolume,target=/hosttmp mycontainer
     docker run --rm -it --mount             source=myvolume,target=/hosttmp mycontainer
     ```
+- si besoin, on peut inspecter un container qui tourne pour connaître son type de volume :
+    ```sh
+    docker inspect mycontainer
+    # "Mounts": [
+    #     {
+    #         "Type": "volume",  # pourrait être "bind"
+    #         "Source": "tmp",
+    #         "Target": "/hosttmp"
+    #     }
+    # ],
+    ```sh
 
 ### Quand utiliser quoi ?
 

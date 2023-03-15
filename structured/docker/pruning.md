@@ -8,10 +8,12 @@ Ces notes concernent le ménage qu'on peut faire dans l'espace utilisé par dock
 
 
 * [Pruning docker](#pruning-docker)
+   * [Analyse de ce qui prend de la place](#analyse-de-ce-qui-prend-de-la-place)
    * [Images](#images)
    * [Containers](#containers)
    * [Volumes](#volumes)
    * [Networks](#networks)
+   * [Build cache](#build-cache)
 
 > For each type of object, Docker provides a prune command. In addition, you can use docker system prune to clean up multiple types of objects at once.
 
@@ -20,6 +22,25 @@ Ces notes concernent le ménage qu'on peut faire dans l'espace utilisé par dock
 > The docker system prune command is a shortcut that prunes images, containers, and networks. Volumes are not pruned by default, and you must specify the --volumes flag for docker system prune to prune volumes.
 
 ^ les volumes ne sont pas prunés par défaut (même avec `-a`).
+
+## Analyse de ce qui prend de la place
+
+Ça se fait avec `docker system df` ([lien](https://docs.docker.com/engine/reference/commandline/system_df/)). Exemple de sortie :
+
+```
+ TYPE                TOTAL               ACTIVE              SIZE                RECLAIMABLE
+ Images              34                  24                  18.51GB             16.79GB (90%)
+ Containers          24                  1                   4.881GB             4.605GB (94%)
+ Local Volumes       5                   0                   2.976GB             2.976GB (100%)
+ Build Cache         200                 0                   5.997GB             5.997GB
+```
+
+On peut aussi jeter un oeil au répertoire docker :
+
+```
+du -sh /var/lib/docker
+```
+
 
 ## Images
 
@@ -61,3 +82,17 @@ Pour faire des suppressions plus évoluées, il faut utiliser un filtre plus com
 ## Networks
 
 > Docker networks don’t take up much disk space, but they do create iptables rules, bridge network devices, and routing table entries. To clean these things up, you can use docker network prune to clean up networks which aren’t used by any containers.
+
+## Build cache
+
+Je galère un peu à trouver des explications, mais je finis par trouver dans [un commentaire d'une issue github](https://github.com/docker/buildx/issues/1065#issuecomment-1096768784) :
+
+> docker builder prune clears the BuildKit build-cache. While the "classic" (non-buildkit) builder used image layers as caching mechanism, BuildKit uses its own cache. The BuildKit cache is not directly associated with an "image"
+
+Les objets de cache ne sont créés qu'avec le nouveau builder a.k.a. [BuildKit](https://docs.docker.com/build/buildkit/). Du coup, si je n'utilise pas `DOCKER_BUILDKIT=1`,  `docker builder prune` n'a rien à cleaner :
+
+```
+DOCKER_BUILDKIT=1 docker build -t mycontainer .
+```
+
+Ces objets de cache sont les équivalents des images intermédiaires avec l'ancien builder, .
