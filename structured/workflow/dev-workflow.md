@@ -19,6 +19,8 @@ Notes sur mon workflow de dev
       * [Installation](#installation-1)
       * [Features et commandes](#features-et-commandes)
       * [Configuration](#configuration)
+* [git](#git)
+   * [diff-so-fancy](#diff-so-fancy)
 * [JOURNAL](#journal)
    * [Vrac1](#vrac1)
    * [Utilisation de telescope avec nvim](#utilisation-de-telescope-avec-nvim)
@@ -434,6 +436,50 @@ let g:ale_completion_enabled = 1
 ```
 
 
+# git
+
+## diff-so-fancy
+
+https://github.com/so-fancy/diff-so-fancy
+
+Installation manuelle de `diff-so-fancy` = un simple clone :
+
+```sh
+cd ~/.local
+git clone https://github.com/so-fancy/diff-so-fancy
+cd bin
+ln -s ../diff-so-fancy/diff-so-fancy
+```
+
+Configuration de git pour l'utiliser :
+
+```sh
+git config --global core.pager "diff-so-fancy | less --tabs=4 -RFX"
+git config --global interactive.diffFilter "diff-so-fancy --patch"
+```
+
+Configuration des couleurs (j'ai un poil modifié ce que la page officielle suggère pour `color.diff.meta` et `color.diff.commit`, car le yellow ne se marie pas bien avec mon thème clair)
+
+```sh
+git config --global color.ui true
+git config --global color.diff-highlight.oldNormal    "red bold"
+git config --global color.diff-highlight.oldHighlight "red bold 52"
+git config --global color.diff-highlight.newNormal    "green bold"
+git config --global color.diff-highlight.newHighlight "green bold 22"
+git config --global color.diff.meta       "blue"
+git config --global color.diff.frag       "magenta bold"
+git config --global color.diff.func       "146 bold"
+git config --global color.diff.commit     "blue bold"
+git config --global color.diff.old        "red bold"
+git config --global color.diff.new        "green bold"
+git config --global color.diff.whitespace "red reverse"
+```
+
+Rétro-pédalage dans le philenv où j'avais setté le `GIT_PAGER` à `cat` :
+
+```sh
+unset GIT_PAGER
+```
 
 # JOURNAL
 
