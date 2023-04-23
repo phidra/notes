@@ -396,25 +396,35 @@ Ce qui ouvre la possibilité d'erreurs humaines et donc de bugs :
 
 ^ un autre intérêt du paging (en plus de permettre à chaque process d'avoir son propre espace mémoire, sans introduire de fragmentation) = sécurité des accès mémoire out-of-bound.
 
-**REPRISE** : reprendre à :
-
-https://os.phil-opp.com/paging-introduction/#page-faults
-
-TODO
-
-TODO
-
-TODO
+La suite du post montre des exemples concrets de page-fault (en lecture et/ou en écriture), et l'accès aux registres contenant les détails des page-faults, et mentionne une limitation que je ne détaille pas (et qui sera addressée dans la page suivante).
 
 ### Paging Implementation
 
 https://os.phil-opp.com/paging-implementation/
 
-TODO
+Le résumé du post :
 
-TODO
+> This post shows how to implement paging support in our kernel. It first explores different techniques to make the physical page table frames accessible to the kernel and discusses their respective advantages and drawbacks. It then implements an address translation function and a function to create a new mapping.
+>
+> The previous post gave an introduction to the concept of paging. It motivated paging by comparing it with segmentation, explained how paging and page tables work, and then introduced the 4-level page table design of x86_64. We found out that the bootloader already set up a page table hierarchy for our kernel, which means that our kernel already runs on virtual addresses. This improves safety since illegal memory accesses cause page fault exceptions instead of modifying arbitrary physical memory.
+>
+> The post ended with the problem that we can’t access the page tables from our kernel because they are stored in physical memory and our kernel already runs on virtual addresses. This post explores different approaches to making the page table frames accessible to our kernel.
 
-TODO
+En gros, c'est pas évident d'accéder à la page-table, car ce mapping vers des addresses physiques nous est abstrait.
+
+> The problem for us is that we can’t directly access physical addresses from our kernel since our kernel also runs on top of virtual addresses.
+
+^ Voilà.
+
+> This way, the physical addresses of page tables are also valid virtual addresses so that we can easily access the page tables of all levels starting from the CR3 register.
+
+Je me contente de skimmer, mais si je comprends bien, l'idée est de trouver un moyen d'accéder à la RAM qui stocke la page-table, c'est ce que le post explore, et ça nécessite aussi un travail sur le bootloader.
+
+Du coup, je mets le résumé :
+
+> In this post we learned about different techniques to access the physical frames of page tables, including identity mapping, mapping of the complete physical memory, temporary mapping, and recursive page tables. We chose to map the complete physical memory since it’s simple, portable, and powerful.
+>
+> We can’t map the physical memory from our kernel without page table access, so we need support from the bootloader. [...]
 
 ### Heap Allocation
 
