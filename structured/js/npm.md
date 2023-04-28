@@ -172,6 +172,13 @@ Pour mettre à jour npm :
 npm install -g npm@latest
 ```
 
+Pour mettre à jour node via le PPA :
+
+```
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
 ## analyser la version installée — npm
 
 ```sh
