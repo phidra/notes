@@ -7,7 +7,9 @@
 - **source** = N/A
 - **tags** = language>agnostic ; topic>architecture ; level>intermediate
 
-_WORK IN PROGRESS..._
+J'ai terminé le livre et les annotations :-)
+
+En résumé, le message est proche des principes derrière l'archi hexagonale, avec 1. un découpage plus fin de l'hexagone (entity, domaine, use-case, voire le couple `Presenter` dans l'hexagone + `View` hors de l'hexagone) et 2. un focus plus important sur _pourquoi_ les dépendances sont dans ce sens (bas-niveau vs haut-niveau).
 
 Je n'annote pas tout exhaustivement (les présentes notes ne constituent donc PAS un résumé auto-porteur) : je me contente de ce qui a retenu mon attention / que j'estime nécessaire d'annoter.
 
@@ -47,6 +49,13 @@ Les numéros des pages font référence à mon édition = `ISBN-13: 978-0-13-449
       * [Chapitre 29 = Clean Embedded Architecture](#chapitre-29--clean-embedded-architecture)
    * [Partie 6 = Details](#partie-6--details)
       * [Chapitre 30 = The Database Is A Detail](#chapitre-30--the-database-is-a-detail)
+      * [Chapitre 31 = The Web Is A Detail](#chapitre-31--the-web-is-a-detail)
+      * [Chapitre 32 = Frameworks Are Details](#chapitre-32--frameworks-are-details)
+      * [Chapitre 33 = Case Study : Video Sales](#chapitre-33--case-study--video-sales)
+      * [Chapitre 34 = The Missing Chapter](#chapitre-34--the-missing-chapter)
+      * [Afterword](#afterword)
+   * [Partie 7 = Appendix](#partie-7--appendix)
+      * [Appendix A = Architecture Archaeology](#appendix-a--architecture-archaeology)
    * [Notes supplémentaires](#notes-supplémentaires)
 
 ## Partie 1 = Introduction
@@ -569,7 +578,106 @@ Un point intéressant au sujet de ce qu'on met dans les header files : il faut r
 
 ### Chapitre 30 = The Database Is A Detail
 
-REPRENDRE À = PAGE 277
+La database est un détail bas-niveau, mais ce n'est pas le cas du data-model, qui est important et qui fait partie de l'application !
+
+> The use cases of your application should neither know nor care about [arranging data into rows within tables].
+
+Important : une structure de type `DatabaseRow` ne devrait jamais être utilisée pour véhiculer des données un peu partout dans l'application : elle doit être confinée à une couche extérieure = l'adapter de la database.
+
+Pages 279 et 280, il y a un intéressant paragraphe sur les disques durs rotatifs, les filesystems et les databases.
+
+> From an architectural viewpoint, we should not care about the form that the data takes while it is on the surface of a rotating magnetic disk.
+
+### Chapitre 31 = The Web Is A Detail
+
+> The GUI is a detail. The web is a GUI. So the Web is a detail.
+
+Les deux premiers paragraphes de la page 289 sont intéressants car il tempère son message "il faut architecturer proprement" avec les contraintes de la vraie vie : selon l'UI utilisée, c'est parfois compliqué de découpler réellement son application de l'UI (e.g. il y a beaucoup d'allers-retours entre l'UI et l'application pour de la validation).
+
+Par contre, il faut découper quand même ses use-cases, et même si l'UI fait des allers-retours avec l'application (ce qui est un peu une entorse aux bons principes d'architecture), les use-cases, eux, sont proprement séparés.
+
+### Chapitre 32 = Frameworks Are Details
+
+Partant du constat (plutôt objectif) que l'utilisation de frameworks encourage souvent à être couplé au framework, il pousse une opinion (plutôt subjective, et quelque peu bizarre) comme quoi il y a une relation asymétrique entre auteur du framework et user du framework.
+
+> Treat the framework as a detail that belongs in one of the outer circles of the architecture.
+
+^ son conseil = rester découplé du framework
+
+### Chapitre 33 = Case Study : Video Sales
+
+Intéressante étude d'un cas concret, qui vaut le coup d'oeil, car il reste simple à comprendre, mais il montre concrètement l'application des principes de clean architecture :
+
+- page 298 = description du fonctionnel souhaité = un site pour streamer des vidéos de coding
+- page 299 = listing des actors et use-cases
+- page 301 = description de la clean architecture résultante
+
+Note qu'il y a plusieurs possibilités pour déployer cette architecture de composants, de façon plus ou moins granulaire.
+
+**Identifier les actors différents est important**, car les composants correspondants changeront pour des raisons différentes et à des vitesses différentes !
+
+> [The architecture] includes two dimensions of separation. The first is the separation of actors based on the Single Responsibility Principle ; the second is the Dependency Rule.
+> The goal of both is to separate components that change for different reasons, and at different rates.
+> The different reasons correspond to the actors ; the different rates correspond to the different levels of policy.
+
+### Chapitre 34 = The Missing Chapter
+
+(ce chapitre a été écrit par un autre auteur que Uncle Bob = [Simon BROWN](https://simonbrown.je/))
+
+Le chapitre compare 4 architectures (pas forcément clean) possibles pour une même appli, et discute des moyens de packager les classes de cette appli au sein d'un même monolithe, selon où on met les frontières, et ce qu'on déclare public ou privé (cf. figures pages 317 et 318). C'est assez intéressant.
+
+L'objectif du chapitre semblait être de montrer qu'une belle archi peut très bien être salopée par des détails d'implémentation, mais j'avoue que ce message n'est pas archi-clair.
+
+
+
+Archi 1 = layered architecture (cf. pages 304 et 305) ; jusqu'à peu, c'était mon modèle de codage par défaut !
+
+Problème 1 = on finit souvent par avoir besoin de découper plus finement que les layers.
+
+Problème 2 = l'architecture ne screame pas l'objectif de l'application.
+
+(et problème en filigrane = le haut-niveau dépend du bas-niveau)
+
+Archi 2 = _package by feature_
+
+C'est mieux (notamment car l'application screame son cas d'usage), mais c'est pas ouf (il dit pas pourquoi, mais je devine en filigrane que c'est parce que le haut-niveau dépend du bas-niveau).
+
+Archi 3 = ports and adapters
+
+Archi 4 = ce qu'il pousse = _package by component_ :
+
+> A grouping of related functionality behind a nice clean interface, whih resides inside an execution environment like an application.
+
+^ sa définition
+
+----
+
+> If you make all types in your Java application `public`, the packages are simply an organization mechanism (a grouping, like folders), rather than being used for encapsulation.
+
+Pour organiser les sources d'une archi hexagonale, on peut avoir trois source-trees (hexagone + primary actors + secondary actors) ou n'en avoir que deux (hexagone + outside World), ce qui est certes plus simple, mais un peu plus risqué car rien n'interdit alors aux primary actors d'utiliser du code des secondary actors.
+
+
+### Afterword
+
+Rien à annoter
+
+## Partie 7 = Appendix
+
+### Appendix A = Architecture Archaeology
+
+> Software is soft. Features needed to be added. Bugs needed to be fixed.
+
+Pourquoi _software is soft_ ? Parce que contrairement au hardware, on peut le modifier, il n'est pas figé dans le marbre !
+
+Les pages 347 et 348 (et celles qui les introduisent) sont intéressantes : il décrit comment il a créé des objets polymorphiques (= ça n'est qu'au runtime qu'on connaît le code qui sera réellement exécuté) via une indirection en RAM : le code exécute une routine à une adresse fixée, sans savoir ce que fait cette routine.
+
+Le paragraphe qui se termine page 374 est intéressant : il relate un échec lié à une over-architecture : l'architecture retenue est peut-être propre, mais elle est trop complexe (donc trop coûteuse) pour le besoin !
+
+Le paragraphe qui se termine page 377 est intéressant, et résonne avec quelque chose dont je suis déjà convaincu : il a investi du temps pour écrire une première app (6k loc) et un framework réutilisable (45k loc) censé permettre d'écrire une vingtaine d'autres apps assez similaires. Problème = quand il a commencé à bosser sur la deuxième app censée utiliser le framework réutilisable, il s'est rendu compte que son framework réutilisable... n'était pas réutilisable !
+
+Ça n'est que quand il a bossé sur PLUSIEURS apps utilisant le framework que ce dernier est devenu un truc vraiment réutilisable.
+
+Moralité : on ne peut pas écrire un truc réutilisable sans réellement le réutiliser !
 
 ## Notes supplémentaires
 
