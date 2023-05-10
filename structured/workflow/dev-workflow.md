@@ -21,6 +21,10 @@ Notes sur mon workflow de dev
       * [Configuration](#configuration)
 * [git](#git)
    * [diff-so-fancy](#diff-so-fancy)
+* [just](#just)
+   * [C'est quoi](#cest-quoi)
+   * [Installation](#installation-2)
+   * [Notes vrac d'utilisation](#notes-vrac-dutilisation)
 * [JOURNAL](#journal)
    * [Vrac1](#vrac1)
    * [Utilisation de telescope avec nvim](#utilisation-de-telescope-avec-nvim)
@@ -480,6 +484,93 @@ Rétro-pédalage dans le philenv où j'avais setté le `GIT_PAGER` à `cat` :
 ```sh
 unset GIT_PAGER
 ```
+
+# just
+
+## C'est quoi
+
+`just` ([github](https://github.com/casey/just), [site officiel](https://just.systems/), [manuel](https://just.systems/man/en/)) est un command-runner = un équivalent moderne à `make`.
+
+Il permet 1. de définir des shortcuts per-project, et surtout 2. d'auto-documenter les commandes utiles propres à un projet, plutôt que de les définir dans le README (et les commandes étant documentées, elles restent lançables manuellement si on n'a pas installé `just`).
+
+## Installation
+
+Le tool n'est pas packagé pour ubuntu, j'ai donc suivi la doc pour installer manuellement :
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /home/myself/.local/bin
+# install: Repository:  https://github.com/casey/just
+# install: Crate:       just
+# install: Tag:         1.13.0
+# install: Target:      x86_64-unknown-linux-musl
+# install: Destination: /home/myself/.local/bin
+# install: Archive:     https://github.com/casey/just/releases/download/1.13.0/just-1.13.0-x86_64-unknown-linux-musl.tar.gz
+
+just --version
+# just 1.13.0
+```
+
+Syntaxe des `justfile` dans le vimrc :
+
+```
+call plug#begin()
+Plug 'https://github.com/NoahTheDuke/vim-just'
+call plug#end()
+```
+
+Éditer le zshrc pour avoir un alias `j` plus court à taper + activer la complétion des recipes avec zsh :
+
+
+
+```sh
+# dans un terminal :
+mkdir ~/.local/custom-zsh-completions && just --completions zsh > ~/.local/custom-zsh-completions/_just
+
+# dans le zshrc :
+alias j=just
+
+# dans le zshrc, modifier le fpath AVANT de sourcer oh-my-zsh.sh :
+fpath=(~/.local/custom-zsh-completions $fpath)
+source $ZSH/oh-my-zsh.sh
+```
+
+## Notes vrac d'utilisation
+
+- Le tool est plus puissant qu'il n'y paraît (e.g. on peut charger des variables depuis un dotenv) mais [le manuel](https://just.systems/man/en/) est bien fait → si j'ai des besoins particuliers, ne pas hésiter à aller y jeter un coup d'œil.
+- Par défaut, `just` printe la commande exécutée avant de l'exécuter (pour disabler, il faut préfixer la commande par `@`)
+- Par défaut, `just` arrête une recipe dès qu'une de ses commandes échoue (pour forcer à continuer malgré les erreurs, il faut préfixer la commande par `-`)
+- Si on ne précise pas de recipe à `just`, il exécutera la première (une bonne astuce est donc de définir `just --list` comme première recipe du `justfile`).
+- Les lignes de commentaires dans le justfile sont printées à l'exécution (ici aussi on peut les préfixer par `@` pour ne pas les printer à l'exécution) ; c'est un peu déroutant, mais à l'usage c'est pratique, et c'est un besoin que j'ai déjà eu = commenter à la fois le code et ce qui est affiché.
+- On peut définir des dépendances (un peu comme les makefiles : on résout le DAG, et les dépendances sont exécutées d'abord) :
+    ```
+    task1:
+      echo "TASK 1"
+
+    task2: task1
+      @echo "TASK 2"
+    ```
+- On peut définir des alias pour raccourcir la commande `just` à utiliser :
+    ```
+    alias b := build
+
+    build:
+      echo 'Building!'
+    ```
+- Un commentaire juste avant une recipe fait office de docstring, qui apparaîtra comme doc de la recipe dans un `just --list` :
+    ```
+    # this is the docstring of the recipe
+    slides:
+      echo "slides"
+    ```
+- On peut définir des variables pour les réutiliser dans plusieurs recipes :
+    ```
+    name := "Luke"
+
+    jedi:
+      @echo "Use the force {{ name }}"
+    ```
+- `just` fournit quelques fonctions pour faire de l'introspection ou de la manipulation de paths ou de strings, cf. https://just.systems/man/en/chapter_30.html
+- modularité : on peut splitter ses justfiles et inclure des fichiers externes
 
 # JOURNAL
 
