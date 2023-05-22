@@ -18,7 +18,6 @@
 
 J'annote l'ensemble des contenus comme une seule ressource, même si tout est splitté en plusieurs posts.
 
-
 * [Writing an OS in Rust](#writing-an-os-in-rust)
    * [Bare bones](#bare-bones)
       * [Préambule : Bare machine](#préambule--bare-machine)
@@ -39,7 +38,6 @@ J'annote l'ensemble des contenus comme une seule ressource, même si tout est sp
       * [Allocator Designs](#allocator-designs)
    * [Multitasking](#multitasking)
       * [Async/Await](#asyncawait)
-
 
 ## Bare bones
 
@@ -430,22 +428,103 @@ Du coup, je mets le résumé :
 
 https://os.phil-opp.com/heap-allocation/
 
-TODO
+> This post adds support for heap allocation to our kernel. First, it gives an introduction to dynamic memory and shows how the borrow checker prevents common allocation errors. It then implements the basic allocation interface of Rust, creates a heap memory region, and sets up an allocator crate
 
-TODO
+L'allocation dynamique (= la gestion d'un heap) est une feature de l'OS : rien n'oblige à splitter la mémoire virtuelle gérée par le processeur en deux zones (stack et heap).
 
-TODO
+> Static variables are stored at a fixed memory location separate from the stack. This memory location is assigned at compile time by the linker and encoded in the executable. Statics live for the complete runtime of the program
+
+^ définition des static variable
+
+> Local and static variables (...) both have their limitations: \
+> Local variables only live until the end of the surrounding function or block. (...) \
+> Static variables always live for the complete runtime of the program, so there is no way to reclaim and reuse their memory when they’re no longer needed.  (...) \
+> Another limitation of local and static variables is that they have a fixed size. So they can’t store a collection that dynamically grows when more elements are added. \
+> To circumvent these drawbacks, programming languages often support a third memory region for storing variables called the heap.
+
+Plus généralement que ces quelques extraits, l'intro du post présente l'allocation dynamique, ses bénéfices et inconvénients.
+
+> Rust takes a different approach to the problem: It uses a concept called ownership that is able to check the correctness of dynamic memory operations at compile time.
+
+^ c'est bien l'ownership le concept important de rust
+
+> Instead of letting the programmer manually call allocate and deallocate, the Rust standard library provides abstraction types that call these functions implicitly. The most important type is Box, which is an abstraction for a heap-allocated value.
+
+^ `Box` semble être un mix des smart-pointers avec le concept d'ownership.
+
+> Taking a reference to a value is called borrowing the value since it’s similar to a borrow in real life: You have temporary access to an object but need to return it sometime, and you must not destroy it. By checking that all borrows end before an object is destroyed, the Rust compiler can guarantee that no use-after-free situation can occur.
+
+^ une autre explication en quelques mots expliquant que les références ne peuvent jamais être dangling en rust.
+
+> As a basic rule, dynamic memory is required for variables that have a dynamic lifetime or a variable size.
+
+^ raisons de nécessiter de l'allocation dynamique
+
+> The most important type with a dynamic lifetime is `Rc`, which counts the references to its wrapped value and deallocates it after all references have gone out of scope.
+
+^ `Rc` est un équivalent des `shared_ptr`, qui ne sait quand il doit desallouer que dynamiquement, en fonction de qui a encore des références sur la ressource.
+
+> Examples for types with a variable size are Vec, String, and other collection types that dynamically grow when more elements are added.
+
+^ les tableaux dynamiques nécessitent également une allocation dynamique, vu qu'ils ne connaissent la taille qui leur est nécessaire qu'au runtime.
+
+Il faut définir nos propres fonctions allocate / desallocate , et indiquer à rust de les utiliser (via l'atteibute `#[global_allocator]`)
+
+Probablement que l'allocator par défaut utilise celui de la libc.
+
+> Before we can create a proper allocator, we first need to create a heap memory region from which the allocator can allocate memory. To do this, we need to define a virtual memory range for the heap region and then map this region to physical frames.
+
+^ quelque part, ce n'est pas l'allocation dynamique en elle même qui consomme de la mémoire virtuelle : c'est le bouzin sous jacent (l'implémentation de l'allocateur, en quelque sorte le "moteur d'allocation") qui le fait, et l'allocation dynamique se contente de renvoyer un morceau de cette RAM consommée (et derrière, la RAM physique consommée dépend de ce qui backe la RAM virtuelle).
+
+Du coup, sa première fonction mappe un gros chunk de RAM à des adresses virtuelles, et cette plage d'adresses (100 kio dans son exemple) constitue le heap. Au moment où il initialise le heap de la sorte, la RAM est consommée alors qu'aucune allocation dynamique n'a encore eu lieu :
+
+> We now have a mapped heap memory region that is ready to be used.
+
+Dans la suite du post, il n'implemente pas encore un allocator :
+
+> Since implementing an allocator is somewhat complex, we start by using an external allocator crate. We will learn how to implement our own allocator in the next post.
 
 ### Allocator Designs
 
 https://os.phil-opp.com/allocator-designs/
 
+> The responsibility of an allocator is to manage the available heap memory. It needs to return unused memory on alloc calls and keep track of memory freed by dealloc so that it can be reused again. Most importantly, it must never hand out memory that is already in use somewhere else because this would cause undefined behavior.
+>
+> Apart from correctness, there are many secondary design goals. For example, the allocator should effectively utilize the available memory and keep fragmentation low. Furthermore, it should work well for concurrent applications and scale to any number of processors. For maximal performance, it could even optimize the memory layout with respect to the CPU caches to improve cache locality and avoid false sharing.
 
-TODO
+^ les objectifs d'un allocator
 
-TODO
+Derrière, il décrit plusieurs stratégies d'allocation, toutes liées au problème de savoir comment gérer la connaissance de quels morceaux du heap sont disponibles, et quels morceaux du heap sont occupés.
 
-TODO
+**Bump allocator** = on alloue les chunks les uns à la suite des autres, et on ne désalloue jamais, sauf si tous les chunks ont été libérés. Pour cela, un compteur garde trace du nombre de chunks actifs (et ce n'est que quand ce compteur tombe à zéro qu'on rend la RAM).
+
+**Linked-list allocator** : on maintient une linked-list de chaque chunk libre (qui n'est donc pas vraiment libre et rendu à l'os : mais qui contient plutôt un node de la liste, chaque node a un pointeur vers le chunk suivant). La structure est une **free-list** = une linked liste des zones du heap qui sont free. Les allocators qui utilisent une free-list s'appellent des **pool allocators**. L'implémentation est bien détaillée, mais je la skimme. Le souci de ça, c'est qu'il faut traverser la liste pour trouver le premier emplacement libre suffisamment grand pour accueillir l'allocation demandée, ce qui peut être très long.
+
+**Fixed Size Block Allocator** : seuls des blocs de taille fixes (16, 64, et 512, par exemple) sont allouables. Au lieu d'avoir une unique free-list, on a une free-list par taille de bloc : chaque liste ne contient que des blocs d'une même taille. Chaque allocation est arrondie à la taille de bloc supérieure, ce qui gâche de la mémoire (jusqu'à la moitié de la RAM !), mais on y gagne de meilleures performances que les pool allocators, car on se contente d'utiliser le head de la liste approprié pour répondre à une demande d'allocation, et on n'a donc pas à traverser la liste.
+
+Une stratégie supplémentaires consiste à mixer les stratégies , e.g. utiliser le Fixed Size Block Allocator en général, mais utiliser un Pool Allocator pour les rares cas où on doit allouer des gros blocs.
+
+Il continue son bestiaire des allocators :
+
+**Slab Allocator** :
+
+> The idea behind a slab allocator is to use block sizes that directly correspond to selected types in the kernel. This way, allocations of those types fit a block size exactly and no memory is wasted.
+
+**Buddy Allocator**
+
+> Instead of using a linked list to manage freed blocks, the buddy allocator design uses a binary tree data structure together with power-of-2 block sizes. When a new block of a certain size is required, it splits a larger sized block into two halves, thereby creating two child nodes in the tree. Whenever a block is freed again, its neighbor block in the tree is analyzed. If the neighbor is also free, the two blocks are joined back together to form a block of twice the size.
+>
+> The advantage of this merge process is that external fragmentation is reduced so that small freed blocks can be reused for a large allocation. It also does not use a fallback allocator, so the performance is more predictable. The biggest drawback is that only power-of-2 block sizes are possible, which might result in a large amount of wasted memory due to internal fragmentation.
+
+Son summary est tellement bien que le cite tel quel :
+
+> This post gave an overview of different allocator designs. We learned how to implement a basic bump allocator, which hands out memory linearly by increasing a single next pointer. While bump allocation is very fast, it can only reuse memory after all allocations have been freed. For this reason, it is rarely used as a global allocator.
+>
+> Next, we created a linked list allocator that uses the freed memory blocks itself to create a linked list, the so-called free list. This list makes it possible to store an arbitrary number of freed blocks of different sizes. While no memory waste occurs, the approach suffers from poor performance because an allocation request might require a complete traversal of the list. Our implementation also suffers from external fragmentation because it does not merge adjacent freed blocks back together.
+>
+> To fix the performance problems of the linked list approach, we created a fixed-size block allocator that predefines a fixed set of block sizes. For each block size, a separate free list exists so that allocations and deallocations only need to insert/pop at the front of the list and are thus very fast. Since each allocation is rounded up to the next larger block size, some memory is wasted due to internal fragmentation.
+>
+> There are many more allocator designs with different tradeoffs. Slab allocation works well to optimize the allocation of common fixed-size structures, but is not applicable in all situations. Buddy allocation uses a binary tree to merge freed blocks back together, but wastes a large amount of memory because it only supports power-of-2 block sizes. It’s also important to remember that each kernel implementation has a unique workload, so there is no “best” allocator design that fits all cases.
 
 ## Multitasking
 
@@ -453,8 +532,23 @@ TODO
 
 https://os.phil-opp.com/async-await/
 
-TODO
+> In this post, we explore cooperative multitasking and the async/await feature of Rust. We take a detailed look at how async/await works in Rust, including the design of the Future trait, the state machine transformation, and pinning
 
-TODO
+^ vue la qualité des posts précédents, je vais au moins skimmer, mais pas sûr que ça soit très lié aux concepts que j'essayais de creuser.
 
-TODO
+Chaque thread a sa propre callstack, de sorte que seuls les contenus des registres doivent être sauvegardés/restaurés lors des context-switch.
+
+> The main advantage of preemptive multitasking is that the operating system can fully control the allowed execution time of a task. This way, it can guarantee that each task gets a fair share of the CPU time, without the need to trust the tasks to cooperate (...)
+>
+> Instead of forcibly pausing running tasks at arbitrary points in time, cooperative multitasking lets each task run until it voluntarily gives up control of the CPU. This allows tasks to pause themselves at convenient points in time, for example, when they need to wait for an I/O operation anyway. (...)
+>
+> The drawback of cooperative multitasking is that an uncooperative task can potentially run for an unlimited amount of time. Thus, a malicious or buggy task can prevent other tasks from running and slow down or even block the whole system
+
+^ preemptive vs cooperative multitasking
+
+Il donne des explication sur les `future` et `async/await` dans rust.
+
+> Now that we understand how cooperative multitasking based on futures and async/await works in Rust, it’s time to add support for it to our kernel.
+
+^ le reste du post explique l'implémentation de ça dans le toy kernel qu'il développe.
+
