@@ -32,6 +32,14 @@ Notes sur mon workflow de dev
    * [Vrac2](#vrac2)
    * [Vrac3](#vrac3)
    * [Nouveau problème avec clangd = il ne trouve pas libc++](#nouveau-problème-avec-clangd--il-ne-trouve-pas-libc)
+   * [Nouveau problème avec clangd = le standard utilisé n'est pas le bon](#nouveau-problème-avec-clangd--le-standard-utilisé-nest-pas-le-bon)
+      * [Manifestation de mon problème](#manifestation-de-mon-problème)
+      * [TL;DR](#tldr)
+      * [Analyse](#analyse)
+         * [STEP 1 = en première approche, les logs LSP montrent que clangd ne trouve pas de compile_commands.json](#step-1--en-première-approche-les-logs-lsp-montrent-que-clangd-ne-trouve-pas-de-compile_commandsjson)
+         * [STEP 2 = même avec un compile_commands.json ET le standrad en C++17 dans le CMakeLists.txt, clangd continue d'utiliser le standard C++14](#step-2--même-avec-un-compile_commandsjson-et-le-standrad-en-c17-dans-le-cmakeliststxt-clangd-continue-dutiliser-le-standard-c14)
+         * [STEP 3 = je force cmake à préciser explicitement le standard dans compile_commands.json](#step-3--je-force-cmake-à-préciser-explicitement-le-standard-dans-compile_commandsjson)
+      * [Questions](#questions)
 * [FUTUR](#futur)
 
 # neovim
@@ -251,6 +259,15 @@ ln -s build/compile_commands.json .
 ```
 
 **caveat** = si les temps de recompilation (surtout pour des gros fichiers sources mal découpés, comme ceux d'ULTRA) sont assez longs, le temps de réaction du linter pourra être assez lent...
+
+**caveat** = pour être sûr que clangd utilise le bon standard de compilation, il faut le préciser explicitement dans `CMakeLists.txt` afin d'être sûr qu'il apparaisse dans la ligne de commande de `compile_commands.json` :
+
+```
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# malheureusement, ne pas utiliser la version moderne = target_compile_features
+# en effet, elle ne permet pas de forcer le standard...
+```
 
 ### compile_commands.json
 
@@ -970,6 +987,189 @@ sudo update-alternatives --config clangd
 ```
 
 Toutes les versions étaient à une priorité de 100, j'ai choisi manuellement clangd-14 comme prioritaire.
+
+## Nouveau problème avec clangd = le standard utilisé n'est pas le bon
+
+(possiblement une conséquence du paragraphe précédent où j'ai forcé clangd-14)
+
+
+### Manifestation de mon problème
+
+- j'ai fait une POC sur `std::optional`, qui n'est disponible qu'à partir de C++17
+- je compile avec cmake en précisant le standard à C++17 :
+    + ça compile bien
+- pourtant, lorsque j'ouvre le code dans nvim, les erreurs du LSP montrent qu'il analyse le code en C++14 (qui ne connaît pas `std::optional`) :
+    ```
+    std::optional<unsigned int> halve_if_even(unsigned int value) {     ■ No template named 'optional' in namespace 'std'
+    ```
+
+### TL;DR
+
+**EXPLICATION** = le standard n'était pas indiqué dans `compile_commands.json` (car mon compilo était compatible) ET j'utilisais un clangd/clang++ avec un standard par défaut différent.
+
+**RÉSOLUTION** :
+
+- ne pas oublier d'activer le `compile_commands.json` :
+    ```
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    ```
+- définir le standard avec `CMAKE_CXX_STANDARD` (et non pas avec `target_compile_features`) :
+    ```
+    set(CMAKE_CXX_STANDARD 17)
+    ```
+    - malheureusement, il ne faut PAS utiliser la commande "moderne" de cmake permettant de définir le standard = `target_compile_features(mytarget PRIVATE cxx_std_17)`
+- ne pas oublier de forcer cmake à préciser explicitement le standard sur la ligne de commande de compilation dans `compile_commands.json` :
+    ```
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    ```
+
+Note = pour débugger le client LSP de neovim :
+
+- `:LspRestart` pour redémarrer le Lsp (et forcer la réanalyse du code, e.g. après modification du `compile_commands.json`)
+- `:LspLog` pour voir ce que dit clangd (se passe avec clangd redémarrer le client LSP (et forcer la réanalyse du code)
+- éventuellement, pour cleaner le log LSP préalablement  =  `rm ~/.cache/nvim/lsp.log`
+
+### Analyse
+
+#### STEP 1 = en première approche, les logs LSP montrent que clangd ne trouve pas de `compile_commands.json`
+
+`:LspLog`  (ou `bat ~/.cache/nvim/lsp.log`) :
+
+```
+Failed to find compilation database for /path/to/main.cpp
+ASTWorker building file /path/to/main.cpp version 0 with command clangd fallback
+/usr/bin/clang -resource-dir=/usr/lib/llvm-14/lib/clang/14.0.0 -- /path/to/main.cpp
+```
+
+Du coup, on voit qu'il utilise clang14 pour compiler, sans lui préciser le standard (et clang14 ne semble pas être en C++17 par défaut).
+
+#### STEP 2 = même avec un `compile_commands.json` ET le standrad en C++17 dans le CMakeLists.txt, clangd continue d'utiliser le standard C++14
+
+Je m'assure d'avoir un `compile_commands.json` :
+
+```
+# dans le CMakeLists.txt :
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# lien obligatoire à la racine du projet
+ln -s NOGIT_build/`compile_commands.json`
+```
+
+Je vérifie également que le projet est compilé en C++17 :
+
+```
+# dans le CMakeLists.txt :
+set(CMAKE_CXX_STANDARD 17)
+# (et je vérifie que le build compile correctement, donc qu'il est en C++17)
+```
+
+Pourtant, LspLog montre que clangd, même s'il utilise `compile_commands.json`, compile toujours en C++ 14 :
+
+```
+Loaded compilation database from /path/to/`compile_commands.json`
+ASTWorker building file /path/to/main.cpp version 0 with command
+usr/bin/c++ --driver-mode=g++ -Wall -Wextra -pedantic -Werror -o CMakeFiles/pouet.dir/main.cpp.o -c -resource-dir=/usr/lib/llvm-14/lib/clang/14.0.0 -- /path/to/main.cpp
+```
+
+Et effectivement, `compile_commands.json` n'indique PAS le standard :
+
+```
+"directory": "/path/to/NOGIT_build",
+"command": "/usr/lib/ccache/c++   -Wall -Wextra -pedantic -Werror -o CMakeFiles/pouet.dir/main.cpp.o -c /path/to/main.cpp",
+"file": "/path/to/main.cpp"
+```
+
+Du coup, clangd (qui utilise la commande de compilation, mais avec clang14 !) utilise le standard par défaut de clang-14... qui se trouve être C++14 ! (cf. QUESTIONS ci-dessous)
+
+#### STEP 3 = je force cmake à préciser explicitement le standard dans `compile_commands.json`
+
+En fait, cmake ne passe pas forcément le standard C++ dans la ligne de commande (cf. QUESTIONS ci-dessous). Pour forcer explicitement, il faut une option :
+
+```
+# dans le CMakeLists.txt :
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+```
+
+Si on fait ça, le `compile_commands.json` précise ENFIN le standard explicitement :
+
+```
+"directory": "/path/to/NOGIT_build",
+"command": "/usr/lib/ccache/c++   -Wall -Wextra -pedantic -Werror -std=gnu++17 -o CMakeFiles/pouet.dir/main.cpp.o -c /path/to/main.cpp",
+"file": "/path/to/main.cpp"
+```
+
+Du coup, LspLog montre ENFIN que clangd le prend en compte :
+
+```
+Loaded compilation database from /path/to/`compile_commands.json`\n"
+ASTWorker building file /path/to/main.cpp version 0 with command
+/usr/bin/c++ --driver-mode=g++ -Wall -Wextra -pedantic -Werror -std=gnu++17 -o CMakeFiles/pouet.dir/main.cpp.o -c -resource-dir=/usr/lib/llvm-14/lib/clang/14.0.0 -- /path/to/main.cpp
+```
+
+Et les warnings disparaissent, victory !
+
+### Questions
+
+Q = quel est le standard C++ utilisé par mon code ?
+
+- en théorie, je peux aller observer la ligne de compilation dans `compile_commands.json`
+- en pratique, le standard n'y apparaît pas...
+- pourtant, j'ai bien `CMAKE_CXX_STANDARD` dans mon CMakeLists.txt !
+
+Q = quel est le standard C++ par défaut utilisé par clangd 14.0.0 ?
+
+-  j'ai eu du mal à y arriver, mais la question est mal posée
+-  s'il n'y a pas de database compilation, clangd redirige sur clang pour compiler
+-  c'est donc le standard C++ par défaut de clang qui compte
+
+Q = quel est le standard C++ utilisé par clang 14 ?
+- EDIT : finalement, l'info est dans le man de clang (pas de clangd, mais bien de clang) :
+   > The default C++ language standard is gnu++14.
+- de façon surpenante, c'est difficile d'obtenir une réponse définitive à cette question
+- je ne trouve pas d'option dans clangd pour lui dire "dis-moi quel standard par défaut tu utilises"
+- LspLog m'indique la version de clangd utilisée (c'est bien celle qui est installée sur mon poste) :
+    ```
+    Ubuntu clangd version 14.0.0-1ubuntu
+    ```
+- sans trouver d'info officielle, je trouve ceci sur [cette page](https://www.phoronix.com/news/LLVM-Clang-16-Default-GNU17), qui montre que ce n'est qu'à partir de clang-16 que clang est en C++17 par défaut :
+    > GNU++17 (C++17 with GNU extensions) is now the default C++ standard targeted if no other version is explicitly set for the compiler.
+    >
+    > This is a bump from GNU++14 as the current C++ default up to LLVM/Clang 15.
+- indirectement, l'info est dans [la page officielle](https://clang.llvm.org/cxx_status.html) :
+    > By default, Clang 16 or later builds C++ code according to the C++17 standard.
+- Mais comme c'est au milieu d'autres phrases un peu contradictoire, c'est un peu confusant :
+    > Clang 5 and later implement all the features of the ISO C++ 2017 standard. \
+    > By default, Clang 16 or later builds C++ code according to the C++17 standard. \
+    > You can use Clang in C++17 mode with the -std=c++17 option (use -std=c++1z in Clang 4 and earlier).
+
+Q = comment modifier le standard utilisé par clangd ?
+
+   - en s'assurant qu'il utilise `compile_commands.json` + en forçant cmake à préciser le standard dans la ligne de commande de compilation
+
+Q = pourquoi le standard C++17 n'apparaît pas dans la ligne de compilation de `compile_commands.json` ?
+
+- TL;DR = car le compilo détecté par cmake est compatible avec C++17, donc il ne juge pas nécessaire de le préciser.
+- Du coup, clangd utilise son standard par défaut à sa propre version, qui peut être différent du standard par défaut du compilo utilisé pour builder.
+- Pour forcer le standard explicitement :
+    ```
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    ```
+- (la doc est pas hyper-claire, mais en pratique ça a l'air de marcher)
+
+Q = comment indiquer à cmake le standard à utiliser ?
+
+- Notamment, quelle différence entre :
+    ```
+    set(CMAKE_CXX_STANDARD 17)
+    target_compile_features(pouet PUBLIC cxx_std_17)
+    ```
+- réponse : le deuxième est la façon moderne
+- MAIS [la doc](https://cmake.org/cmake/help/latest/manual/cmake-compile-features.7.html) indique que le flag n'est pas obligatoirement passé :
+    > Note If the compiler's default standard level is at least that of the requested feature, CMake may omit the -std= flag. The flag may still be added if the compiler's default extensions mode does not match the <LANG>_EXTENSIONS target property, or if the <LANG>_STANDARD target property is set.
+- du coup, j'ai l'impression que si je veux forcer le fait de passer le standard, pour le moment, je dois rester à l'ancienne façon de passer le standard + préciser le REQUIRED...
+- note : [cette issue cmake](https://gitlab.kitware.com/cmake/cmake/-/issues/23397) présente exactement mon problème :
+    > If you want to control the standard explicitly, use CMAKE_CXX_STANDARD.  That mode will be used unless a compile feature demands a higher level.
+    - TL;DR : c'est by design, donc pour obtenir ce que je veux (= utiliser EXACTEMENT ce standard et non "au moins" ce standard); il faut utiliser `CMAKE_CXX_STANDARD` et non `target_compile_features`
+
 
 # FUTUR
 
