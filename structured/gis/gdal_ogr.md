@@ -23,7 +23,7 @@ Contexte = janvier 2022, j'essaye de charger des données `.osm.pbf` dans qgis, 
     ```sh
     ogr2ogr -where "osm_id IN ('176577460', '166149571', '318654737', '158189815')" -f 'GeoJSON' dest.geojson /tmp/monaco.osm.pbf lines
     ```
-- limiter l'import à une bbox (fonctionne pour `ogrinfo` et `ogr2ogr`) :
+- limiter l'import à une bbox (fonctionne pour `ogrinfo` et `ogr2ogr`, `-spat xmin ymin xmax ymax`) :
     ```sh
     ogrinfo -ro -spat 7.4143945 43.7285819 7.4155760 43.7289873 /tmp/monaco.osm.pbf lines
     ```
@@ -141,7 +141,7 @@ ogr2ogr -f OSM dest.osm /tmp/monaco.osm.pbf lines
 ERROR 1: OSM driver does not support data source creation.
 ```
 
-(c'est dommage, ça m'aurait été utile pour extraire facilement des sous-parties de données restreintes à un polygone, avec `ogr2ogr` et `-spat`)
+(c'est dommage, ça m'aurait été utile pour extraire facilement des sous-parties de données restreintes à un polygone, avec `ogr2ogr` et `-spat` ; **EDIT** : mais ça reste utile pour exporter un fichier OSM en CSV, que je peux charger derrière dans qgis)
 
 ## Fichier `osmconf.ini`
 

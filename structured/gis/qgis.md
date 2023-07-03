@@ -15,11 +15,18 @@ nice -n 19 ionice -c 3 qgis
 
 Les docs = [user guide](https://docs.qgis.org/3.22/en/docs/user_manual/) et [trainings](https://docs.qgis.org/3.22/en/docs/training_manual/).
 
+
 * [Installation](#installation)
    * [Plugins](#plugins)
 * [Usage n°1 = import](#usage-n1--import)
    * [Ajouter des tuiles de fond de plan](#ajouter-des-tuiles-de-fond-de-plan)
    * [Comment importer un fichier .osm.pbf ?](#comment-importer-un-fichier-osmpbf-)
+      * [Impossible d'importer directement le fichier .osm.pbf](#impossible-dimporter-directement-le-fichier-osmpbf)
+      * [Contournement en exportant l'OSM en CSV](#contournement-en-exportant-losm-en-csv)
+      * [Comment limiter la conversion CSV à une bbox ?](#comment-limiter-la-conversion-csv-à-une-bbox-)
+      * [Importer la couche CSV](#importer-la-couche-csv)
+      * [Comment n'afficher le réseau routier que si on est suffisamment zoomé](#comment-nafficher-le-réseau-routier-que-si-on-est-suffisamment-zoomé)
+   * [DEPRECATED Comment importer un fichier .osm.pbf ?](#deprecated-comment-importer-un-fichier-osmpbf-)
       * [Comment limiter l'import PBF à une bbox ?](#comment-limiter-limport-pbf-à-une-bbox-)
    * [Comment importer des shapefiles ?](#comment-importer-des-shapefiles-)
    * [Comment importer des features d'une base postgis ?](#comment-importer-des-features-dune-base-postgis-)
@@ -87,6 +94,70 @@ Une fois les tuiles ajoutées, on peut drag-n-dropper la couche sur la visualiza
 URL des couches openstreetmap = `https://tile.openstreetmap.org/{z}/{x}/{y}.png`
 
 ## Comment importer un fichier .osm.pbf ?
+
+### Impossible d'importer directement le fichier .osm.pbf
+
+À date de juillet 2023, le driver utilisé pour importer des données OSM (= [OGR](./gdal_ogr.md)) n'est pas capable de construire un index spatial. Du coup, en dehors de petites données (genre Monaco), qgis est inutilisable après import des données :
+
+- le rendu est démesurément lent, donc même si on prend son mal en patience et qu'on attend le chargement, dès qu'on bouge/zoome la carte, tout est à refaire
+- la sélection de features est démesurément lente
+
+(c'est visible si on essaye de construire manuellement l'index via _Traitement > Boîte à Outils > Outils généraux pour les vecteurs > Créer un index spatial_ : l'exécution du traitement produit un log indiquant que le driver ne gère pas les index spatiaux)
+
+### Contournement en exportant l'OSM en CSV
+
+Solution = exporter les données en CSV, et importer le fichier CSV :
+
+```
+ogr2ogr -f 'CSV' /tmp/paris.csv -lco GEOMETRY=AS_WKT /tmp/Paris.osm.pbf lines
+```
+
+À noter :
+
+- pour accélérer le tout premier rendu de la couche, on peut zoomer fortement la carte **avant** d'importer la couche.
+- toutes [mes notes sur gdal](./gdal_ogr.md) (et notamment les tags cachés dans `other_tags`) sont applicables au moment de la conversion
+- [la doc du driver OSM de gdal](https://gdal.org/drivers/vector/osm.html) indique la signification de `lines` / `points` et consorts :
+   > The driver will categorize features into 5 layers :
+   > - points : "node" features that have significant tags attached.
+   > - lines : "way" features that are recognized as non-area.
+   > - multilinestrings : "relation" features that form a multilinestring(type = 'multilinestring' or type = 'route').
+   > - multipolygons : "relation" features that form a multipolygon (type = 'multipolygon' or type = 'boundary'), and "way" features that are recognized as area.
+   > - other_relations : "relation" features that do not belong to the above 2 layers.
+- si je veux construire un graphe routable, je peux donc a priori me contenter de `lines`
+
+### Comment limiter la conversion CSV à une bbox ?
+
+On peut utiliser l'option `-spat xmin ymin xmax ymax` de `ogr2ogr` :
+
+```
+ogr2ogr -f 'CSV' /tmp/cropped.csv -lco GEOMETRY=AS_WKT -spat 2.337398547855315 48.851750441390834 2.354516975749249 48.86197299664923  /tmp/Paris.osm.pbf lines
+```
+
+### Importer la couche CSV
+
+Une fois nos données OSM converties en CSV, _Couche > Ajouter une couche > Ajouter une couche de texte délimité_ , il faut :
+
+- choisir _SCR de la géométrie_ à **EPSG:4326 — WGS84**
+- dans _Paramètres de la couche_, cocher "Index spatial"
+
+En terme de taille de données, avec un extract OSM IDF de 284 Mio, la conversion en CSV prend quelques secondes, l'import sous QGIS prend quelques dizaines de secondes.
+
+### Comment n'afficher le réseau routier que si on est suffisamment zoomé
+
+Si la carte est dézoomée, non seulement il est inutile d'afficher le réseau routier (on n'y verra rien), mais en plus ça ralentit le rendu.
+
+Solution = n'afficher la couche importée qu'à partir d'un certain niveau de zoom :
+
+- clic-droit sur la Couche > Propriétés
+- Onglet "Rendu"
+- Cocher "visibilité dépendante de l'échelle"
+- Choisir par exemple :
+    - `Minimium = 1:10000`
+    - `Maximum = 1:1`
+
+## DEPRECATED Comment importer un fichier .osm.pbf ?
+
+**ATTENTION** : ces notes sont deprecated, en juillet 2023, j'utilise plutôt une autre façon = conversion en CSV, essentiellement pour pouvoir construire un index spatial sur les données.
 
 Le principe va être d'importer un layer ("Couche" en VF) contenant les features du fichier OSM :
 
