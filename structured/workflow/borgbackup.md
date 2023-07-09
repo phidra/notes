@@ -29,6 +29,8 @@ Un outil pour backuper ses données sur un repo local ou remote, avec plein de f
 - **compression** = les archives peuvent être compressées
 - **pruning** = très configurable, on peut choisir p.ex. de ne conserver qu'une archive par mois
 
+NOTE : cf. `K2_JOURNAL_ADMINISTRATIF.otl` pour les détails sur comment j'utilise borg pour backuper mes journaux.
+
 # Concepts clé
 
 ## repo vs. archive
