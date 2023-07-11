@@ -113,7 +113,11 @@ Mes raccourcis actuels (possiblement, ce sont mes raccourcis persos et pas ceux 
 
 - ça a l'air assez aléatoire au boot
 - c'est embêtant pour activer le VPN
-- contournement = utiliser `nmtui` qui fait le taf pour activer le VPN
+- contournement 1 = utiliser `nmtui` qui fait le taf pour activer le VPN
+- contournement 2 = lancer manuellement `NetworkManager` :
+    ```sh
+    sudo NetworkManager
+    ```
 - sinon, le problème discuté [ici](https://askubuntu.com/questions/1292644/ubuntu-20-04-1-lts-networkmanager-not-appearing-in-ubuntu) qui [pointe là](https://askubuntu.com/questions/507310/network-manager-icon-disappeared-14-04/529287#529287) et suggère :
     ```sh
     sudo vim /etc/xdg/autostart/nm-applet.desktop
