@@ -47,6 +47,10 @@ Notes sur mon workflow de dev
 ## Notes d'installation
 
 - je choisis d'installer [en compilant depuis les sources](https://github.com/neovim/neovim/wiki/Installing-Neovim#install-from-source), il y a [une doc qui explique tout ça](https://github.com/neovim/neovim/wiki/Building-Neovim).
+- je n'oublie pas d'installer les dépendances (la commande ci-dessous n'est indiquée qu'à titre indicatif, mieux vaut se référer à [la doc](https://github.com/neovim/neovim/wiki/Building-Neovim#build-prerequisites)) :
+    ```
+    sudo apt install ninja-build gettext cmake unzip curl
+    ```
 - j'installe la version `stable` :
     ```
     git clone https://github.com/neovim/neovim --depth 1 --branch stable
