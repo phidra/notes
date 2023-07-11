@@ -7,6 +7,8 @@
 * [envoyer une touche littérale dans le terminal](#envoyer-une-touche-littérale-dans-le-terminal)
 * [mélanger les lignes d'un fichier](#mélanger-les-lignes-dun-fichier)
 * [sauter à la ligne dans une commande zsh multiligne de l'historique](#sauter-à-la-ligne-dans-une-commande-zsh-multiligne-de-lhistorique)
+* [créer ou extraire une archive .tar.7z de tout un répertoire](#créer-ou-extraire-une-archive-tar7z-de-tout-un-répertoire)
+* [chiffrer un fichier](#chiffrer-un-fichier)
 
 # imagemagick pour calculer la différence entre deux images
 
@@ -126,3 +128,37 @@ shuf logs.txt | head --lines=5
 Quand on rappelle une commande de l'historique zsh et qu'on veut l'éditer, si cette commande est multiligne, `Entrée` l'exécute au lieu d'insérer un saut de ligne.
 
 Solution = `Escape` puis `Entrée`.
+
+# créer ou extraire une archive .tar.7z de tout un répertoire
+
+**tags** : tarball, 7z, compression
+
+Créer une archive de tout un répertoire :
+
+```sh
+tar -cvf - monrepertoire | 7z a -si /tmp/monarchive.tar.7z
+```
+
+Extraire l'archive :
+
+```sh
+7z x -so /tmp/monarchive.tar.7z | tar -xvf -
+```
+
+# chiffrer un fichier
+
+**tags** : chiffrement, openssl
+
+Chiffrer un fichier (l'exemple est donné avec une archive 7z, car ça fait un bon combo)
+
+```sh
+openssl enc -e -aes-256-cbc -salt -in /tmp/monarchive.tar.7z -out /tmp/monarchive.tar.7z.xxx
+# le tool demande le mot de passe au prompt
+```
+
+Déchiffrer :
+
+```sh
+openssl enc -d -aes-256-cbc -salt -in /tmp/monarchive.tar.7z.xxx -out /tmp/monarchive.tar.7z
+# le tool demande le mot de passe au prompt
+```
