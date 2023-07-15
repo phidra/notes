@@ -377,7 +377,7 @@ Cette partie explique dans quel ordre implémenter quoi quand on démarre un nou
 - puis on implémente les vrais driven adapters, en les testant avec des drivers mockés
 - enfin, on branche les vrais des deux côtés
 
-Le tableau explicatif est très bien 👍
+Le tableau explicatif est très bien 👍  (EDIT : mais j'aime encore mieux l'image de [cet article](./2023-07-15-ports-and-adapters-architecture-explained.md))
 
 NDM : c'est l'implémentation des vrais driven adapters qui force à choisir la technologie du projet (e.g. la database), et on voit qu'on travaille dessus en dernier, et notamment après l'hexagone : on a retardé le moment de faire des choix technologiques.
 
