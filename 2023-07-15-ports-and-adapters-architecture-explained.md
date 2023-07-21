@@ -26,7 +26,7 @@ TL;DR : yet another article on hexagonal architecture.
 > - a Recipient – only receives information from the domain; e.g. a printer or message queue (as a publisher)
 > - a Repository – can both provide information to the domain and receive it; e.g. a database or file system
 
-Cette distinction **Recipient** vs. **Repository** est facultative pour la compréhension de l'architecture hexagonale, mais je l'aime beaucoup, notamment car elle aide à comprendre le flow de l'information. De plus, elle aide à nommer des classes.
+Du côté des driven actors, cette distinction **Recipient** vs. **Repository** est facultative pour la compréhension de l'architecture hexagonale, mais je l'aime beaucoup, notamment car elle aide à comprendre le flow de l'information. De plus, elle aide à nommer des classes.
 
 > A port can be considered a group of interactions with a specific purpose
 
