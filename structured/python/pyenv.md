@@ -49,7 +49,7 @@ Le besoin auquel pyenv répond est de pouvoir installer simplement (puis jongler
 - du coup, il intercepte les commandes python (e.g. `python`, `python3`, `pip`, `2to3`, etc.) et exécute à la place ses propres **shims**
     ```sh
     type python
-    python is /home/username/.pyenv/shims/python
+    python is /home/myself/.pyenv/shims/python
     ```
 - un shim n'est qu'un passe-plat intelligent : il "choisit" la bonne version de python à utiliser, puis lui transmet la commande
     ```sh
@@ -59,7 +59,7 @@ Le besoin auquel pyenv répond est de pouvoir installer simplement (puis jongler
 - la façon dont un shim choisit la version de python à utiliser suit le process suivant, dans l'ordre :
     - envvar `PYENV_VERSION` (cf. `pyenv shell`)
     - fichier `.python-version` dans le répertoire courant ou un de ses parents (cf. `pyenv local`)
-    - fichier `/home/username/.pyenv/version` (cf. `pyenv global`)
+    - fichier `/home/myself/.pyenv/version` (cf. `pyenv global`)
     - fallback sur la commande "normale" (i.e. celle qui serait lancée si pyenv n'était pas dans le `PATH`)
 - on utilise `pyenv rehash` pour créer de nouveaux shims ou mettre à jour ceux existants (cf. paragraphe ci-dessous)
 - (il est possible d'activer _plusieurs_ versions de python au sein d'un projet, pour que le projet puisse utiliser plusieurs versions concurrentes de python ; c'est utile pour que tox puisse tester que le projet est correct avec différentes versions de python)
@@ -80,7 +80,7 @@ Le besoin auquel pyenv répond est de pouvoir installer simplement (puis jongler
     ```
 - in fine, voici l'état de mon PATH `echo $PATH` :
     ```sh
-    /home/username/.pyenv/plugins/pyenv-virtualenv/shims:/home/username/.pyenv/shims:/home/username/.pyenv/bin:/usr/lib/ccache:.....
+    /home/myself/.pyenv/plugins/pyenv-virtualenv/shims:/home/myself/.pyenv/shims:/home/myself/.pyenv/bin:/usr/lib/ccache:.....
     ```
 - on dirait que les versions de python installables par pyenv sont hard-codées, du coup, attention à distinguer :
     - les différentes versions de python qu'on peut installer avec pyenv
@@ -122,24 +122,24 @@ Le besoin auquel pyenv répond est de pouvoir installer simplement (puis jongler
 - je peux confirmer que mon python global est celui du système ; je peux changer de python global et revenir à celui du système :
     ```sh
     pyenv versions
-    # * system (set by /home/username/.pyenv/version)
+    # * system (set by /home/myself/.pyenv/version)
     #   3.5.10
 
     pyenv global 3.5.10
     pyenv versions
     #   system
-    # * 3.5.10 (set by /home/username/.pyenv/version)
+    # * 3.5.10 (set by /home/myself/.pyenv/version)
 
     pyenv global system
     pyenv versions
-    # * system (set by /home/username/.pyenv/version)
+    # * system (set by /home/myself/.pyenv/version)
     #   3.5.10
     ```
 - je peux aussi modifier le python du shell courant (plus pratique que `local`, et moins invasif que `global`) :
     ```sh
     # STEP 1 = le python actuel est 'system' :
     pyenv version
-    # system (set by /home/username/.pyenv/version)
+    # system (set by /home/myself/.pyenv/version)
     echo $PYENV_VERSION
     # [vide]
 
@@ -153,24 +153,24 @@ Le besoin auquel pyenv répond est de pouvoir installer simplement (puis jongler
     # STEP 3 = si besoin, retour manuel à la normale :
     PYENV_VERSION=""
     pyenv version
-    # system (set by /home/username/.pyenv/version)
+    # system (set by /home/myself/.pyenv/version)
     ```
 - dans tous les cas, *même quand pyenv est configuré pour utiliser le python système*, `python` pointe sur le shim pyenv (et il faut utiliser `pyenv which` pour savoir quelle est la commande réellement utilisée derrière) :
     ```sh
     pyenv versions
-    # * system (set by /home/username/.pyenv/version)
+    # * system (set by /home/myself/.pyenv/version)
     #   3.5.10
 
     which python
-    # /home/username/.pyenv/shims/python
+    # /home/myself/.pyenv/shims/python
     pyenv which python
     # /usr/bin/python
 
     pyenv global 3.5.10
     which python
-    # /home/username/.pyenv/shims/python  <--- ceci ne change pas
+    # /home/myself/.pyenv/shims/python  <--- ceci ne change pas
     pyenv which python
-    # /home/username/.pyenv/versions/3.5.10/bin/python  <--- mais ceci change !
+    # /home/myself/.pyenv/versions/3.5.10/bin/python  <--- mais ceci change !
     ```
 
 ## passer d'une version de python à une autre
@@ -254,13 +254,13 @@ cat .python-version
 - par exemple, `python3` est un shim, qui vient faire le proxy pour "remplacer" le python3 du système :
     ```sh
     which python3
-    # /home/username/.pyenv/shims/python3
+    # /home/myself/.pyenv/shims/python3
     pyenv shims
     # [...]
-    # /home/username/.pyenv/shims/python3
+    # /home/myself/.pyenv/shims/python3
     # [...]
     pyenv which python3
-    # /home/username/.pyenv/versions/3.5.10/bin/python3
+    # /home/myself/.pyenv/versions/3.5.10/bin/python3
     ```
 - certains shims peuvent exister pour pyenv mais pas pour le système :
     ```sh
@@ -268,10 +268,10 @@ cat .python-version
     # python3.5 not found
     pyenv shims
     # [...]
-    # /home/username/.pyenv/shims/python3.5
+    # /home/myself/.pyenv/shims/python3.5
     # [...]
     pyenv which python3.5
-    # /home/username/.pyenv/versions/3.5.10/bin/python3.5
+    # /home/myself/.pyenv/versions/3.5.10/bin/python3.5
     ```
 - dans le cas ci-dessus, la commande `python3.5` n'est disponible que si la version de python active est 3.5.10 ; donc si pyenv utilise le python système, il nous indique (fort logiquement) que `python3.5` n'existe pas
 - cependant, pyenv (qui intercepte le call) sait que `python3.5` existe dans une AUTRE version de python que celle active, et nous l'indique gentiment :
@@ -298,7 +298,7 @@ cat .python-version
 
     # by default, version is the 'global' one :
     pyenv version
-    # system (set by /home/username/.pyenv/version)
+    # system (set by /home/myself/.pyenv/version)
 
     # we can set a 'local' version :
     pyenv local 3.5.10
@@ -308,9 +308,9 @@ cat .python-version
     # 3.5.10
 
     # it is specific to the project folder, in another folder, the version is unchanged :
-    cd /home/username/  # another folder
+    cd /home/myself/  # another folder
     pyenv version
-    # system (set by /home/username/.pyenv/version)
+    # system (set by /home/myself/.pyenv/version)
     ```
 - ça a l'air magique : dès qu'on est dans le répertoire (ou un de ses fils) ou bien qu'on le quitte, la version de python utilisée est mise à jour !
 - comment ça fonctionne :
@@ -320,7 +320,7 @@ cat .python-version
     ```sh
     # version globale (valable partout sur le système) :
     pyenv version
-    # system (set by /home/username/.pyenv/version)
+    # system (set by /home/myself/.pyenv/version)
 
     # version locale (propre au répertoire du projet) :
     pyenv version
@@ -369,9 +369,9 @@ Utilisation :
 - pyenv traite les virtualenvs un peu comme des versions particulières de python (c'est pas si idiot que ça, puisqu'il s'accompagne p.ex. de possibles nouveaux shims). Du coup, le virtualenv apparaît dans le résultat de `pyenv versions` :
     ```sh
     ll ~/.pyenv/versions
-    # lrwxrwxrwx 1 username username   52 janv. 11 11:41 mysuperenv -> /home/username/.pyenv/versions/3.5.10/envs/mysuperenv
+    # lrwxrwxrwx 1 myself myself   52 janv. 11 11:41 mysuperenv -> /home/myself/.pyenv/versions/3.5.10/envs/mysuperenv
     pyenv versions
-    # * system (set by /home/username/.pyenv/version)
+    # * system (set by /home/myself/.pyenv/version)
     #   3.10.1
     #   3.5.10
     #   3.5.10/envs/mysuperenv
@@ -384,7 +384,7 @@ Utilisation :
     pyenv version
     # mysuperenv (set by /path/to/myproject/.python-version)
     pyenv which python
-    # /home/username/.pyenv/versions/mysuperenv/bin/python
+    # /home/myself/.pyenv/versions/mysuperenv/bin/python
     python -V
     # Python 3.5.10
     ```
@@ -412,13 +412,13 @@ La question demeure : à quoi ça sert ? Typiquement, quel intérêt de faire `p
     ```sh
     cd /tmp/a_random_dir/
     pyenv version
-    # system (set by /home/username/.pyenv/version)
+    # system (set by /home/myself/.pyenv/version)
     pyenv activate mysupervenv
     pyenv version
     # mysupervenv (set by PYENV_VERSION environment variable)
     pyenv deactivate
     pyenv version
-    # system (set by /home/username/.pyenv/version)
+    # system (set by /home/myself/.pyenv/version)
     ```
 - par rapport à `pyenv shell`, j'ai l'impression à le lecture [du code](https://github.com/pyenv/pyenv-virtualenv/blob/master/bin/pyenv-sh-activate) et avec quelques tests, que ça sert surtout à définir des envvars ; notamment `VIRTUAL_ENV` (utilisée p.ex. par zsh pour définir le PS1)
 - j'ai vérifié que l'activation automatique (et le set de `VIRTUAL_ENV`) était bien apporté par la ligne dans `.zshrc` : si je l'enlève, le comportement apporté par `pyenv local` (activation automatique de la version de python lorsqu'on entre dans le répertoire) reste actif , mais PAS la définition automatique de `VIRTUAL_ENV`, il faut `pyenv activate` manuellement.
@@ -459,10 +459,10 @@ Le mécanisme utilisé par pyenv (shims) ne marche pas très bien quand on insta
 - la solution est plutôt de mettre à jour les shims de pyenv, pour lui ajouter un shim pour `do_the_work` :
     ```sh
     pyenv rehash
-    do_the_work 
+    do_the_work
     # OK :-)
     which do_the_work
-    # /home/username/.pyenv/shims/do_the_work
+    # /home/myself/.pyenv/shims/do_the_work
     ```
 - en gros, `pyenv rehash` regarde dans tous les répertoires `bin` de tous les environnements qu'il connaît, et vérifie que ses shims sont bien à jour avec les exécutabiles qu'il trouve : il ajoute des nouveaux shims pour les exécutables qu'il ne connaît pas encore, et supprime les éventuels shims installés par le passé qui ne sont plus utilisés par aucun environnement pyenv.
 - du coup, un shim donné n'est pas nécessairement disponible sur tous les envs ; pour connaître les environnements sur lequel le shim correspond à un vrai binaire : `pyenv whence`
