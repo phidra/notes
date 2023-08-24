@@ -15,6 +15,7 @@
    * [orphan rule](#orphan-rule)
    * [ownership](#ownership)
    * [fields d'une struct publics vs utiliser new](#fields-dune-struct-publics-vs-utiliser-new)
+   * [mutabilité et move des références](#mutabilité-et-move-des-références)
 
 # Ressources
 
@@ -189,3 +190,57 @@ struct FriendsGroup {
 Alors les fields `members` et `mean_age` sont liés l'un à l'autre : lorsque `members` change, il faut mettre à jour l'âge moyen → les fields ne doivent donc pas être publics, mais settés par des accesseurs.
 
 **CONCLUSION** = il faut voir la question "field publics" vs. "new + fields privés" comme une question d'encapsulation : a-t-on besoin d'accesseurs ? Le constructeur `new()` est un accesseur comme un autre pour "setter" les attributs.
+
+## mutabilité et move des références
+
+[Cet article](https://dev.to/wrongbyte/rust-references-5ehc) m'a aidé à comprendre des trucs sur l'impossibilité de _move-out of a reference_ ou sur le fait d'avoir des variables mutables sur les références immutables;
+
+> Due to its immutability, we are not allowed to either change what's inside of it or move what's inside of it. In other words, we can't "move out".
+
+^ à partir d'une référence immutable, on n'a pas le droit 1. de muter la valeur pointée (ça c'est intuitif), mais également 2. de move-out la valeur pointée. Si on le fait, on a cette erreur :
+
+```
+cannot move out of `*my_vec_ref` which is behind a shared reference
+move occurs because `*my_vec_ref` has type `Vec<i32>`, which does not implement the `Copy` trait
+```
+
+^ du coup, l'erreur ci-dessus est à reconnaître comme "j'essaye de move une valeur depuis un borrow".
+
+> Additionally, in Rust the . operator automatically dereferences reference types,
+
+^ en rust, de façon un peu contre-intuitive à mes yeux, les références s'utilisent comme des valeurs : on peut utiliser la syntaxe `x.member` de la même façon, que `x` peu importe que `x` soit une référence ou une valeur.
+
+Et du coup, l'erreur `cannot move out` ci-dessus surviendra également lorsque j'essaye de move-out un membre d'une struct, si on manipule la struct avec un immutable borrow :
+
+```rs
+struct MyStruct {
+    str_vec: Vec<i32>
+}
+
+fn main() {
+    let strct = MyStruct { str_vec: vec![1, 2, 3]};
+    let strct_ref = &strct;
+    let my_vec = strct_ref.str_vec; // error!
+}
+```
+
+Et pour les références mutables ?
+
+> Similarly to shared references, Rust also does not allow us to move out of mutable references. In fact, moving out from any kind of reference - mutable or not - is not allowed.
+
+^ avec une référence mutable, on peut muter la valeur pointée par la référence... mais on ne peut pas non plus move-out la valeur référencée !
+
+**Conclusion à retenir** : on ne peut move que des valeurs, et pas des références ! Les références ne permettent que de lire les valeurs référencées, ou de les muter si on a une mutable référence.
+
+> What is the difference between p: &T, mut p: &T, p: &mut T and mut p: &mut T?
+
+^ en résumé, si la référence est mutable (`p: &mut T` et `mut p: &mut T`), on peut muter la valeur référencée.
+
+Et si la variable qui stocke la référence est elle-même mutable (`mut p: &T` et `mut p: &mut T`), ça permet de réassigner la variable sur une autre référence :
+
+```rs
+let vec_number = vec![1, 2, 3];
+let another_vec = vec![2, 3, 4];
+let mut ref_vec = &vec_number;
+ref_vec = &another_vec;
+```
