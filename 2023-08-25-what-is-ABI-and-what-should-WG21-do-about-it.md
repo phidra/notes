@@ -10,6 +10,18 @@
 
 **TL;DR** : des explications sur ce qu'est l'ABI, avec des exemples concrets de changements qui ne sont pas rétro-compatibles du point de vue de l'ABI.
 
+* [What is ABI, and What Should WG21 Do About It?](#what-is-abi-and-what-should-wg21-do-about-it)
+   * [Définition de l'ABI](#définition-de-labi)
+   * [Name mangling](#name-mangling)
+   * [Object Representation](#object-representation)
+   * [Object Representation and Semantics](#object-representation-and-semantics)
+   * [Calling Convention](#calling-convention)
+   * [It is “Just” a Binary Format](#it-is-just-a-binary-format)
+   * [Why Would We Consider ABI Changes ?](#why-would-we-consider-abi-changes-)
+   * [Nesting and ABIs](#nesting-and-abis)
+   * [Approaches to Breaking](#approaches-to-breaking)
+   * [Alternatively, We Promise Stability](#alternatively-we-promise-stability)
+
 Le contexte du papier : doit-on faire un C++23 qui corrige des problèmes de performance, mais casse la rétrocompatibilité de l'ABI ? Mais ce qui m'intéresse surtout, c'est de mieux comprendre ce que représente l'ABI et quels changements l'impactent.
 
 ## Définition de l'ABI
@@ -136,7 +148,36 @@ Changer la façon dont on passe un `unique_ptr<T>` à une fonction (afin de rés
 
 Jusqu'à présent, le comité C++ a préféré privilégier la stabilité de l'ABI (i.e. qu'un exécutable récent puisse tout de même utiliser/linker avec une lib ou tout fichier objet buildé il y a longtemps, avec une ancienne ABI) au détriment des perfs.
 
-Il enchaîne en listant des modifs d'ABI (pour la plupart, source-compatibles, i.e. qui ne nécessitent pas de modifier le code-source de l'appelant) qui amélioreraient les perfs, mais qui sont jusqu'ici refusées pour garder l'ABI stable :
+Il enchaîne en listant des modifs d'ABI (pour la plupart, source-compatibles, i.e. qui ne nécessitent pas de modifier le code-source de l'appelant) qui amélioreraient les perfs, mais qui sont jusqu'ici refusées pour garder l'ABI stable, morceaux choisis :
 
 - changer les `std::unordered_map` et `std::hash` pour des implémentations plus efficaces
-- TO BE CONTINUED
+- changer l'implémentation de `std::regex`, ce qui accélèrerait entre 10 et 100x (!)
+- faire en sorte que `vector<T>::push_back` retourne une référence sur la nouvelle location (NDM : pourquoi est-ce un changement d'ABI, sachant que le type de retour d'une fonction n'est pas manglée ? Peut-être pour des raisons de calling conventions : l'actuel `push_back` ne retourne rien, donc le registre habituellement affecté aux valeurs retournées est utilisée pour passer un paramètre ?)
+- rendre `std::bitset` trivially-destructible ; apparemment, ça modifierait la calling convention d'un bitset (en déplaçant le passage de paramètre de registre à stack, ou le contraire, je suppose, vu que ces règles sont liées à la présence d'un destructeur)
+
+
+Un autre point intéressant (bien que pas lié à l'ABI) = il y a un effet grenouille bouillie sur les propositions d'évolusions du langages : les contributeurs récents ont plus tendance que les anciens à faire des propositions qui cassent l'ABI, alors que les anciens s'auto-censurent sur ces propositions.
+
+## Nesting and ABIs
+
+> The basic principle for inline namespaces is to provide the ability for source-compatibility while adding extra differentiation in mangled names. For example, a standard library that utilizes inline namespaces can provide an inline “abi42” namespace inside std, which results in source referring to std::string and std::sort but changes the mangling for those names to derive from std::abi42::string and std::abi42::sort.
+
+^ il y a une éventuelle proposition de versionner impliitement les objets, mais ça ne permet de résoudre les problèmes d'incompatibilités que des usages directs (p.ex. ça ne protège pas un objet `MyCustomObject` dont l'un des champs serait une `std::string`, vu que `MyCustomObject` ne serait pas particulièrement dans un namespace versionné, celui-ci ne s'appliquant qu'à `std`)
+
+## Approaches to Breaking
+
+Je n'annote pas tout ici car ce qui m'intéressait était surtout une meilleure compréhension de ce qui influait sur l'ABI, mais ce paragraphe traite de la façon d'introduire un changement d'ABI non-rétrocompatible, avec deux possibilités :
+
+- changer tous les noms de façon explicite, de sorte qu'on ne puisse pas linker implicitement avec une version trop ancienne ou trop récente
+- produire des objets binaires qui soient compatibles avec les deux versions
+
+L'auteur pousse plutôt pour la première option, plus explicite.
+
+## Alternatively, We Promise Stability
+
+Last but not least, l'auteur dit qu'il n'est pas impossible de continuer à privilégier la stabilité de l'ABI, mais souligne :
+
+- qu'il y aura des trucs inefficaces dans la stdlib qu'on laisse volontairement tels quels
+- que l'industrie s'impliquera de moins en moins dans le C++ standard (au profit p.ex. de libs alternatives comme abseil ou folly)
+- qu'il faut arrêter de vendre le C++ comme le langage de la performance
+- que maintenir le statu-quo revient à choisir dans le sens de la stabilité de l'ABI, contre la performance
