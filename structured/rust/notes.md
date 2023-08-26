@@ -14,18 +14,20 @@
 * [Notes diverses](#notes-diverses)
    * [orphan rule](#orphan-rule)
    * [ownership](#ownership)
+   * [ownership le retour](#ownership-le-retour)
    * [fields d'une struct publics vs utiliser new](#fields-dune-struct-publics-vs-utiliser-new)
    * [mutabilité et move des références](#mutabilité-et-move-des-références)
 
 # Ressources
 
-[Rust by Example](https://doc.rust-lang.org/rust-by-example/)
-[Rust By Practice](https://practice.rs/why-exercise.html)
-[Rust API Guidelines](https://rust-lang.github.io/api-guidelines/)
-[Effective Rust](https://www.lurklurk.org/effective-rust/)
-[Rust Language Cheat Sheet](https://cheats.rs/)
-[Easy Rust](https://dhghomon.github.io/easy_rust/Chapter_1.html)
-[A Gentle Introduction to Rust](https://stevedonovan.github.io/rust-gentle-intro/readme.html#a-gentle-introduction-to-rust)
+- [Rust by Example](https://doc.rust-lang.org/rust-by-example/)
+- [Rust By Practice](https://practice.rs/why-exercise.html)
+- [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/)
+- [Effective Rust](https://www.lurklurk.org/effective-rust/)
+- [Rust Language Cheat Sheet](https://cheats.rs/)
+- [Easy Rust](https://dhghomon.github.io/easy_rust/Chapter_1.html)
+- [A Gentle Introduction to Rust](https://stevedonovan.github.io/rust-gentle-intro/readme.html#a-gentle-introduction-to-rust)
+- beaucoup, beaucoup de liens qui ont l'air intéressants dans [la cheatsheet rust](https://cheats.rs/#links-services)
 
 
 # Conversions
@@ -165,6 +167,26 @@ pub struct MyStruct {
 Une façon de comprendre l'ownership : dire qu'une variable V prends l'ownership d'une autre variable W (i.e. W est moved dans V) revient à dire :
 
 > "c'est quand V arrivera en fin de scope que la valeur à laquelle V était bindée sera détruite, alors qu'avant le move, c'était plutôt quand W arrivait en fin de scope que la valeur était détruite"
+
+## ownership le retour
+
+> Ownership = Instantiating a type and binding it to a variable name creates a memory resource that the Rust compiler will validate through its whole lifetime. The bound variable is called the resource's owner.
+
+^ beaucoup de choses dans ce résumé [issu de tourofrust.com](https://tourofrust.com/43_en.html), notamment :
+
+- la variable n'est pas la valeur
+- la valeur est une ressource = la zone mémoire
+- la variable **possède** la valeur
+
+> When an owner is passed as an argument to a function, ownership is moved to the function parameter. (...) During a move the stack memory of the owners value is copied to the function call's parameter stack memory.
+
+^ du coup grâce au résumé précédent, [cette autre citation de tourofrust.com](https://tourofrust.com/46_en.html) est claire : la ressource (= la zone mémoire) est initialement possédée par la variable externe. Lorsqu'on la passe à une fonction, la ressource est transmise à la variable de la stackframe de la fonction, qui est le nouvel owner de la ressource.
+
+
+
+> References allow us borrow access to a resource with the & operator. References are also dropped like other resources.
+
+^ enfin, ce [troisième extrait de tourofrust.com](https://tourofrust.com/48_en.html) complète la boucle : les références se contentent d'emprunter la ressource (= la zone mémoire) mais la rendent quand elles arrivent en fin de vie, d'où leur nom : borrow.
 
 ## fields d'une struct publics vs utiliser new
 
