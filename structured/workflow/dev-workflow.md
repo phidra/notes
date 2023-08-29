@@ -15,15 +15,12 @@ Notes sur mon workflow de dev
       * [compile_commands.json](#compile_commandsjson)
       * [construction de l'index clangd](#construction-de-lindex-clangd)
    * [LSP client — native neovim client](#lsp-client--native-neovim-client)
-   * [LSP client — ALE DEPRECATED](#lsp-client--ale-deprecated)
-      * [Installation](#installation-1)
-      * [Features et commandes](#features-et-commandes)
-      * [Configuration](#configuration)
+* [pyenv](#pyenv)
 * [git](#git)
    * [diff-so-fancy](#diff-so-fancy)
 * [just](#just)
    * [C'est quoi](#cest-quoi)
-   * [Installation](#installation-2)
+   * [Installation](#installation-1)
    * [Notes vrac d'utilisation](#notes-vrac-dutilisation)
 * [JOURNAL](#journal)
    * [Vrac1](#vrac1)
@@ -375,6 +372,10 @@ Pour lancer une fonction LSP de façon synchrone e.g. pour attendre que le forma
   E.g. code formatting: " Auto-format *.rs (rust) files prior to saving them
 autocmd BufWritePre *.rs lua vim.lsp.buf.formatting_sync(nil, 1000)
 ```
+
+# pyenv
+
+cf. [mes notes spécifiques sur le sujet](../python/pyenv.md)
 
 # git
 
