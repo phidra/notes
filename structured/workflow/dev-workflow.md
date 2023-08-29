@@ -18,6 +18,7 @@ Notes sur mon workflow de dev
 * [rust](#rust)
    * [Utilisation avec neovim](#utilisation-avec-neovim)
 * [pyenv](#pyenv)
+* [javascript et typescript](#javascript-et-typescript)
 * [git](#git)
    * [diff-so-fancy](#diff-so-fancy)
 * [just](#just)
@@ -500,6 +501,25 @@ Note : on dirait que `rust-analyzer` nécessite un projet cargo pour fonctionner
 # pyenv
 
 cf. [mes notes spécifiques sur le sujet](../python/pyenv.md)
+
+# javascript et typescript
+
+Regarder quelle est la dernière version de node sur https://nodejs.org/en
+
+Installer la dernière version disponible :
+
+```sh
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install nodejs
+sudo apt autoremove
+npm config set prefix '~/.local/'  # en tant que REGULARUSER
+```
+
+Installation de typescript + LSP :
+
+```sh
+npm install -g typescript typescript-language-server
+```
 
 # git
 
