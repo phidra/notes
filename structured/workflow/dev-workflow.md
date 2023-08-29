@@ -235,6 +235,8 @@ On peut rouvrir telescope dans l'état dans lequel on l'avait laissé : `:lua re
 J'ai testé `pyright` qui fait le taf :
 
 ```
+pipx install flake8
+pipx install black
 pipx install pyright
 ```
 
