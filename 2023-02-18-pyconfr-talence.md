@@ -25,29 +25,27 @@
 
 Par ailleurs, les confs qui ont retenu mon attention, mais auxquelles je n'ai pas pu assister (donc à voir en replay), dans le désordre :
 
-- [Django Admin comme framework pour développer des outils internes](https://www.pycon.fr/2023/fr/talks/30m.html#django-admin-comme-framework-p)
-- [Python web performance 101: uncovering the root causes](https://www.pycon.fr/2023/fr/talks/30m.html#python-web-performance-101-unc)
-- [Giving and receiving great feedback through PRs](https://www.pycon.fr/2023/fr/talks/30m.html#giving-and-receiving-great-fee)
-- [Monorepo Python avec environnements de développement reproductibles et CI scalable](https://www.pycon.fr/2023/fr/talks/30m.html#monorepo-python-avec-environne)
-- [Déployer du backend en 2023](https://www.pycon.fr/2023/fr/talks/1h.html#deployer-du-backend-en-2023)
-- [Uncovering Python’s surprises: a deep dive into gotchas](https://www.pycon.fr/2023/fr/talks/30m.html#uncovering-pythons-surprises-a)
-- [Développement VRAIMENT cross-platform avec Python](https://www.pycon.fr/2023/fr/talks/1h.html#developpement-vraiment-cross-p) ([slides](https://v.gd/ZA3XLv))
-- [Writing Great Test Documentation](https://www.pycon.fr/2023/fr/talks/30m.html#writing-great-test-documentati)
-- [ZFS: un stockage fiable, puissant et accessible.](https://www.pycon.fr/2023/fr/talks/1h.html#zfs-un-stockage-fiable-puissan)
-- [« Fixed bugs » n’est peut-être pas le meilleur message de commit](https://www.pycon.fr/2023/fr/talks/1h.html#fixed-bugs-nest-peut-etre-pas)
-- [Psycopg, troisième du nom](https://www.pycon.fr/2023/fr/talks/30m.html#psycopg-troisieme-du-nom)
-- [Python web performance 101: uncovering the root causes](https://www.pycon.fr/2023/fr/talks/30m.html#python-web-performance-101-unc)
-- [From a Python script to an open-source project](https://www.pycon.fr/2023/fr/talks/30m.html#from-a-python-script-to-an-ope)
-- [Geographic visualization using Streamlit](https://www.pycon.fr/2023/fr/talks/30m.html#geographic-visualization-using)
-- [Monitorez vos applications Python (et pas uniquement votre infra)](https://www.pycon.fr/2023/fr/talks/30m.html#monitorez-vos-applications-pyt)
-- [Cloud infrastructure from Python code: how far could we go?](https://www.pycon.fr/2023/fr/talks/30m.html#cloud-infrastructure-from-pyth)
-- [GEMSEO : une bibliothèque pour l’optimisation multi-disciplinaire](https://www.pycon.fr/2023/fr/talks/30m.html#gemseo-une-bibliotheque-pour-l)
+- [Django Admin comme framework pour développer des outils internes](https://www.pycon.fr/2023/fr/talks/30m.html#django-admin-comme-framework-p) ([replay](https://indymotion.fr/w/3HP9UdwPybvC8CLaJXLE2i))
+- [Python web performance 101: uncovering the root causes](https://www.pycon.fr/2023/fr/talks/30m.html#python-web-performance-101-unc) ([replay](https://indymotion.fr/w/bJytAHj2sab5ENhj771Wq7))
+- [Giving and receiving great feedback through PRs](https://www.pycon.fr/2023/fr/talks/30m.html#giving-and-receiving-great-fee) ([replay](https://indymotion.fr/w/udj9K5VQrKasNaH6GC3sCW))
+- [Monorepo Python avec environnements de développement reproductibles et CI scalable](https://www.pycon.fr/2023/fr/talks/30m.html#monorepo-python-avec-environne) ([replay](https://indymotion.fr/w/9VWSjLge45KqiRgitZ7obC))
+- [Déployer du backend en 2023](https://www.pycon.fr/2023/fr/talks/1h.html#deployer-du-backend-en-2023) ([replay](https://indymotion.fr/w/orJRgHsst8MwNEfpdsF6cA))
+- [Uncovering Python’s surprises: a deep dive into gotchas](https://www.pycon.fr/2023/fr/talks/30m.html#uncovering-pythons-surprises-a) ([replay](https://indymotion.fr/w/dy8du4pKjXE6umxcmAdLmT))
+- [Développement VRAIMENT cross-platform avec Python](https://www.pycon.fr/2023/fr/talks/1h.html#developpement-vraiment-cross-p) ([slides](https://v.gd/ZA3XLv), [replay](https://indymotion.fr/w/811dRxXUMHeRk3TzFMUfuL))
+- [Writing Great Test Documentation](https://www.pycon.fr/2023/fr/talks/30m.html#writing-great-test-documentati) ([replay](https://indymotion.fr/w/wpaDkJzENJ1vdQmn4pzTgQ))
+- [ZFS: un stockage fiable, puissant et accessible.](https://www.pycon.fr/2023/fr/talks/1h.html#zfs-un-stockage-fiable-puissan) ([replay](https://indymotion.fr/w/j3C47dzkfT9bBhY11CzHzG))
+- [« Fixed bugs » n’est peut-être pas le meilleur message de commit](https://www.pycon.fr/2023/fr/talks/1h.html#fixed-bugs-nest-peut-etre-pas) ([replay](https://indymotion.fr/w/iFJthhnVyNfjNZ2cLfAQSK))
+- [Psycopg, troisième du nom](https://www.pycon.fr/2023/fr/talks/30m.html#psycopg-troisieme-du-nom) ([replay](https://indymotion.fr/w/eA4SFNYbfF4du4J3t5ocjc))
+- [Geographic visualization using Streamlit](https://www.pycon.fr/2023/fr/talks/30m.html#geographic-visualization-using) ([replay](https://indymotion.fr/w/fNPWF1iiuZyzd1K6rNTR5z))
+- [Monitorez vos applications Python (et pas uniquement votre infra)](https://www.pycon.fr/2023/fr/talks/30m.html#monitorez-vos-applications-pyt) ([replay](https://indymotion.fr/w/jWPJYRnUh8BttPbmgdnqfV))
+- [Cloud infrastructure from Python code: how far could we go?](https://www.pycon.fr/2023/fr/talks/30m.html#cloud-infrastructure-from-pyth) ([replay](https://indymotion.fr/w/sVTpHHactff28Zyc1PwDuW))
+- [GEMSEO : une bibliothèque pour l’optimisation multi-disciplinaire](https://www.pycon.fr/2023/fr/talks/30m.html#gemseo-une-bibliotheque-pour-l) ([replay](https://indymotion.fr/w/by8dBRA1i4EjAdhf9EP1Hj))
 
 
 ## Driving down the Memray lane - Profiling your data science work
 
 - speaker = [Cheuk Ting-Ho](https://cheuk.dev), bosse à Anaconda
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#driving-down-the-memray-lane-p), prez en anglais, durée = 30 min ; [slides](slides.com/cheukting_ho/memray-lane) + [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#driving-down-the-memray-lane-p), prez en anglais, durée = 30 min ; [slides](slides.com/cheukting_ho/memray-lane) + [replay](https://indymotion.fr/w/oyNNJHcMLhpyVqiexYKuo9)
 
 Gentle introduction au memory-profiling.
 
@@ -77,7 +75,7 @@ Gentle introduction au memory-profiling.
 ## Je suis nul·le !
 
 - speaker = [Guillaume AYOUB](https://www.yabz.fr/)
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#je-suis-nul-le), durée = 30 min ; [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#je-suis-nul-le), durée = 30 min ; [replay](https://indymotion.fr/w/kKFA25V4bNSUirH6SmKkY7)
 
 Prez rafraîchissante qui aborde l'aspect humain du métier et défend un rapport positif à son travail et aux autres devs.
 
@@ -88,7 +86,7 @@ Prez rafraîchissante qui aborde l'aspect humain du métier et défend un rappor
 ## Portage Python sur Webassembly
 
 - speakers = [Paul PENY](https://github.com/pmp-p), spécialiste de la conversion en wasm + [François GUTHERZ](https://fr.linkedin.com/in/astrofra?trk=pulse-article_main-author-card), développe un moteur 3D = Harfang
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/1h.html#portage-python-sur-webassembly), durée = 1h ; [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/1h.html#portage-python-sur-webassembly), durée = 1h ; [replay](https://indymotion.fr/w/rEV1qrdYoTa4FGqQTTAGAt)
 
 Retour d'expérience sur le portage d'un moteur 3D en python/C++ vers wasm, pour que les apps qui l'utilisent puissent être utilisées dans le navigateur.
 
@@ -145,7 +143,7 @@ Retour d'expérience sur le portage d'un moteur 3D en python/C++ vers wasm, pour
 ## Continuous performance analysis for Python
 
 - speaker = [Arthur PASTEL](https://github.com/art049), il a créé codspeed
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#continuous-performance-analysi), durée = 30 min ; [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#continuous-performance-analysi), durée = 30 min ; [replay](https://indymotion.fr/w/9iwwEkFv6XqZjhHvLZQ5ag)
 
 Ma prez préférée de l'event, elle introduit [codspeed](https://codspeed.io/) = l'outil qu'il développe qui utilise valgrind pour disposer de tests de perfs reproductibles et les intégrer aux pipelines de CI.
 
@@ -184,7 +182,7 @@ Ma prez préférée de l'event, elle introduit [codspeed](https://codspeed.io/) 
 ## Fear the mutants. Love the mutants.
 
 - speaker = [Max KAHAN](https://uk.linkedin.com/in/maxkahan), python developer advocate chez [vonage](https://www.vonage.fr/developer-center/) = communication's API (SMS API / 2 factor auth / ...)
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#fear-the-mutants-love-the-muta), durée = 30 min ; [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#fear-the-mutants-love-the-muta), durée = 30 min ; [replay](https://indymotion.fr/w/j7sNkSW1NfXE3ciL9SBTB9)
 
 Présentation des principes du mutation testing, avec des exemples concrets.
 
@@ -217,7 +215,7 @@ Présentation des principes du mutation testing, avec des exemples concrets.
 ## Python moderne et fonctionnel pour des logiciels robustes
 
 - speaker = [Guillaume Desforges](https://github.com/GuillaumeDesforges) , data/software engineer chez tweag
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/1h.html#python-moderne-et-fonctionnel), durée = 1h ; [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/1h.html#python-moderne-et-fonctionnel), durée = 1h ; [replay](https://indymotion.fr/w/mWB9g1Z6dUt8iVdm8LEF6F)
 
 Introduction en douceur à la FP et ses concepts (fonctions pures/impures, immutabilité, types) pour le pythonista.
 
@@ -248,7 +246,7 @@ Introduction en douceur à la FP et ses concepts (fonctions pures/impures, immut
 ## Domain-driven design: what can Python do for you?
 
 - speaker = [David KREMER](https://github.com/drake-mer)
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#domain-driven-design-what-can), durée = 30 min ; [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#domain-driven-design-what-can), durée = 30 min ; [replay](https://indymotion.fr/w/wAA4GdKJF3XorcsnxkAvZ7)
 
 Intro au DDD = Domain-Driven Design, sans entrer dans les détails.
 
@@ -270,7 +268,7 @@ Intro au DDD = Domain-Driven Design, sans entrer dans les détails.
 Sous-titré = "je doute que tester soit douter"
 
 - speaker = [Nicolas LEDEZ](https://nicolas.ledez.net)
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#on-a-teste-pour-vous-methodolo), durée = 30 min ; [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#on-a-teste-pour-vous-methodolo), durée = 30 min ; [replay](https://indymotion.fr/w/18YPF5QZ7QJcA9T6nSo87E)
 
 Manifeste pour convaincre d'utiliser TDD et expliquer comment le faire.
 
@@ -307,7 +305,7 @@ Notes brutes :
 ## Traitement de données géographiques avec Rasterio, NumPy, Fiona et Shapely
 
 - speaker = [Arnaud MORVAN](https://github.com/arnaud-morvan), [camptocamp](https://www.camptocamp.com/fr), ils mettent en œuvre des SIG
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#traitement-de-donnees-geograph), durée = 30 min ; [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#traitement-de-donnees-geograph), durée = 30 min ; [replay](https://indymotion.fr/w/vhhRGdaSEVJW5kQnKa4Wzz)
 
 Cette prez est une gentle introduction aux outils SIG, elle est pour toi si :
 
@@ -336,7 +334,7 @@ Notes brutes :
 ## Cerveau, Biomarqueurs et Deep Learning
 
 - speaker = [Facundo CALCAGNO](https://twitter.com/fmcalcagno), techlead chez Servier
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#cerveau-biomarqueurs-et-deep-l), durée = 30 min ; [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/30m.html#cerveau-biomarqueurs-et-deep-l), durée = 30 min ; [replay](https://indymotion.fr/w/v9Epbfk6vsqFxsK7Z1y3Jd)
 
 Prez non-technique qui présente de façon très abstraite quelques pipelines d'analyse de données médicales.
 
@@ -368,7 +366,7 @@ Notes brutes :
 ## Apport du langage Python dans un service de recherche hospitalière pour mener des analyses de deep learning
 
 - speaker = [Clément BENOIST](https://fr.linkedin.com/in/clementbenoist?original_referer=https%3A%2F%2Fwww.google.com%2F), ingénieur en statistiques au CHU de Limoges ; son activité = data science sur la transplantation rénale
-- [description de la prez](https://www.pycon.fr/2023/fr/talks/1h.html#apport-du-langage-python-dans), durée = 1 h ; [replay](http://example.com/TODO)
+- [description de la prez](https://www.pycon.fr/2023/fr/talks/1h.html#apport-du-langage-python-dans), durée = 1 h ; [replay](https://indymotion.fr/w/ddjm63CWj4tSUZ4psA1Qyt)
 
 Présentation dune application de machine-learning en python pour prévoir les rejets de greffes de rein.
 
