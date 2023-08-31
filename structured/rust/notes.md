@@ -17,6 +17,16 @@
    * [ownership le retour](#ownership-le-retour)
    * [fields d'une struct publics vs utiliser new](#fields-dune-struct-publics-vs-utiliser-new)
    * [mutabilité et move des références](#mutabilité-et-move-des-références)
+* [Rust for C++ Programmers](#rust-for-c-programmers)
+   * [Unique pointers](#unique-pointers)
+   * [Borrowed pointers](#borrowed-pointers)
+   * [Reference counted and raw pointers](#reference-counted-and-raw-pointers)
+   * [Data types](#data-types)
+   * [Destructuring](#destructuring)
+   * [Destructuring pt2 - match and borrowing](#destructuring-pt2---match-and-borrowing)
+   * [Arrays and Vectors](#arrays-and-vectors)
+   * [Graphs and arena allocation](#graphs-and-arena-allocation)
+   * [Closures and first-class functions](#closures-and-first-class-functions)
 
 # Ressources
 
@@ -266,3 +276,220 @@ let another_vec = vec![2, 3, 4];
 let mut ref_vec = &vec_number;
 ref_vec = &another_vec;
 ```
+
+# Rust for C++ Programmers
+
+Notes éparses issues de [Rust For Systems Programmers](https://github.com/nrc/r4cppp/tree/master) = un mini-book expliquant les concepts de rust en s'adressant à un public de devs C++/
+
+## Unique pointers
+
+https://github.com/nrc/r4cppp/blob/master/unique.md
+
+> As shown above, owning pointers must be dereferenced to use their values. However, method calls automatically dereference, so there is no need for a -> operator or to use * for method calls.
+
+^ ça clarifie une question que je me posais : c'est uniquement pour les appels de méthodes qu'on omet `*` : dans les autres cas, il faut bien déréférencer les références avec `*` !
+
+Au passage, ça donne une situation que je ne suis pas sûr d'apprécier, mais rigolote = on peut utiliser les méthodes des pointeurs de pointeurs (ou de références de références) de multiples fois, comme s'il n'y avait pas d'indirection :
+
+```rs
+fn bar(x: Box<Foo>, y: Box<Box<Box<Box<Foo>>>>) {
+    x.foo();
+    y.foo();
+}
+```
+
+----
+
+> Calling Box::new() with an existing value does not take a reference to that value, it copies that value.
+
+```rs
+fn foo() {
+    let x = 3;
+    let mut y = Box::new(x);
+    *y = 45;
+    println!("x is still {}", x);
+}
+```
+
+^ dans le cas général (i.e. les types qui ne sont pas `Copy`), `Box::new(something)` alloue une zone mémoire sur le heap capable de stocker `something`, puis y move `something`, et pointe sur cette zone. Dans le cas particulier des types `Copy`, `Box::new` INSTANCIE une nouvelle valeur sur le heap, vers laquelle il pointe.
+
+## Borrowed pointers
+
+https://github.com/nrc/r4cppp/blob/master/borrowed.md
+
+> Note that the reference may be mutable (or not) independently of the mutableness of the variable holding the reference. This is similar to C++ where pointers can be const (or not) independently of the data they point to.
+
+^ J'ai déjà vu ce point dans des notes récentes (un peu plus haut dans ce fichier) : la mutabilité de la référence permet de muter la valeur, la mutabilité de la variable permet de réassigner la référence.
+
+> If a mutable value is borrowed, it becomes immutable for the duration of the borrow. Once the borrowed pointer goes out of scope, the value can be mutated again (...) The same thing happens if we take a mutable reference to a value - the value still cannot be modified.
+
+^ référence mutable sur valeur immutable et vice-versa
+
+
+> pointer types will automatically be converted to a reference:
+
+```rs
+fn foo(x: &i32) { ... }
+
+fn bar(x: i32, y: Box<i32>) {
+    foo(&x);
+    // foo(x);   // Error - expected &i32, found i32
+    foo(y);      // Ok
+    foo(&*y);    // Also ok, and more explicit, but not good style
+}
+```
+
+^ techniquement, si on dispose d'un `Box<i32>` et qu'on veut passer une référence vers l'inner i32 à une fonction qui attend un `&i32`, il faudrait 1. déréférencer le Box avec `*`, puis 2. prendre la référence vers l'inner-value avec `&`, soit `&*my_box`. En pratique, les pointer-types (dont Box fait partie, je suppose qu'il s'agit de ce que le rustbook appelait smart pointers, i.e. ce qui implémente `Deref`) peuvent être passés là où on attend une référence.
+
+> As we mentioned above, all mutable variables are unique. So if you have a mutable value, you know it is not going to change unless you change it. Furthermore, you can change it freely since you know that no one else is relying on it not changing.
+
+^ résumé de pourquoi les règles enforcées par le borrow-checker apportent de la sécurité
+
+## Reference counted and raw pointers
+
+https://github.com/nrc/r4cppp/blob/master/rc-raw.md
+
+> To pass a ref-counted pointer you need to use the clone method. This kinda sucks, and hopefully we'll fix that, but that is not for sure (sadly). You can take a (borrowed) reference to the pointed at value, so hopefully you don't need to clone too often.
+
+^ pour passer des `Rc` à droite à gauche, il faut les cloner. Mais on n'est pas absolument obligés de passer des `Rc` : on peut aussi passer directement un borrow sur la valeur pointée par le `Rc`. La syntaxe n'est pas très jolie though : `baz(&*x);` on déréférence le Rc pour accéder à son inner value, puis on prend une référence vers cette inner value. Et comme tout borrow, un mutable borrow interdira d'utiliser les autres Rc.
+
+> if you want a mutable, ref counted object you need a Cell or RefCell wrapped in an Rc. As a first approximation, you probably want Cell for primitive data (NDM : objects Copy) and RefCell for objects with move semantics
+
+^ résumé de `Rc<RefCell>` et `Rc<Cell>`.
+
+Les raw pointers sont créés avec la même syntaxe que les références (`&`) mais en précisant explicitement que c'est un raw pointer qu'on veut récupérer :
+
+```rs
+let mut x = 5;
+let x_p: *mut i32 = &mut x;
+```
+
+Les raw pointers peuvent être nuls (ce sont les seuls pointeurs de rust à le pouvoir)
+
+Les raw pointers ne sont pas déréférencés automatiquement comme le sont les références, ce qui force à :
+
+```rs
+(*x).foo();
+```
+
+## Data types
+
+https://github.com/nrc/r4cppp/blob/master/data-types.md
+
+> We don't mark fields in structs or enums as mutable, their mutability is inherited. This means that a field in a struct object is mutable or immutable depending on whether the object itself is mutable or immutable.
+
+^ la mutability est héritée : la mutability d'un field est la même que celle de sa struct....
+
+> Inherited mutability in Rust stops at references. (...) If you want a reference field to be mutable, you have to use &mut on the field type:
+
+^ ... mais apparemment pas si on manipule la struct par une référence ?! (Ou plutôt si le champ lui même est une référence, d'après les exemples ?)
+
+> In Rust we have the Cell and RefCell structs. (...) Whilst that is useful, it means you need to be aware that when you see an immutable object in Rust, it is possible that some parts may actually be mutable.
+
+^ une bonne remarque à garder en tête : quand on dispose d'un objet immutable, il se peut qu'il ne soit pas immutable à 100% s'il contient des Cell/RefCell.
+
+## Destructuring
+
+https://github.com/nrc/r4cppp/blob/master/destructuring.md
+
+> When destructuring structs, the fields don't need to be in order and you can use .. to elide the remaining fields
+
+^ quand on déstructure une struct, on peut ignorer ses fields (y compris tous ses fields) avec `..`
+
+> To create a reference to something in a pattern, you use the ref keyword. For example,
+
+```rs
+fn foo(b: Big) {
+    let Big { field3: ref x, ref field6, ..} = b;
+    println!("pulled out {} and {}", *x, *field6);
+}
+```
+
+> Here, x and field6 both have type &int and are references to the fields in b.
+
+^ le fait de déstructurer une struct va move les champs de la struct déstructurée ; pour l'éviter (i.e. pour prendre un borrow sur un champ), on utilise cette syntaxe avec `ref field`.
+
+## Destructuring pt2 - match and borrowing
+
+https://github.com/nrc/r4cppp/blob/master/destructuring-2.md
+
+Je n'annote pas, mais ce chapitre traite du cas assez complexe où on déstructure une référence vers un enum
+
+## Arrays and Vectors
+
+https://github.com/nrc/r4cppp/blob/master/arrays.md
+
+> Just like other data structures in Rust, arrays are immutable by default and mutability is inherited.
+
+^ la mutabilité est héritée dans les data structures.
+
+> The size is known dynamically (as opposed to statically in the case of fixed length arrays), and we say that slice types are dynamically sized types
+
+^ les slices sont des DST
+
+> Since a slice is just a sequence of values, the size cannot be stored as part of the slice. Instead it is stored as part of the pointer (remember that slices must always exist as pointer types). A pointer to a slice (like all pointers to DSTs) is a fat pointer - it is two words wide, rather than one, and contains the pointer to the data plus a payload. In the case of slices, the payload is the length of the slice
+
+^ la length des slices est stockée dans le pointeur, qui est donc un fat pointeur.
+
+> A slice can be thought of as a (borrowed) view of an array
+
+^ résumé conceptuel des slices.
+
+## Graphs and arena allocation
+
+https://github.com/nrc/r4cppp/blob/master/graphs/README.md
+
+^ l'article qui m'a fait lire la série. Il décrit une façon d'implémenter un graphe, ce qui n'est pas si évident que ça en rust, à cause du borrow-checker et de l'ownership.
+
+## Closures and first-class functions
+
+https://github.com/nrc/r4cppp/blob/master/closures.md
+
+> A FnMut represents an object which can be called and can be mutated during that call. This doesn't apply to normal functions, but for closures it means the closure can mutate its environment.
+
+^ `FnMut` veut dire qu'on a une closure qui peut muter son environnement.
+
+> You can use methods in the same way as functions - take pointers to them store them in variables, etc
+
+^ on peut passer des méthodes dans des higher order functions comme on le ferait avec des fonctions classiques ou des closures.
+
+C'est un sujet avancé, mais à noter que les fonctions qu'on donne à manger à une higher order function peuvent être générique sur les lifetimes, avec une syntaxe spéciale `for<'a>` :
+
+```rs
+fn foo<'b, 'c, F>(x: &'b Bar, y: &'c Bar, f: F) -> (&'b Baz, &'c Baz)
+    where F: for<'a> Fn(&'a Bar) -> &'a Baz
+{
+    (f(x), f(y))
+}
+```
+
+> A function type which is generic in this way is called a higher-ranked type
+
+Le paragraphe **Closure flavours** synthétise très bien beaucoup de choses intéressantes sur les closures, je le reproduis quasiment à l'identique :
+
+A closure has two forms of input:
+
+- the arguments which are passed to it explicitly and
+- the variables it captures from its environment.
+
+(...)
+
+**For the arguments**, you can declare types instead of letting Rust infer them. You can also declare a return type. Rather than writing `|x| { ... }` you can write `|x: i32| -> String { ... }`.
+
+Whether an argument is owned or borrowed is determined by the types (either declared or inferred).
+
+**For the captured variables**, the type is mostly known from the environment, but Rust does a little extra magic. Should a variable be captured by reference or value?
+
+Rust infers this from the body of the closure. If possible, Rust captures by reference. E.g.,
+
+```rs
+fn foo(x: Bar) {
+    let f = || { ... x ... };
+}
+```
+
+- All being well, in the body of `f`, `x` has the type `&Bar` with a lifetime bounded by the scope of `foo`.
+- However, if x is mutated, then Rust will infer that the capture is by mutable reference, i.e., `x` has type `&mut Bar`
+- If `x` is moved in `f` (e.g., is stored into a variable or field with value type), then Rust infers that the variable must be captured by value, i.e., it has the type `Bar`.
+
+This can be overridden by the programmer (sometimes necessary if the closure will be stored in a field or returned from a function). By using the `move` keyword in front of a closure. Then, all of the captured variables are captured by value. E.g., in `let f = move || { ... x ... };`, `x` would always have type `Bar`.
