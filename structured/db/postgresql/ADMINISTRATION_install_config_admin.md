@@ -217,6 +217,8 @@ master password : à la première utilisation, je créée un master password (pa
 
 NOTE : pour rafraîchir une DB, il ne suffit pas de faire clic-droit > rafraîchir, le mieux est de double-cliquer dessus.
 
+NOTE : l'autocomplétion des noms des bases, tables et colonnes est très pratique, `Ctrl+Espace` pour la trigger.
+
 ## (re)démarrer postgresql + savoir si postgresql est actif
 
 Démarrer / redémarrer :

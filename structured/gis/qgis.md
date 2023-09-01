@@ -15,7 +15,6 @@ nice -n 19 ionice -c 3 qgis
 
 Les docs = [user guide](https://docs.qgis.org/3.22/en/docs/user_manual/) et [trainings](https://docs.qgis.org/3.22/en/docs/training_manual/).
 
-
 * [Installation](#installation)
    * [Plugins](#plugins)
 * [Usage n°1 = import](#usage-n1--import)
@@ -41,6 +40,7 @@ Les docs = [user guide](https://docs.qgis.org/3.22/en/docs/user_manual/) et [tra
    * [Retrouver tous les edges d'un type particulier](#retrouver-tous-les-edges-dun-type-particulier)
    * [Sélection de features + accès à leurs attributs](#sélection-de-features--accès-à-leurs-attributs)
 * [Usage n°3 = attributs des features](#usage-n3--attributs-des-features)
+   * [Géométrie des features](#géométrie-des-features)
    * [Consulter les attributs d'un edge](#consulter-les-attributs-dun-edge)
       * [Ouvrir la table](#ouvrir-la-table)
       * [Deux vues : ligne par ligne ou formulaire](#deux-vues--ligne-par-ligne-ou-formulaire)
@@ -56,6 +56,7 @@ Les docs = [user guide](https://docs.qgis.org/3.22/en/docs/user_manual/) et [tra
    * [Exporter un geojson des features sélectionnées](#exporter-un-geojson-des-features-sélectionnées)
    * [Exporter une couche PostGIS pour la rendre indépendante de la BDD](#exporter-une-couche-postgis-pour-la-rendre-indépendante-de-la-bdd)
 * [Autres notes vrac sur l'UI](#autres-notes-vrac-sur-lui)
+
 
 # Installation
 
@@ -311,6 +312,14 @@ Autre raccourci utile = Ctrl+Shift+A pour tout déselectionner.
 
 # Usage n°3 = attributs des features
 
+## Géométrie des features
+
+Au moins pour les coordonées ponctuelles, si on sélectionne une feature avec **Identifier des entités**, on a un champ `Dérivé` qui contient les coordonnées du point _dans le SRS actuel de qgis_ (et non dans le SRS de la source de données).
+
+Pour les linestrings ou les polygons, je n'ai pas encore trouvé mieux qu'ajouter la géométrie de la feature en tant qu'attribut cf. quelques paragraphes plus loin.
+
+(à noter qu'on a à la fois la coordonée ponctuelle du point, et la coordonnée cliquée, proche)
+
 ## Consulter les attributs d'un edge
 
 ### Ouvrir la table
@@ -455,3 +464,6 @@ On peut aussi exporter un fichier de style (en plus des features elles-mêmes) p
 - avec l'outil par défaut clic gauche quelque part sur la carte ne sélectionne PAS la feature, mais centre la carte à l'endroit du clic
 - clic droit quelque part sur la carte permet d'accéder aux coordonnées du point cliqué
 - Pour sélectionner l'outil "main" : Vue > Centrer la carte
+- on peut manipuler la carte au clavier : flêches pour déplacer + PgUp/PgDown pour zoomer :
+    - intérêt 1 = ça évite d'avoir à utiliser la souris
+    - intérêt 2 = je peux garder l'outil "sélectionner les features" constamment sélectionné pour cliquer
