@@ -9,6 +9,8 @@
 * [sauter à la ligne dans une commande zsh multiligne de l'historique](#sauter-à-la-ligne-dans-une-commande-zsh-multiligne-de-lhistorique)
 * [créer ou extraire une archive .tar.7z de tout un répertoire](#créer-ou-extraire-une-archive-tar7z-de-tout-un-répertoire)
 * [chiffrer un fichier](#chiffrer-un-fichier)
+* [éditer un fichier dans un container docker qui n'a pas d'éditeur](#éditer-un-fichier-dans-un-container-docker-qui-na-pas-déditeur)
+* [matcher toute l'arborescence ou juste les fichiers avec zsh](#matcher-toute-larborescence-ou-juste-les-fichiers-avec-zsh)
 
 # imagemagick pour calculer la différence entre deux images
 
@@ -161,4 +163,30 @@ Déchiffrer :
 ```sh
 openssl enc -d -aes-256-cbc -salt -in /tmp/monarchive.tar.7z.xxx -out /tmp/monarchive.tar.7z
 # le tool demande le mot de passe au prompt
+```
+
+
+# éditer un fichier dans un container docker qui n'a pas d'éditeur
+
+**tags** : docker
+
+Même si l'image docker ne dispose pas de container, on peut éditer un fichier de façon externe, et le copier dans le container via `docker cp` :
+
+```sh
+docker cp <container>:/path/to/myfile /tmp
+vim /tmp/myfile
+docker cp /tmp/myfile <container>:/path/to/myfile
+```
+
+# matcher toute l'arborescence ou juste les fichiers avec zsh
+
+**tags** : zsh
+
+```sh
+
+# éditer toute l'arborescence actuelle, fichiers ET répertoires :
+nvim **/*
+
+# éditer tous les FICHIERS de l'arborescence actuelle :
+nvim **/*(.)
 ```
