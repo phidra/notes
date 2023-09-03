@@ -34,6 +34,7 @@ Les docs = [user guide](https://docs.qgis.org/3.22/en/docs/user_manual/) et [tra
       * [Comment ne pas garder la synchro entre la couche postgis et le serveur](#comment-ne-pas-garder-la-synchro-entre-la-couche-postgis-et-le-serveur)
       * [Comment limiter l'import PostGIS à une bbox ?](#comment-limiter-limport-postgis-à-une-bbox-)
       * [Ajouter le résultat d'une requête comme couche](#ajouter-le-résultat-dune-requête-comme-couche)
+   * [Comment importer des features d'une base spatialite ?](#comment-importer-des-features-dune-base-spatialite-)
 * [Usage n°2 = rechercher/sélectionner des features](#usage-n2--recherchersélectionner-des-features)
    * [Retrouver un edge à partir de son id](#retrouver-un-edge-à-partir-de-son-id)
    * [Retrouver tous les edges d'une liste d'ids donnée](#retrouver-tous-les-edges-dune-liste-dids-donnée)
@@ -265,6 +266,12 @@ ST_Intersects(ST_MakeEnvelope(-4.987792, 41.918628, 8.578320, 51.193115, 4326), 
 ### Ajouter le résultat d'une requête comme couche
 
 TODO (j'ai l'impression qu'il refait la requête)
+
+## Comment importer des features d'une base spatialite ?
+
+spatialite = équivalent de postgis pour sqlite
+
+Au moins avec la version 3.10 de qgis, il ne faut PAS utiliser **Ajouter une couche Spatialite** (qui n'importe rien), mais plutôt utiliser **Ajouter une couche vecteur**, et choisir un fichier sqlite.
 
 # Usage n°2 = rechercher/sélectionner des features
 
