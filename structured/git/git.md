@@ -1,13 +1,20 @@
 **WORK IN PROGRESS** : je suis en train de transférer mes anciennes notes privées vers ce repo public -> ces notes correspondent juste à la portion que j'ai transférée.
 
 * [Misc](#misc)
+   * [contourner un certificat manquant](#contourner-un-certificat-manquant)
+   * [commit parent de deux branches](#commit-parent-de-deux-branches)
+   * [formatter l'affichage d'un commit pour afficher des champs en particulier](#formatter-laffichage-dun-commit-pour-afficher-des-champs-en-particulier)
+   * [lister des branches distantes ou locales](#lister-des-branches-distantes-ou-locales)
+   * [lister les infos des branches distantes](#lister-les-infos-des-branches-distantes)
 * [Worktree](#worktree)
 * [Revert](#revert)
    * [Revert un commit classique](#revert-un-commit-classique)
    * [Revert un commit de merge](#revert-un-commit-de-merge)
 * [Modifier l'historique](#modifier-lhistorique)
    * [Modifier la date d'un commit](#modifier-la-date-dun-commit)
+   * [Modifier l'auteur d'un commit](#modifier-lauteur-dun-commit)
    * [Modifier un commit](#modifier-un-commit)
+   * [Rebaser le tout premier commit](#rebaser-le-tout-premier-commit)
    * [Splitter un commit](#splitter-un-commit)
 * [Tagging](#tagging)
    * [Créer un tag](#créer-un-tag)
@@ -20,6 +27,8 @@
    * [Appliquer et/ou supprimer un stash](#appliquer-etou-supprimer-un-stash)
 * [Remotes](#remotes)
 * [LFS](#lfs)
+
+
 
 # Misc
 
@@ -39,14 +48,28 @@ Afficher le hash du commit parent le plus récent de deux branches (i.e. le dern
 git merge-base BRANCH1 BRANCH2
 ```
 
-## afficher un champ particulier d'un commit
+## formatter l'affichage d'un commit pour afficher des champs en particulier
 
 ```sh
 git show b6296d75b2865eeb5c18dd7627fb5f3a8399d89f --pretty='format:%ai'
 2021-09-24 08:51:39 +0000
 ```
 
-Grepper `placeholders` dans `git help show` pour savoir comment afficher tel ou tel champ.
+Grepper `placeholders` dans `git help show` pour savoir comment afficher tel ou tel champ (ou `git log --help`).
+
+Exemple :
+
+```sh
+git log --format="%H  %h  %an  %ae  %cn  %ce   %s"
+# H  = hash
+# h  = hash abrégé
+# an = author name
+# ae = author mail
+# cn = committer name
+# ce = committer mail
+# s  = message de commit
+```
+
 
 ## lister des branches distantes ou locales
 
@@ -210,6 +233,21 @@ NEWDATE="2022-02-03T04:05:06" ; GIT_COMMITTER_DATE="$NEWDATE" git commit --amend
 
 Les formats de date acceptés par git sont [documentés ici](https://git-scm.com/docs/git-commit#_date_formats).
 
+## Modifier l'auteur d'un commit
+
+Même problématique ici, il y a **deux** auteurs `Author` (auteur original) et `Committer` (auteur de la modification la plus récente).
+
+L'idée va être de réécrire le commit avec rebase (ce qui settera le committer à l'user actuel) et d'utiliser l'option `--reset-author` pour setter également l'author à l'user actuel.
+
+Il y a un hic : la `CommitDate` sera également resettée à la date actuelle -> si on veut plutôt la laisser inchangée, il faut carabistouiller :
+
+```sh
+# marquer le commit à modifier en EDIT :
+git rebase -i PARENT
+
+# recommiter à l'identique en ne changeant que l'auteur (pour l'user actuel) :
+git commit --no-verify --amend --reset-author --no-edit --date="$(git log -n 1 --format=%aD)" && git rebase --continue
+```
 
 ## Modifier un commit
 
@@ -232,6 +270,14 @@ git add .
 git commit --amend  # éventuellement : --no-edit
 
 git rebase --continue
+```
+
+## Rebaser le tout premier commit
+
+Le premier commit n'ayant pas de parent, on utilise l'option `--root` :
+
+```
+git rebase -i --root
 ```
 
 ## Splitter un commit
