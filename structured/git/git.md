@@ -1,5 +1,6 @@
 **WORK IN PROGRESS** : je suis en train de transférer mes anciennes notes privées vers ce repo public -> ces notes correspondent juste à la portion que j'ai transférée.
 
+
 * [Misc](#misc)
    * [contourner un certificat manquant](#contourner-un-certificat-manquant)
    * [commit parent de deux branches](#commit-parent-de-deux-branches)
@@ -13,6 +14,7 @@
 * [Modifier l'historique](#modifier-lhistorique)
    * [Modifier la date d'un commit](#modifier-la-date-dun-commit)
    * [Modifier l'auteur d'un commit](#modifier-lauteur-dun-commit)
+   * [Modifier l'auteur de plusieurs commits en batch](#modifier-lauteur-de-plusieurs-commits-en-batch)
    * [Modifier un commit](#modifier-un-commit)
    * [Rebaser le tout premier commit](#rebaser-le-tout-premier-commit)
    * [Splitter un commit](#splitter-un-commit)
@@ -247,6 +249,14 @@ git rebase -i PARENT
 
 # recommiter à l'identique en ne changeant que l'auteur (pour l'user actuel) :
 git commit --no-verify --amend --reset-author --no-edit --date="$(git log -n 1 --format=%aD)" && git rebase --continue
+```
+
+## Modifier l'auteur de plusieurs commits en batch
+
+L'astuce est de carabistouiller encore plus pour exécuter une commande automatique à chaque commit rebasé :
+
+```sh
+git -c rebase.instructionFormat='%s%nexec GIT_COMMITTER_DATE="%cD" GIT_AUTHOR_DATE="%aD" git commit --amend --no-edit --reset-author' rebase -f PARENT-COMMIT
 ```
 
 ## Modifier un commit
