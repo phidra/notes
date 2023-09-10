@@ -15,7 +15,7 @@
     - step 1 = marquer une fonction `f` comme overloadable, en la décorant de `@singledispatch`
     - step 2 = ajouter une implémentation de `f` pour un type en particulier, en décorant cette implémentation de `@f.register(TYPE)`
 - la conséquence de la step 1, c'est que ça ne concerne pas **toutes** les fonctions : seules les fonctions explicitement marquées sont overloadables
-- j'ai [une POC sur le sujet](https://github.com/phidra/pocs/blob/572839bedf3e4d3c76699764962755a9b337a426/python/singledispatch/poc.py), qui teste certains points, notamment le comportement de mypy
+- j'ai [une POC sur le sujet](https://github.com/phidra/pocs/blob/fd9f9d9b5321433008b90bf0cc116817f33479c4/python/singledispatch/poc.py), qui teste certains points, notamment le comportement de mypy
 
 
 * [PEP 443 -- Single-dispatch generic functions](#pep-443----single-dispatch-generic-functions)
@@ -86,7 +86,7 @@ La section donne également quelques billes sur d"où on vient" :
 
 ## POC
 
-J'ai fait [une POC sur le sujet](https://github.com/phidra/pocs/blob/b052307751e4854457f83ba76b3f7b54179528ac/python/singledispatch/poc.py), qui addresse certaines questions :
+J'ai fait [une POC sur le sujet](https://github.com/phidra/pocs/blob/fd9f9d9b5321433008b90bf0cc116817f33479c4/python/singledispatch/poc.py), qui addresse certaines questions :
 
 - Q = est-ce que mypy détecte et prévient quand on essaye d'utiliser une fonction singledispatched, mais que le type n'est pas implémenté ?
 - R = apparemment non...

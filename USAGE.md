@@ -36,7 +36,7 @@ Le nom du fichier est la concaténation :
 1. la date de consultation de la ressource en préfixe (ainsi, les notes sont classées par l'ordre dans lequel j'ai lu/visionné les ressources)
 2. un nom de fichier slugifié, rappelant le contenu (si applicable, le titre de la note slugifié)
 
-Exemple ([lien](https://github.com/phidra/notes/blob/0b18506b195768c374d486a06f7fa0dcb342debc/2021-02-24-cppcon-back-to-basics-the-abstract-machine.md)):
+Exemple ([lien](https://github.com/phidra/notes/blob/c16c543a0de1b27592a12390dd824d1e7a699312/2021-02-24-cppcon-back-to-basics-the-abstract-machine.md)):
 
 ```
 2021-02-24-cppcon-back-to-basics-the-abstract-machine.md
