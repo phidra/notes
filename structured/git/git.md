@@ -244,11 +244,14 @@ L'idée va être de réécrire le commit avec rebase (ce qui settera le committe
 Il y a un hic : la `CommitDate` sera également resettée à la date actuelle -> si on veut plutôt la laisser inchangée, il faut carabistouiller :
 
 ```sh
-# marquer le commit à modifier en EDIT :
 git rebase -i PARENT
 
+# marquer le commit à modifier en EDIT
+
 # recommiter à l'identique en ne changeant que l'auteur (pour l'user actuel) :
-git commit --no-verify --amend --reset-author --no-edit --date="$(git log -n 1 --format=%aD)" && git rebase --continue
+GIT_COMMITTER_DATE="$(git log -n 1 --format=%cD)" git commit --no-verify --amend --reset-author --no-edit --date="$(git log -n 1 --format=%aD)"
+
+git rebase --continue
 ```
 
 ## Modifier l'auteur de plusieurs commits en batch
@@ -256,7 +259,7 @@ git commit --no-verify --amend --reset-author --no-edit --date="$(git log -n 1 -
 L'astuce est de carabistouiller encore plus pour exécuter une commande automatique à chaque commit rebasé :
 
 ```sh
-git -c rebase.instructionFormat='%s%nexec GIT_COMMITTER_DATE="%cD" GIT_AUTHOR_DATE="%aD" git commit --amend --no-edit --reset-author' rebase -f PARENT-COMMIT
+git -c rebase.instructionFormat='%s%nexec GIT_COMMITTER_DATE="%cD" GIT_AUTHOR_DATE="%aD" git commit --no-verify --amend --no-edit --reset-author' rebase -f PARENT-COMMIT
 ```
 
 ## Modifier un commit
