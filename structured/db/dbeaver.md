@@ -47,12 +47,15 @@ La vue des données a plein de features UX pratiques :
 - il y a un fil d'Ariane sur ce qu'on visualise
 - il y a de la pagination par défaut, et des tools pour facilement récupérer le reste / la page suivante
 - on peut facilement exporter les données visualisées
-- on peut passer en mode "record" pour visualiser une lignes en changeant de disposition (ses champs sur deux colonnes key + value)
+- on peut passer en mode "record" pour visualiser la ligne actuellement sélectionnée en inversant la disposition colonnes↔ligne (une ligne par colonne contenant deux champs key + value)
 - on peut détacher la fenêtre de visualisation des données, si ça aide
 
 Bémol 1 = je m'y perds un peu sur tous mes onglets (mais on peut "fermer les autres onglets" facilement)
 
-Bémol 2 = pour passer une requête sur la table dont on visualise actuellement les données, je ne trouve pas de shortcut rapide (même si l'autocomplétion fait le taf).
+Bémol 2 = ~~pour passer une requête sur la table dont on visualise actuellement les données, je ne trouve pas de shortcut rapide (même si l'autocomplétion fait le taf)~~ Trouvé :
+
+- quand je visualise des données, double-clic sur le nom de la table (juste avant le `where` permettant de filtrer) ouvre un éditeur sur la table
+- et si je préfère, un clic-droit au même endroit donne un template SQL pour requêter la table à copier/coller
 
 
 # Bosser avec des données géographiques
