@@ -11,6 +11,17 @@ Ici, j'ai l'intention de regrouper des notes qui concerne des sujets **transvers
 
 En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets tout dans le présent fichier.
 
+* [Quotes](#quotes)
+* [Gestion des erreurs](#gestion-des-erreurs)
+   * [Recoverable vs. irrecoverable](#recoverable-vs-irrecoverable)
+* [Architecture](#architecture)
+   * [Interfaces](#interfaces)
+* [Coding guidelines](#coding-guidelines)
+   * [Calculs vs. actions](#calculs-vs-actions)
+* [Conduite du changement](#conduite-du-changement)
+
+
+
 # Quotes
 
 Premature **micro**-optimization is the root of all evil. ([source](https://milen.me/writings/premature-optimization-universally-misunderstood/))
@@ -39,6 +50,17 @@ Au sujet des exceptions ([source](https://quuxplusone.github.io/blog/2022/12/14/
 J'ai déjà fait [une POC](https://github.com/phidra/pocs/blob/fd9f9d9b5321433008b90bf0cc116817f33479c4/cpp/CATEGORY_archi/interface_vs_implementation/main.cpp) sur le principe d'avoir une factory qui renvoie un `IMachin*`, de sorte que le client n'ait pas connaissance (et donc ne dépende pas) de l'implémentation concrète `MyMachin`.
 
 Par ailleurs, faire des interfaces vides peut avoir un intérêt, juste pour représenter un objet qui, par le simple fait d'être vivant, fait quelque chose d'utile en side-effect.
+
+# Coding guidelines
+
+## Calculs vs. actions
+
+Séparer les fonctions en deux catégories générales, et ne pas mélanger les deux :
+
+- les actions (avec I/O)
+- les calculs (fonctions pures)
+
+Une source parmi d'autres sur le sujet : https://rusty-ferris.pages.dev/blog/fp-actions-vs-calculations/
 
 # Conduite du changement
 
