@@ -13,6 +13,9 @@ OSM = OpenStreetMap
    * [idEditor](#ideditor)
    * [libosmium](#libosmium)
    * [osmium-tool](#osmium-tool)
+* [Contribuer à OSM](#contribuer-à-osm)
+   * [HOT = Humanitarian OpenStreetMap Team](#hot--humanitarian-openstreetmap-team)
+   * [idEditor](#ideditor-1)
 
 # Structure de la donnée
 
@@ -206,3 +209,90 @@ osmium getid someplace.osm --output-format=xml n7276388553 w779274334 r10612083
 (pas avec ma version) on peut faire des extracts dans une bounding box ou dans un polygone geojson
 
 (pas avec ma version) on peut filtrer des nodes/ways/relations selon leurs tags (e.g. pour ne garder que le réseau routier)
+
+# Contribuer à OSM
+
+**Contexte** : septembre 2023, ma super collègue cartographe propose de contribuer à [ce projet hotosm](https://tasks.hotosm.org/projects/15468) pour cartographier les zones sinistrées par le tremblement de terre au Maroc. Elle me fait une session d'explication sur OSM + sur HOT (= Humanitarian OpenStreetMap Team) = sous-projet humanitaire d'openstreetmap qui existe quasiment depuis le début. Du coup je me créée un compte sur OSM, et je contribue.
+
+Quels outils elle utilise pour contribuer ?
+
+- idEditor pour petites contributions (client web = directement accessible sur le site osm)
+- jOSM si contributions massives
+- elle n'a pas de tool dédié dans son téléphone
+
+## HOT = Humanitarian OpenStreetMap Team
+
+Plate-forme sur laquelle des projets s'ouvrent ponctuellement, pour des temps donnés (ici, 2 semaines), p.ex. :
+
+- à cause de catastrophes naturelles
+- à la demande de médecins sans frontières
+
+Principe = il y a une grande zone à cartographier, divisée en carrés, on choisit un carré, on voit l'image satellite correspondante, et on peut ajouter les features à partir de l'image.
+
+Pour ce projet, on se limite à buildings + routes (pour d'autres projets, d'autres features peuvent les intéresser = cours d'eau, zones résidentielles, POIs, etc.)
+
+Légende des carrés :
+
+- blanc = à faire
+- vert = terminé
+- bleu clair = en cours de validation
+
+
+Cliquer sur un carré blanc pour le remplir en contribuant : ça le locke + un idEditor sur le carré s'ouvre et on peut contribuer :
+
+- valider quand on a fini, ce qui délocke le carré
+- les carrés sont divisés en fonction du travail → on peut demander à diviser un carré si besoin
+- l'image satellite par défaut est la meilleure pour la zone (mais essayer d'autres images si besoin)
+- on ajoute des routes / bâtiments comme sur OSM classique
+- bâtiment : ne pas préciser le type (quelqu'un qui est sur place le fera)
+- route = choisir entre les deux types suivantes :
+    - route résidentielle si bâtiment autour de la route
+    - route mineure sinon
+    - (des gens derrière vont vérifier la route)
+- route = une autre option est de prolonger une route existante, auquel cas elle sera déjà taggée dans la bonne catégorie
+- attention : pour les routes, il faut penser à la connecter au réseau existant (sinon, mieux vaut ne pas la cartographier)
+
+Attention, quand on édite sur idEditor, il faut cocher "données de carte personnaliées" (parmi les données cartographiques disponibles) pour voir apparaître le rectangle rose indiquant la zone de "son" carré.
+
+Le principe de ce projet humanitaire est que tout le monde puisse cartographier → ne pas se prendre la tête avec les tags
+
+Une fois ses éditions réalisées :
+- sauvegarder dans OSM (comme pour une édition OSM classique)
+    - normalement, il faut toujours commenter ses contributions OSM...
+    - ... mais ici, ils ont forcé le commentaire aux tags de HOT indiquant ce dont il est question
+- sauvegarder son carré dans HOT, en indiquant si la zone est finie ou non (i.e. reste-t-il des objets à cartographier ?)
+    - ça délocke le carré
+
+## idEditor
+
+Le tutoriel idEditor est plutôt bien fait (mais à faire dans une fenêtre en plein écran ! L'iframe intégrée à HOT empêchait le bon positionnement des éléments du tutoriel, le rendant inutilisable...)
+
+UX :
+
+- pour clore un polygone = recliquer sur le premier point
+- pour clore une ligne, recliquer sur le dernier point
+- le sélecteur à gauche a deux rôles :
+    - lorsqu'une feature est sélectionnée, elle permet de le tagger (et notamment de choisir le type, avec recherche du type : "Bât..." est complété en "Bâtiment")
+    - lorsqu'aucune feature n'est sélectionnée, elle permet d'en sélectionner une en greppant parmi les features affichées à l'écran
+- quand on place des points, Alt permet de désactiver le magnétisme (qui peut être un peu relou)
+- quand on sélectionne des features, Shift pour en sélectionner plusieurs
+- pour ajouter un point au milieu d'une ligne, plusieurs possibilités :
+    - double-cliquer sur la ligne
+    - cliquer sur la flèche entre deux points
+
+S'il y a des choses qui ne correspondent pas à la réalité, ne pas hésiter à corriger :
+
+- les légers décalages sont OK, sans doute dûs à des images satellite un peu différentes
+- mais ne pas hésiter à corriger les très grosses erreurs
+
+Lorsqu'on édite avec idEditor, il y a une vérification d'erreur à la volée :
+
+- exemple 1 = route qui croise bâtiment
+- exemple 2 = on a ajouté un polygone sans préciser ce que c'était (ça c'est une erreur bloquante)
+- les warnings ne sont pas forcément bloquants, mais sont signe de trucs qui ne vont pas -> ils peuvent aider
+
+Une fois qu'on est sûr de ses contributions, les features et les tags, on les sauvegarde dans OSM :
+
+- il faut toujours commenter une contribution (pour décrire le jeu de changements)
+- les commentaires sont à faire en anglais
+
