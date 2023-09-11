@@ -30,12 +30,30 @@ Globalement, le tool est plus ergonomique que pgadmin4.
     - un diagramme Entity Relashionship Diagram !
 - c'est général : on peut consulter les Propriétés de chaque objet : database, schéma, table, colonne...
     - et il y a un fil d'Ariane pour naviguer facilement
-- la vue des données permet de filtrer facilement en entrant le contenu d'une clause `WHERE`, ça évite d'avoir à taper toute la requête :
+
+# Vue des données
+
+La vue des données a plein de features UX pratiques :
+
+- on peut filtrer facilement en entrant le contenu d'une clause `WHERE`, ça évite d'avoir à taper toute la requête :
     ```
     my_field = 'this_value'
     ```
-- par défaut, la vue des données n'affiche que les 200 premières lignes, mais en cliquant droit sur les colonnes, on peut télécharger les pages suivantes voire toute la table (attention à la RAM dans ce cas)
+- par défaut, n'affiche que les 200 premières lignes, mais en cliquant droit sur les colonnes, on peut télécharger les pages suivantes voire toute la table (attention à la RAM dans ce cas)
 - pour faciliter leur copier/coller, on peut afficher les résultats sous une forme textuelle (et dans ce cas, la sélection est par colonne = équivalent de Ctrl+V sous vim)
+- on peut masquer des colonnes
+- on peut afficher en grille ou en textuel
+- il y a un viewer de géométrie basé sur leaflet
+- il y a un fil d'Ariane sur ce qu'on visualise
+- il y a de la pagination par défaut, et des tools pour facilement récupérer le reste / la page suivante
+- on peut facilement exporter les données visualisées
+- on peut passer en mode "record" pour visualiser une lignes en changeant de disposition (ses champs sur deux colonnes key + value)
+- on peut détacher la fenêtre de visualisation des données, si ça aide
+
+Bémol 1 = je m'y perds un peu sur tous mes onglets (mais on peut "fermer les autres onglets" facilement)
+
+Bémol 2 = pour passer une requête sur la table dont on visualise actuellement les données, je ne trouve pas de shortcut rapide (même si l'autocomplétion fait le taf).
+
 
 # Bosser avec des données géographiques
 
