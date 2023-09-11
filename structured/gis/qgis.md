@@ -46,6 +46,7 @@ Les docs = [user guide](https://docs.qgis.org/3.22/en/docs/user_manual/) et [tra
       * [Ouvrir la table](#ouvrir-la-table)
       * [Deux vues : ligne par ligne ou formulaire](#deux-vues--ligne-par-ligne-ou-formulaire)
       * [Ajouter la géométrie des features en tant qu'attribut](#ajouter-la-géométrie-des-features-en-tant-quattribut)
+   * [Afficher l'aire des features](#afficher-laire-des-features)
 * [Usage n°4 = affichage](#usage-n4--affichage)
    * [N'afficher que les edges avec un certain attribut](#nafficher-que-les-edges-avec-un-certain-attribut)
    * [Rendre une couche transparente](#rendre-une-couche-transparente)
@@ -357,6 +358,14 @@ Utile pour pouvoir copier/coller la géométrie d'une feature.
 - choisir le nom (e.g. `my_geometry`) et définir le type `Texte`
 - Dans l'expression, entrer `geom_to_wkt($geometry)`  (profiter de l'autocompletion si besoin)
 - cliquer sur ok, chaque feature a une nouvelle colonne avec la géométrie en WKT, p.ex. `Point (1.4989549 43.5485043)`
+
+## Afficher l'aire des features
+
+* Dans la toolbar, il y a une icône "Ouvrir la calculatrice de champ" avec une image de boulier (je ne trouve pas l'item correspondant dans les menus...)
+* Cocher **Créer un champ virtuel**
+* Choisir le nom, et le type (pour une aire, un type `double`)
+* Dans **Expression**, entrer `$area`
+* Valider → l'identification des features et la table des attributs comportent maintenant l'aire de la feature
 
 # Usage n°4 = affichage
 
