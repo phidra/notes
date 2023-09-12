@@ -16,9 +16,12 @@ En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets t
    * [Recoverable vs. irrecoverable](#recoverable-vs-irrecoverable)
 * [Architecture](#architecture)
    * [Interfaces](#interfaces)
+   * [Dependency Injection](#dependency-injection)
+   * [Application-logic classes vs. Configuration classes](#application-logic-classes-vs-configuration-classes)
 * [Coding guidelines](#coding-guidelines)
    * [Calculs vs. actions](#calculs-vs-actions)
 * [Conduite du changement](#conduite-du-changement)
+
 
 
 
@@ -50,6 +53,30 @@ Au sujet des exceptions ([source](https://quuxplusone.github.io/blog/2022/12/14/
 J'ai déjà fait [une POC](https://github.com/phidra/pocs/blob/fd9f9d9b5321433008b90bf0cc116817f33479c4/cpp/CATEGORY_archi/interface_vs_implementation/main.cpp) sur le principe d'avoir une factory qui renvoie un `IMachin*`, de sorte que le client n'ait pas connaissance (et donc ne dépende pas) de l'implémentation concrète `MyMachin`.
 
 Par ailleurs, faire des interfaces vides peut avoir un intérêt, juste pour représenter un objet qui, par le simple fait d'être vivant, fait quelque chose d'utile en side-effect.
+
+## Dependency Injection
+
+> Traditionally, each object is responsible for obtaining its own references to the objects it collaborates with (its dependencies).
+>
+> When applying Dependency Injection, the objects are given their dependencies at creation time by some external entity that coordinates each object in the system.
+
+([source](https://youtu.be/92ZJcxJgmmE?t=488))
+
+^ les dépendances sont injectées par un objet ordonnanceur, il y a deux points importants derrière cette notion :
+
+- les dépendances sont injectées (en pratique, sous forme d'objet implémentant une interface plutôt que d'un objet concret)
+- un objet ordonnanceur crée les objets concrets
+
+## Application-logic classes vs. Configuration classes
+
+> One way to make code more testable is to use Dependency Injection. This means that an object should never instantiate its collaborator by calling the new operator. It should be passed its collaborators instead. When we work this way we separate classes in two kinds.
+> - Application logic classes have their collaborators passed into them in the constructor.
+> - Configuration classes build a network of objects, setting up their collaborators.
+> Application logic classes contain a bunch of logic, but no calls to the new operator. Configuration classes contain a bunch of calls to the new operator, but no application logic.
+
+([source](http://matteo.vaccari.name/blog/archives/154))
+
+^ séparer ses classes en **Application-logic** d'un côté, et **Configuration** de l'autre.
 
 # Coding guidelines
 
