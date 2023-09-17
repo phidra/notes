@@ -1,0 +1,358 @@
+META :
+	j'avais arrêté l'étude avant qu'elle ait convergé, donc non seulement les notes ne sont pas cleanées, mais elles ne sont même pas finies
+	je pseudo-archive ici : l'idée est de décharger mes journaux dans lesquels elles étaient stockées + de les rendre publiquement accessibles sans attendre
+
+2022 = ROUTES ALTERNATIVES :
+	DERNIÈRES NOTES AVANT ARRÊT :
+		avancer lecture thèse (j'ai noté l'endroit où reprendre)
+		jeter un oeil aux autres papiers :
+			le papier de SEA 2012 sur les candidates sets (qui semble adresser la question de comment trouver les via-nodes, sans avoir à relaxer)
+			les papiers récents, qui donneront sans doute un bon aperçu des techniques à jour
+		sysnthétiser ce que j'apprends pour pouvoir faire des retours sur le sujet
+	NOTES VRAC SUR LA THESE :
+		https://publikationen.bibliothek.kit.edu/1000050750/3763818
+		SOTA = choisir son chemin en présence d'aléatoire sur le poids des edges (avec un budget de temps donné, trouver le trajet qui maximise la probabilité d'arriver à l'heure).
+		PHAST :
+			on explore le upward tree complètement
+			on explore chaque noeud downward en commençant par le plus haut rank :
+				le noeud de plus haut rank a son PCC définitif (vu que c'est le plus haut de l'upward path)
+				(je suppose que) ses successeurs voient leur distance mise à jour
+		La section 4.1.5 Theoretical Results a un résumé des résultats théoriques sur CH ! (et il y en a plusieurs, en fonction de la contrainte qu'on donne au graphe)
+		Chapitre 5 = les techniques de routes alternatives
+			utiliser des métriques différentes, e.g. road quality, distance, travel-time
+				approche assez simpliste et intuitive
+				inconvénient = les différentes routes sont parfois très similaire au shortest path optimisant le travel-time
+				inconvénient = route retenue parfois déraisonnable
+				CRP (qui autorise une métrique par query) permet d'utiliser autant de métrique qu'on veut
+			utiliser les k plus courts chemins :
+				approche assez simpliste et intuitive aussi
+				l'idée est de trouver une alternative parmi les k plus courts chemins
+				en pratique ça marche pas bien, car à moins de prendre un k très grand, on se retrouve avec des variations très peu différentes de l'iti optimal
+				(e.g. un iti qui sort de l'autoroute pour y re-rentrer immédiatement est une variation qui polluera les k réponses, mais sans avoir aucun intérêt en tant que route alternative)
+			éliminer les arcs/vertices de l'iti principal :	
+				ainsi, en recalculant un shortest path, on emprunte forcément une route différente (mais optimale, compte-tenu des arcs/vertices éliminés)
+				(NdM : se marie sans doute mal avec les CH)
+			pénaliser les arcs/vertices de l'iti principal :	
+				même principe
+				note que pour éviter de faire des petits détours autour de l'iti principal, il faut aussi pénaliser les arcs AUTOUR du chemin optimal
+				(NdM : se marie sans doute mal avec les CH)
+			Equilibria :
+				principe = on lance PLUSIEURS itis source->target, et on essaye de maximiser le flow (donc on pénalise les arcs empruntés au fur et à mesure)
+				utilisé par un seul papier (mais pour CH !)
+				In its current form, this seems too expensive for a real-time scenario due to repeated CH creation
+				Should be implementable far more efficiently using using the recent customizeable CH
+			Branching methods :
+				méthode pour approximer les k-shortest paths
+				NdM : souffre des mêmes problèmes qu'une solution basée sur les k-shortest paths ?
+			via-nodes / plateaux :
+				méthode la plus utilisée actuellement
+				(NdM = il me semble que c'est la méthode utilisée par l'article qui utilisait les CH !)
+				pas encore très clair, apparemment on identifie un vertex intermédiaire sur le shortest-path (le via-vertex)
+			calcul de routes non-dominées :
+				des techniques existent, mais apparemment basées sur Dijkstra ou goal-directed...
+			time-dependence :
+				si une route est optimale à un moment quelconque de la journée, alors c'est un bon candidat pour être une route alternative
+		La question de la qualité des routes alternatives est importante, avec deux approches :
+			qualité du jeu de routes complet dans son ensemble
+			qualité d'une route supplémentaire par rapport à un jeu de routes déjà établi
+		5.1 Alternative Graphs
+			un alternative graph est une représentation d'alternatives
+			on peut le calculer à partir de peu de shortest path, mais il permet plus de routes que le nombre de shortest paths, car on peut mixer les bouts de routes, si elles se croisent
+			ça permet d'évaluer un groupe de chemins plutôt que chaque chemin individuellement (et donc d'utiliser des chemins individuels qui auraient été rejetés par d'autres méthodes)
+			il donne un critère formel sur le decision graph
+			problème = un bon chemin alternatif autorise plusieurs mauvais
+			comment ? en ajoutant des pénalités aux arcs du plus court chemin, et aux arcs adjacents aux noeuds du plus court chemin
+				arcs du PCC = pour éviter de garder le même chemin et en trouver un autre
+				arcs adjacents = pour éviter de passer son temps à entrer et sortir du PCC
+				on dirait qu'ils calculent les k plus courts chemins, puis appliquent les pénalités ?
+				en effet, les pénalités sont appliquées sur des chemins déjà calculés, apparemment
+			il dit que le fait de devoir appliquer des pénalités n'est sans doute pas compatible avec CH (même CCH)
+			mais il parle d'une implémentation plus efficace plus tard (des auteurs de 2021)... still, plusieurs centaines de ms pour des graphes pas trop gros
+			ALT reste valide même si la métrique change, à condition qu'elle augmente le poids des arcs
+			En résumé, j'ai l'impression que tout ce qui est décrit dans le chapitre Alternative Graphs n'est pas applicable aux CH.
+		5.2 The Via-Node Paradigm
+			le principe semble être de trouver un node alternatif, et de calculer les deux demi plus courts chemins
+			point intéressant : si on considère qu'on a déjà trouvé un node atlernatif, ça se marie bien avec des speed-up techniques comme CH, puisqu'il suffit de concaténer deux demi-PCC
+			concept de viabilité d'une route alternative défini en 2013 dans :
+				Ittai Abraham, Daniel Delling, Andrew V. Goldberg, and Renato F.  Werneck.
+				Alternative routes in road networks.
+				INPUT = PCC entre s et t + via-vertex v (et les deux demi-PCC s→v et v→t)
+				CRITÈRE 1 = limited sharing : la longueurs des sections communes entre s→t et s→v→t doit être inférieure à α.length(s→t)
+				CRITÈRE 2 = local optimality = localement (i.e. si on ne dézoome pas trop), toute portion de s→v→t est optimale (i.e. c'est un PCC local)
+				CRITÈRE 3 = uniformly bounded stretch : on dirait qu'on requiert  (pas très clair, formulé comme ça, on dirait que c'est le même critère que la local-optimatlity ?) Sans doute un critère sur la longueur total de l'iti, pas trop éloigné de la longueur optimale
+					confirmé plus loin : the path should be not too long in comparison with the shortest path
+			tout via-vertex qui satisfait ces critères est dit viable
+			comme les deux derniers critères sont compliqués à vérifier formellement (et encore moins à TROUVER), il y a des critères approchés :
+				CRITÈRE 2 = APPROXIMATED local optimality = T-test : on trouve deux vertex uT et wT sur le path s→v→t à une distance T du via-vertex v, le critère est vérifié si le sous-chemin uT→wT de s→v→t est bien le plus court chemin. s→v→t est alors T-local-optimal
+				CRITÈRE 3 = APPROXIMATED uniformly bounded stretch : si on ne s'intéresse qu'à la portion u→w de s→v→t qui est distincte du PCC s→t , cette portion u→w de s→v→t doit avoir une longueur inférieure à α x sa contrepartie sur le vrai PCC s→t
+			(en dehors du critère 3 non-approximé, les visualisations de la figure 5.5 suffisent pour comprendre très intuitivement tous les critères)
+			QUESTION : ça explique comment qualifier un via-vertex, mais pas comment le trouver !
+			As we mentioned previously, plateaux are strongly related to the concept of via-vertexs.
+				QUESTION = c'est quoi au final un plateau ?
+				Remember that a plateau is an overlapping segment of two shortest path trees
+				Cam05 utilise les plateaux pour TROUVER des routes alternatives (mais vu la date, ça ne m'aidera sans doute pas beaucoup) :
+					2005
+					Cambridge Vehicle Information Tech. Ltd.
+					Choice routing,
+					http://camvit.com/camvit-technical-english/Camvit-Choice-Routing-Explanation-english.pdf
+		5.2.2 Current Implementations
+			X-BDV = l'implémentation de référence
+				(mais trop lente pour être applicable en pratique)
+				c'est un bidir dijkstra qui continue plus longtemps après avoir trouvé le PCC (EDIT : plus précisément, le critère d'arrêt est que chaque sens du dijkstra s'arrête quand il settle des nodes à 1+ε * la longueur du PCC ; donc chaque sens DÉPASSE la cible)
+				les (nombreux) meeting points contiennent obligatoirement tous les via-vertex possibles, on peut vérifier leur T-test et leur stretch
+			certains résultats théoriques tendent à montrer que les via-vertex sont rarement prunés par les speedup techniques
+			X-REV = première imlémentation efficace basée sur REACH (mais comme je ne connais pas REACH, ça me fait une belle jambe)
+				point important (à mes yeux) :
+					Most speed-up techniques do not offer any guarantees besides the fact that the pruned search tree does contain the shortest path between s and t.
+					Du coup, même si on trouve un via-vertex atteint par les deux propagations, on n'est pas sûr que ce soit via un PCC
+				solution = requêter un PCC de s à v, un autre PCC (backward) de t à v
+				Si on compte aussi le PCC à calculer pour le T-test, ça fait 3 requêtes de PCC pour chaque via-vertex candidat
+				considération additionnelle : il faut unpacker les shortcuts pour pouvoir calculer le sharing (et pour trouver les OD du T-est)
+			X-CHV = avec les Contraction Hierarchies
+				on fait un forward search et un backward search classique
+				tous les meeting points sont des via-vertex candidates
+				tout comme pour REACH, ça n'est pas parce qu'on a trouvé un meeting-point qu'on a trouvé le PLUS COURT chemin y conduisant, du coup on a besoin de 3 autres queries
+				tout comme pour REACH, on a besoin d'unpacker les shortcuts pour calculer le sharing et le T-test
+			Relaxation :
+				comme les search-tree des CH (ou REACH) sont très très épurés de plein de nodes, on peut peut-être passer à côté de via-vertex intéressants
+				du coup, il faut "relaxer" un peu les CH, et accepter de relaxer un node de rank inférieur...
+				faut pas trop le faire, sinon on retombe sur un bidir dijkstra
+				k-CHV = la méthode retenue = un arc (v,w) est pruné s'il se dirige vers un node inférieur non seulment au rank de v, mais également à tous les parents de v, jusqu'au k-ième
+				une autre approche brevetée par Google semble être d'accepter de relaxer les arcs vers des nodes dont le rank est dans un threshold sous le rank actuel
+				----------------------------------------
+				une approche pour trouver des candidats = celle du papier de SEA 2012 :
+					Dennis Luxen and Dennis Schieferdecker
+					Candidate sets for alternative routes in road networks
+				principe = on conjecture que les via-vertex pour des OD suffisament éloignés sont peu nombreux
+				ils proposent donc de les pré-calculer à l'avance
+				le moyen = multi-level partition + ajouter des arcflags à CH
+				en résumé = plus rapide que X-CHV, mais beaucoup plus complexe (partition + arcflags), et consomme plus de mémoire
+			NdM = on peut commencer par voir expérimentalement les résultats que donne un algo sans relaxation ?
+		CHAPITRE 6 = Experimental Methodology
+			instance 1 = dimacs challenge (18M nodes, 42M edges)
+			instance 2 = OSM (extract geofabrik du 10 août 2014), il indique comment il convertit la donnée OSM en graphe, notamment le choix de la vitesse de parcours. Il y a plusieurs jeux de données OSM, l'Europe a 30M nodes et 72M edges)
+			pas de turn-costs ou restrictions
+		6.5 Comparing Alternative Route Quality
+			il y a un sous-chapitre dédié à la comparaison des routes alternatives
+			un critère de qualité de l'algo (pas des routes !) est le success-rate : dans quelle mesure trouve-t-il au moins une (puis deux ? trois ?) routes alternatives ?
+			la figure 6.3 montre que c'est pas forcément facile de dire si renvoyer plus d'alternatives est intéressant ou pas : avoir une première alternative pas terrible (car beaucoup d'overlap), puis une deuixème excellente autorise à en avoir deux (alors qu'avoir l'excellente tout de suite empêche la découverte de la médiocre)
+		6.6.2 An Additional Measure
+			un autre critère pour mesurer la qualité de l'algo = regarder les alternatives à l'alternative
+			encore un autre critère = longueur relative du segment avec la plus grande bounded stretch
+		CHAPITRE 7 = Parallel Pareto Optimal Routes
+			on dirait qu'il adresse la question du bicriteria shortest-path problem = pour fournir un front de Pareto pour travel-time + coût du trajet
+			(c'est pas vraiment ce que je recherche pour le moment)
+			ils proposent un algo parallèle pour calculer le front de Pareto
+			----------------------------------------
+			As it stands, however, Pareto-optimal shortest path search is currently still too costly for providing a competitive tool for the computation of alternative routes.
+			Even on rather small graphs, we can experience running times in orders hundreds of seconds, fully disqualifying it for our purposes of supplying a real-time system for alternative routes.
+		CHAPITRE 8 = Engineering the Penalty Method
+			Even though it seemed unlikely at first, the penalty method can be implemented efficiently.
+			Our final result offers a technique that [...] can handle close to any query type within or at least close to a hundred milliseconds.
+			----------------------------------------
+			(je n'ai pas regardé comment la technique fonctionnait, elle semble basée sur le fait de customiser les graphes avec CRP pour supprimer les tronçons déjà utilisés afin de trouver des alternatives)
+			c'est loin d'être sûr, mais ça pourrait donc être un candidat potentiel mais très coûteux, si jamais des techniques basées sur CH ne fonctionnent pas ?
+		CHAPITRE 9 = A new Approach to Via-Alternatives
+			On dirait que le chapitre présente des avancées sur le sujet...
+			Du coup, ça vaudrait le coup de le lire en détail ?
+				The most common approach for the calculation of alternative routes, so far, is the via-vertex appraoch.
+					The algorithms presented by Abraham et al. [ADGW13] as well as an extension due to Luxen and Schieferdecker [LS12] both operate in a similar fashion.
+					After selecting a via-vertex candidate in a heuristic fashion, the vertex is tested for admissibility and selected on success.
+					The ordering heuristic approximates the quality of an alternative route based on shortcuts. The test itself requires three shortest-path queries.
+					Therefore, both methods present the first viable alternative path as a result instead of evaluating all candidates
+				The discovery of candidates is one of the major parts of both algorithms.
+				Abraham et al. require a relaxed pruning mechanism to achieve reasonable success rates.
+					They relax the pruning mechanism by allowing the query to descend within the hierarchy.
+					This descend is controlled via the levels of up to k parent vertices1.
+					The relaxation not only increases the success rate. The highly increased number of candidates also increases the workload of the algorithm during its testing phase.
+				Luxen and Schieferdecker follow a different approach and build an alternative route cover for all vertices within pairs of distinct regions.
+					NdM : Luxen and Schieferdecker est bien le papier de SEA2012 sur comment trouver les candidate sets
+					Le principe semble être de préprocesser les via-nodes région par région, et d'utiliser ce preprocessing à la query pour trouver facilement les via-nodes.
+					Pour cela, on combine avec arcflags pour stocker des infos dans chaque node.
+					C'est la technique la plus rapide actuellement.
+				One point of critique, in our eyes, is the sequential evaluation of different candidates that reports the first viable via-vertex.
+					In this chapter, we develop an algorithm that can test all its candidates at once.
+					Ils utilisent CH !
+			Ça semble applicable (et appliqué) aux CH :
+				We improve upon Choice Routing and X-BDV by applying their concept, i.e. the discovery of plateaux, to Contraction Hierarchies.
+			Trois étapes :
+				SHORTEST-PATH TREES = The first step computes two (partial) shortest-path trees. Since we are using a CH, these trees consist mostly of shortcuts.
+				HIERARCHY DECOMPOSITION = As in [ LS11], we collapse the hierarchy of the CH. This phase discovers the plateaux and prepares our alternative graph
+					NdM : le papier n'est pas accessible en lecture, mais semble être lié au fait de répartir au mieux les voitures sur un réseau pour limiter le flot max = pour égaliser les temps de trajet sur toutes les routes.
+				POST PROCESSING =  In a final step, we process the graph to contain less unnecessary data.
+		REPRENDRE LA LECTURE A :
+			TODO
+		NOTE D'IMPLEMENTATION :
+			faire des protos avec bidir dijkstra classique pour référence ? (et ainsi savoir si des itis proposés sont réellement bons ou pas, ou savoir si un algo donné améliore les choses ou pas)
+			comment analyser nos résultats ?
+				dit autrement : si j'implémente un X-CHV sans relaxation, comment savoir à quel point le fait de ne pas avoir de relaxation dégrade les routes alternatives trouvées ?
+				ma réponse actuellement = faire du bidir-dijkstra pour faire du brute-force + définir les critères de choix/tri (à la mano, avec un viewer si besoin) pour définir une liste de référence
+		Mon idée sur comment implémenter les routes alternatives avec CH :
+			pré-supposition = je ne travaille que sur un graphe CH statique + je n'utilise pas la relaxation
+			faire un forward search et un backward search
+			dès qu'on connaît le PCC, on le mets de côté, et on en extrait une durée max admissible pour les routes alternatives :
+				pour un PCC de 20 minutes, la route alternative pourra être au max de 25 ou 30 minutes
+				pour un PCC de 2 heures, la route alternative pourra être au max de 2h30 ?
+				pour un PCC de 5 heures, la route alternative pourra être au max de 5h45 ?
+			critère d'arrêt = continuer jusqu'à ce qu'individuellement, chaque search ait dépassé la durée max admissible
+			à ce stade, on a trouvé le PCC, et on a plein d'autres meeting-points
+			on traite chaque meeting-point comme un via-node potentiel
+			comme on va en avoir besoin, on expande le PCC entre source et target (pour avoir le chemin déroulé)
+			c'est là que ça se corse, car il y a beaucoup de taf à faire pour chaque via-node :
+				calculer le PCC entre source et via-node + l'expand
+				calculer le PCC entre via-node et target + l'expand
+				utiliser les chemins expand pour vérifier si le sharing n'est pas trop élevé ?
+				trouver les deux nodes extrêmes N1 et N2 du T-test = le premier node différent du PCC (en partant de chaque bout)
+				faire le T-test = vérifier que le PCC entre N1 et N2 est bien sur le chemin passant par le via-node
+				calculer le sharing
+			on garde chaque via-node candidat (et donc chaque route alternative qui va avec) qui :
+				a une durée pas trop grande (inférieure à la durée max admissible)
+				a un sharing pas trop grand (inférieur à un sharing max)
+				passe le T-test, i.e. c'est bien un PCC local passant par le via-node
+			NOTE : pourquoi faut-il calculer chaque demi-PCC individuellement ?
+				parce que considérer qu'une seule propagation dans un sens (e.g. forward depuis la source) a permis de trouver le PCC revient à dire qu'on n'avait pas besoin de la propagation backward, donc que le via-node est le node de plus haut rank sur le chemin entre la source et le via-node
+				(hors, c'est faux dans le cas général)
+				on a donc besoin de faire deux propagations pour trouver le bon demi-PCC : forward depuis source, et backward depuis via-node potentiel
+				à noter que la propagation forward depuis source a déjà été faite une fois (on pourrait donc remplir une structure pour la réutiliser)
+				et pourquoi ça marche pour le chemin entre source et target ? parce qu'ici, on a bien trouvé le PCC en faisant DEUX propagations, forward et backward !
+			QUESTION : pourquoi a-t-on un besoin de "relaxation" ?
+				un bidir dijkstra exhaustif (avec éventuellement comme critère d'arrêt le fait de s'arrêter quand tout futur chemin sera plus grand que 120% du PCC par exemple) trouvera tous les via-nodes potentiels
+				en effet, tout noeud atteint par les deux dijkstra est un via-node potentiel
+				(car si un node n'est touché que par une seule propagation à la fin du critère d'arrêt, alors c'est que tout chemin passant par lui mets plus de 120% du temps pour relier la source à la target)
+				NdM : en fonction des critères qu'on retient pour l'acceptabilité des via-nodes, ça n'est pas entièrement vrai :
+					contre-exemple : on peut supposer que sur un trajet de 6h, on accepte d'avoir une demi-heure de perte par le chemin alternatif
+					ce PCC de 6h est constitué de (grosso-modo) deux demi-trajets de 6h
+					alors, supposons qu'il existe une alternative pour faire la dernière heure du trajet (donc le dernier tiers du trajet backward)
+					supposons que cette alternative mette 1h05 au lieu d'1h00 (i.e. c'est un détour qui est certes sous-optimal, mais qui ne coûte que 5 minutes)
+					exemple concret : passer par l'A5 sur la dernière partie d'un Lyon-Paris
+					alors cette "fin de parcours alternative" ne sera pas trouvée par un bidir dijkstra, puisque le via-node permettant de l'emprunter est trop loin du milieu du trajet pour être dans les 120%
+					solution = je crois que l'explication est dans le critère d'arrêt que j'ai décrit plus haut pour le bidir dijkstra : peut-être que dans le papier, il faut continuer le bidir dijkstra plus loin ?
+				revenons à nos moutons = pourquoi veut-on de la "relaxation" :
+					si j'ignore le NdM ci-dessus, et que j'admets que tous les via-nodes potentiels sont touchés par les deux sens du bidir dijkstra... ce n'est PAS LE CAS pour le bidir dijkstra CH!
+					en effet, la contrainte de grimper les ranks fait que seuls les noeuds en haut de la hiérarchie seront touchés par les deux sesn du bidir dijkstra CH
+					dit autrement, on ne trouvera que les via-nodes en haut de la hiérarchie, et on sera incapable de trouver les via-nodes en bas de celle-ci, MÊME si c'est le via-node souhaité pour faire le trajet
+				one solution, relaxation = introduire la "relaxation" = s'autoriser à relaxer des edges vers des nodes de rank inférieur
+					obviously pas partout, sinon on retombe sur un bidir dijkstra normal, et on perd l'intérêt des CH
+			idée d'implémentation :
+				on pourrait ne calculer le sharing qu'en tout dernier, car certains via-nodes seront déjà éliminés rien qu'avec leur stretch de durée (donc inutile de les expand)
+				comme approximation des T-nodes, on pourrait les rechercher sur le chemin contracté
+				voire : on pourrait n'expand que les shortcuts qui le nécessite :
+					si le PCC contracté est : SOURCE -> ABCDEFGHI -> TARGET
+					si le via-node est X, et que le plus court chemin contracté passant par X est SOURCE -> ABCUVWXYZ -> TARGET
+					alors pas besoin d'expand AB ou BC : on peut n'expand que CD et CU pour rechercher le premier T-node
+				on pourrait créer un cache d'unpacking unique à chaque requête ?
+			TODO :
+				définir les règles métiers sur le sharing acceptable et le stretch acceptable (en ça, un viewer permettant de jouer avec différentes valeurs aidera)
+				définir les règles métiers permettant d'ordonner plusieurs routes alternatives
+				émerge un besoin de... qualifier le besoin !
+				il faudrait un viewer pour renvoyer toutes les routes alternatives possibles, et aider le PO à qualifier le besoin
+				par exemple, sur un Paris-Lyon de 6h, faire un détour d'une demi-heure sur la dernière heure est intéressant... Mais le même détour d'une demi-heure "juste" sur le trajet de la dernière heure ne le sera peut-être pas !
+				note produit : on pourrait mettre les Choice Points en avant
+				question produit : est-ce que si on renvoie DES routes alternatives sans que ce soit les meilleurs, c'est :
+					acceptable, car c'est mieux que rien
+					à proscrire, car dès lorsqu'on renvoie une route alternative, l'utilisateur va se demander pourquoi on ne renvoie pas la "vraie" route alternative
+	Autres papiers sur lesquels je tombe en vrac :
+		Cambridge Vehicle Information Technology Ltd.
+			2005 (mais introduit des notions encore utilisées 15 ans après, comme la notion de Plateau)
+			CAMVIT = Choice Routing
+			Ça a l'air d'être une solution commerciale (un background router).
+				Cambridge Vehicle Information Technology is a private limited company formed by several research engineers from AT&T Laboratories Cambridge Limited (previously Olivetti Research Limited).
+				Camvit’s Business Model = Camvit would like to transfer this new technology into your company by providing consultancy in the form of workshops and expert advice
+			Le premier paragraphe dresse une revue très pédagogique de pourquoi les single-routers adressent assez mal la question des routes alternatives :
+				les k nearest shortest paths ne calculent que des écarts mineurs au PCC optimal
+				faire varier la cost function trouve des chemins alternatifs, mais pas forcément ceux qu'on veut
+				ignorer crassement tous les edges de la route principale forcera à ignorer des tronçons qu'on voudrait tout de même prendre MÊME en cas de route alternative
+				changer le coût de la fonction (p.ex. pour privilégier la distance sur le temps) ne trouvera pas le cas principal qu'on souhaite = une route alternative très différente, mais qui ne dégrade tous les critères que d'un tout petit facteur seulement
+			Principe :
+				faire indépendamment un forward search (qui trouve les routes localement optimales pour s'éloigner de la source) et un backward search (qui trouve les routes localement optimales pour rejoindre la destination)
+				les segments (particulièrement les longs segments constitués de plusieurs edges) qui apparaissent sur les deux searchs sont des segments intéressants pour faire le trajet de source à target
+				pourquoi le nom plateau ? Parce que pour un node donné, la somme des poids sur les deux search-trees fait un plateau :
+					quand on part du source-node, les nodes reached ont un coût forward qui augmente petit à petit, et un coût backward indéfini (vu que ces noeuds ne sont pas touchés par le backward) -> la somme des deux augmente
+					quand on atteint le premier noeud d'un segment touché par les DEUX search-trees, la somme des deux prend une certaine valeur (et bondit probablement d'un coût)
+					quand on se déplace sur le plateau, la somme des deux reste constante : le coût qu'on doit additionner parce qu'on s'éloigne du source-node, on le retranche car on se rapproche du target-node
+					après le dernier node du plateau, la somme des deux diminue, car le coût forwarde est indéfini (vu que ces noeuds ne sont pas touchés par le forward), et qu'on se rapproche de la target
+					du coup, au fur et à mesure qu'on se déplace sur les nodes d'un chemin depuis la source jusqu'à la target, en sommant les poids de chaque node sur les deux search-trees, cette somme :
+						augemente petit à petit jusqu'à rejoindre un segment commun aux deux search-trees
+						sera constante (haute) sur les segments communs aux deux search-trees
+						diminuera petit à petit dès lors qu'on quitte le segment commun, jusqu'à atteindre le target-node
+				What emerges is a small number of long chains, and millions of small fragments.
+				These long plateaux are the first clue to the good alternative routes, and we select the best using a “goodness” criteria.
+				Each selected plateau is extended into a complete route by tracing back in the trees from each end.
+					une fois qu'on a trouvé les plateaux, on les prolonge vers source/target à partir de leur extrémité
+					(l'un d'entre eux sera le "vrai" shortest path)
+				on renvoie entre 1 et 5 routes parmi les différents plateaux, en classant les plateaux et leur route par goodness
+				les routes sont assez proches en temps/distance, et s'il n'y a qu'une obviously bonne route, seule celle-ci est renvoyée
+			Autre notion importante = Choice Points :
+				généralement, les différentes routes alternatives ne diffèrent qu'en un ou deux endroits où il y a une décision à prendre (e.g. rester sur le chemin le plus rapide, ou passer sur un iti alternatif)
+				on pourrait mettre ces Choice Points en avant sur l'iti ou le GPS
+			Pour éviter que le calculateur essaye de nous rerouter constamment sur le PCC, changer temporairement la destination vers le premier point du plateau, puis une fois qu'on y est, remettre la vraie destination.
+		Candidate Sets for Alternative Routes in Road Networks
+			https://link.springer.com/chapter/10.1007/978-3-642-30850-5_23
+			https://i11www.iti.kit.edu/extra/publications/ls-csarr-12.pdf
+			SEA 2012
+			semble bien se marier avec CH
+			Dennis Luxen & Dennis Schieferdecker
+		Determining alternative routes
+			https://www.researchgate.net/publication/302684371_Determining_alternative_routes
+			novembre 2013
+			Abraham, Delling, Goldberg, Werneck
+			semble breveté
+			semble présenter 3 critères pour admettre une alternative :
+				limited sharing
+				local optimality
+				stretch
+		An Alternative Approach to Alternative Routes: HiDAR
+			https://link.springer.com/chapter/10.1007/978-3-642-40450-4_52
+			https://publikationen.bibliothek.kit.edu/1000035372
+			ESA 2013
+			Moritz Kobitzsch
+		Alternative Routing: k-Shortest Paths with Limited Overlap
+			SIGSPATIAL 2015
+			https://www.researchgate.net/publication/285235064_Alternative_Routing_k-Shortest_Paths_with_Limited_Overlap
+			Theodoros Chondrogiannis + Panagiotis Bouros + Johann Gamper + Ulf Leser
+			introduit le problème formellement = k-Shortest Paths with Limited Overlap (k-SPwLO)
+			sans doute pas applicable à un moteur basé sur les CH (mais qui sait ?)
+		Alternative Route Techniques and their Applications to the Stochastic on-time Arrival Problem
+			2015
+			https://publikationen.bibliothek.kit.edu/1000050750/3763818
+			https://publikationen.bibliothek.kit.edu/1000050750
+			Moritz Kobitzsch
+			longue (350 pages) mais semble faire le tour de la question
+		Alternative Routes and Route Corridors
+			2015 (probablement)
+			https://algo2.iti.kit.edu/download/ISMP2012-alternative-routes-and-rout-corridors.pdf
+			Moritz Kobitzsch
+			présentation powerpoint, même auteur que la thèse sur le sujet, dont il semble être un spin-off ou une présentation
+		Alternative Multicriteria Routes
+			ALENEX 2019
+			Florian Barth, Stefan Funke, and Sabine Storandt
+			https://epubs.siam.org/doi/10.1137/1.9781611975499.6
+			https://epubs.siam.org/doi/pdf/10.1137/1.9781611975499.6
+			https://www.researchgate.net/publication/330095787_Alternative_Multicriteria_Routes
+		Alternative Routes for Next Generation Traffic Shaping
+			SIGSPATIAL 2019
+			https://www.researchgate.net/publication/336975544_Alternative_Routes_for_Next_Generation_Traffic_Shaping
+			Florian Barth, Stefan Funke
+			S'intéresse à la répartition de voitures automatiques sur différentes routes pour éviter le traffic (donc a priori, pas trop corrélé à mon problème).
+			Mais peut s'avérer itnéressant pour avoir des pointeurs vers d'autres travaux.
+		Finding k-shortest paths with limited overlap
+			2020
+			https://www.researchgate.net/publication/339418272_Finding_k-shortest_paths_with_limited_overlap
+			Theodoros Chondrogiannis + Panagiotis Bouros + Johann Gamper + Ulf Leser
+			plus récent, mais semble être une suite du papier de 2015 par les mêmes auteurs ?
+		Most Diverse Near-Shortest Paths
+			SIGSPATIAL 2021
+			https://dl.acm.org/doi/10.1145/3474717.3483955
+			Christian Häcker + Panagiotis Bouros + Theodoros Chondrogiannis + Ernst Althaus
+			k-Most Diverse Near-Shortest Paths (kMDNSP), probablement pas applicable à un moteur basé sur les CH
+		Robust Routing Using Electrical Flows
+			SIGSPATIAL 2021
+			Ali Kemal Sinop + Lisa Fawcett + Sreenivas Gollapudi + Kostas Kollias
+			https://dl.acm.org/doi/10.1145/3474717.3483961
+			sans doute pas applicable à un moteur basé sur les CH (mais qui sait ?)
+		Time-Dependent Alternative Route Planning: Theory and Practice
+			2021
+			https://www.researchgate.net/publication/353395576_Time-Dependent_Alternative_Route_Planning_Theory_and_Practice
+			Spyros C. Kontogiannis + Andreas Paraskevopoulos + Christos Zaroliagis
+			premier papier sur la question TD, introduction prometteuse
+
