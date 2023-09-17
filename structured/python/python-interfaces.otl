@@ -1,0 +1,215 @@
+META :
+	j'avais fini de jouer avec les interfaces en python (avec des POCs sur le sujet), je passe ces anciennes notes sur mon repo public "en l'état", au cas où, mais elles restent en OTL
+
+PERSO> TECHDAY> interfaces python → ceci est à ARCHIVER :
+	TODO = pérenniser les notes tech sur l'article faisant le lien entre les zope interfaces et les protocoles :
+		Abstract types:
+			cannot be instantiated: every instance of an abstract type is an instance of some concrete sub-type, and
+			do not include (complete) implementation logic.
+		Concrete types:
+			can be instantiated: they are complete descriptions of a type, and
+			must include all their own implementation logic.
+		Protocols and Interfaces are both abstract, but Interfaces are nominal.
+		The highest level distinction between the two is that when you have a problem that requires an abstract type, but nominal checking is preferable to structural, Interfaces are a better solution.
+		----------------------------------------
+		there’s a question of how well tooling supports zope.interface
+		Less mainstream performance-focused type-checkers like Pyre and Pyright don’t support zope.interface, either
+		we need to be able to use zope.interface within Mypy as well for a fair comparison with Protocol. Can we? Luckily, yes!
+			plugin mypy qui check les interfaces :-)
+		There are undeniably big areas where Interfaces and Protocols overlap, and in plenty of them, using Protocol is a fine idea.
+			si on n'a pas besoin des cas où zope.interface  > Protocol, autant utiliser les protocoles :+1:
+			notamment, le fait d'être inclus dans la lib standard est un énorme plus
+		NdM = cas où les interfaces sont meilleures que les protocoles = les cas où juste avec le type-system, on ne peut pas exprimer le meaning du code :
+		l'exemple est clair :
+			def add_integers(addend1: int, addend2: int) -> int:
+		there’s nothing hidden about the structure of the integers, no constraints the type system won’t let us specify
+		It would be quite surprising if anything that didn’t have the intended behavior would match this Protocol
+			ce point est important = on ne peut pas "mal" implémenter le protocole
+		à l'inverse, si les contraintes sont trop générales, elles peuvent être matchées par erreur par des implémentations "fausses" :
+			class IPlugin(Interface):
+				def name() -> str:
+					"Return the fully-qualified Python identifier of the thing to load."
+		Ici, toute classe ayant un attribut "name" qui renvoie une string sera considérée comme implémentant le Protocol
+			(alors qu'en vrai, elle ne renverra pas du tout un fully-qualified identifier, comme attendu)
+		With Interfaces, the maintainer of each implementation must explicitly opt in, by choosing whether to specify that they are an @implementer(IPlugin).
+			à l'inverse, avec les zope.interfaces, il faut se déclarer explicitement comme implémentant un protocol pour être considéré comme un implémenteur
+			pas de risque d'implémenter le protocole par erreur
+		"I know what the Interface IPlugin means, and I promise that I can provide it"
+		This is the most salient distinction between Protocols and Interfaces: if you have strong reasons to want adherents to the abstract type to opt in, you want an Interface; if you want them to match automatically, you want a Protocol.
+			Résume partfaitement l'article
+		Interfaces also provide a more nuanced set of runtime checks.
+			pour l'essentiel, on peut faire pareil avec @runtime_checkable
+		(j'aime bien la formulation de l'article "fit the specified shape" pour décrire le structural typing, ça évoque bien l'idée)
+		A framework [...] can use a series of Interfaces, and check at runtime to see which of these the application implements, and be secure in the knowledge that the application has properly intentionally adopted the new interface, and doesn’t just happen to have a matching method name.
+			même principe = on ne risque pas d'implémenter par erreur l'interface
+		Finally, zope.interface gives you adaptation and adapter registries, which can be a useful mechanism for doing things like templating, like a much more powerful version of singledispatch from the standard library.
+			Les adapters semblent pouvoir être utilisés pour faire du singledispatch (en plus puissant, apparemment)
+			c'est assez logique, vue la syntaxe des adapaters :  my_adapted_object = IVehicle.adapt(my_something, fallback_object);
+		L'article détaille un peu ce qui se passe quand on fait :
+			y = IY(x, None)
+		Un point intéressant :
+			But from the perspective of the caller, you can just say “I want an IY”.
+		With Protocols, you can emulate this with functools.singledispatch by making a function which returns your Protocol type and registers various types to do conversion.
+			tiens, je n'avais pas pensé à cet usage de singledispatch couplé aux Protocol
+		Unlike Interfaces, Protocols can describe the types of things that already exist.
+			c'est le revers de la médaille : comme il faut décrire explicitement la dépendance d'un objet à son interface, c'est compliqué d'ajouter cette dépendance a posteriori
+			NdM : hum, pourtant, je peux très bien register la dépendance a posteriori, sur un type que je ne peux pas modifier ?
+		NdM : à froid, j'avais comme image le fait que la description explicite soit une mauvaise chose
+			en partique, je suis plus mitigé : dans mes POCs d'exemple, je cherche à implémenter le protocole, je vais tout faire pour
+			à la limite, je vais même ajouter un commentaire pour dire "attention, je cherche à implémenter tel protocole"
+			du coup, ça fait plutôt sens d'avoir une ligne de code pour ça
+			d'autant qu'à la différence du fait d'hériter d'un objet, je peux aussi register cette dépendance sur un type déjà existant, et que je ne peux pourtant pas modifier
+		In this case, the thing defining the Protocol is your application; the thing implementing the Protocol is your collection of libraries.
+			Un point intéressant : en définissant un Protocol pour un type existant, on créé la dépendance *a posteriori*
+		Il y a un exemple utilisant des notions que je maîtrise encore mal (TypeVar covariant/contravariant) faisant en sorte qu'un set soit considéré (a posteriori, donc vu qu'on ne peut pas modifier la lib standard) comme un Receiver ou un Sender mais pas les deux :-)
+		In modern Python code, when you have an abstract collection of behavior, you should probably consider using a Protocol to describe it by default.
+			However, Interface is also [worth giving a shot] and it can be worthwhile for more sophisticated consumers that [have more fitting needs]
+	TECHDAY> interfaces python — références :
+		(RE)LUE :
+			https://github.com/dabeaz/blog/blob/main/2021/todo-abc.md
+				rien de très intéressant concernant les interfaces python, le message principal est que transformer une classe en une ABC n'est pas forcément utile
+			https://www.reddit.com/r/Python/comments/pfpd51/why_todo_might_be_better_than_an_abstract_base/hb6m9jj/
+				une clé de lecture du post précédent = l'utilisation de ABC n'était sans doute pas pertinent à la base
+			https://www.python.org/dev/peps/pep-0544/
+				la pep sur les protocoles
+			un thread créé par mon collègue avec plein de liens intéressants
+				apporte : le fait que hériter de ABC n'est nécessaire que si on veut des checks au runtime (l'utilisation du décorateur 'abstractmethod' est suffisant sinon)
+			https://threeofwands.com/why-i-use-attrs-instead-of-pydantic/
+				une comparaison de attrs et pydantic, deux outils ayant un peu la même visée que les dataclasses = définir facilement des classes (plus facilement qu'avec une méthode __init__)
+				(pas vraiment lié au sujet des interfaces python, donc)
+			https://tutswiki.com/abstract-classes-and-interfaces-in-python/
+				(j'ai une page dans mes notes github) parle des différences entres les interfaces (ABC) et les zope.interfaces, mais c'est pas très clair (notamment, l'intérêt des adapters n'est pas clair)
+			https://glyph.twistedmatrix.com/2009/02/explaining-why-interfaces-are-great.html
+				(j'ai une page dans mes notes github) parle des différences entres les interfaces (ABC) et les zope.interfaces, est plus clair que le précédent, notamment sur l'intérêt des adapters
+			https://glyph.twistedmatrix.com/2020/07/new-duck.html
+				présente les protocoles et leurs intérêts
+				nominal typing = basé sur les noms (un type A référence directement le type B, par son nom, par exemple en héritant de lui : "si le type s'appelle 'Duck', c'est un canard")
+				structural typing = basé sur le comportement (si le type sait faire couac, c'est un canard)
+				la phrase à retenir = if you’re building a library that exports types that users are expected to implement — consider using Protocol to describe those types
+			https://glyph.twistedmatrix.com/2021/03/interfaces-and-protocols.html
+				article faisant le lien entre les deux précédents : maintenant qu'on a les Protocols, les zope.interfaces sont elles encore utiles ? TL;DR : pas tant que ça, mais pour certains aspects, oui.
+			https://github.com/python/mypy/issues/3960
+				le support des zope.interfaces par mypy semble faire l'objet d'un plugin
+		ECLUSAGE :
+			https://opensource.com/article/19/9/zopeinterface-python-package
+			https://stackoverflow.com/questions/49051638/python-abstract-method-in-normal-class/49051757#49051757
+			https://zopecomponent.readthedocs.io/en/latest/narr.html
+			https://zopecomponent.readthedocs.io/en/latest/socketexample.html
+			https://muthukadan.net/docs/zca.html
+			https://sobolevn.me/2021/06/typeclasses-in-python
+			Les onglets que j'avais ouverts dans mon téléphone portable :
+				https://realpython.com/python-interface/
+				https://docs.python.org/fr/3/library/abc.html
+			https://mypy.readthedocs.io/en/stable/protocols.html
+			https://glyph.twistedmatrix.com/2009/02/explaining-why-interfaces-are-great.html
+			https://andrewbrookins.com/technology/building-implicit-interfaces-in-python-with-protocol-classes/
+			https://www.python.org/dev/peps/pep-3119/
+			D'après cette page :
+				https://mypy.readthedocs.io/en/stable/protocols.html
+				Hériter de mon interface est du "nominal subtyping" (et ça n'est qu'en le combinant avec abc.abstractmethod que ça fait ce que je veux)
+		SAVED :
+			https://dabeaz.github.io/blog/2021/todo-abc.html  (apparemment, on ne voit plus l'article, mais je retrouve le md) :
+				https://github.com/dabeaz/blog/blob/main/2021/todo-abc.md
+				NOTE : pas fou, rien de particulier d'appris...
+				https://www.reddit.com/r/Python/comments/pfpd51/why_todo_might_be_better_than_an_abstract_base/hb6m9jj/
+					Abstract base classes are not intended as stubs, or prototypes, or work-in-progress constructs. I’ve never even read any suggestion to use them for any such purpose.
+					Abstract base classes are for subclassing - for sharing common functionality among diverse objects. They promote code reuse, efficiency, and robustness.
+			https://threeofwands.com/why-i-use-attrs-instead-of-pydantic/
+				possiblement ceci ?
+			https://www.python.org/dev/peps/pep-0544/
+				protocols
+			https://sobolevn.me/2021/06/typeclasses-in-python
+				il me semble que cet article parlait du sujet
+			https://tutswiki.com/abstract-classes-and-interfaces-in-python/
+				un tuto sur les ABC et les interfaces en python
+			https://opensource.com/article/19/9/zopeinterface-python-package
+			https://zopecomponent.readthedocs.io/en/latest/narr.html
+			https://zopecomponent.readthedocs.io/en/latest/socketexample.html
+			https://muthukadan.net/docs/zca.html
+			Les onglets que j'avais ouverts dans mon téléphone portable :
+				https://realpython.com/python-interface/
+				https://docs.python.org/fr/3/library/abc.html
+			https://mypy.readthedocs.io/en/stable/protocols.html
+			https://glyph.twistedmatrix.com/2009/02/explaining-why-interfaces-are-great.html
+			https://andrewbrookins.com/technology/building-implicit-interfaces-in-python-with-protocol-classes/
+			https://www.python.org/dev/peps/pep-3119/
+			D'après cette page :
+				https://mypy.readthedocs.io/en/stable/protocols.html
+				Hériter de mon interface est du "nominal subtyping" (et ça n'est qu'en le combinant avec abc.abstractmethod que ça fait ce que je veux)
+	TECHDAY> interfaces python — Organisation de mes connaissances sur le sujet (préparation d'un blogpost ?) :
+		BESOIN :
+			une lib propose une fonction métier "check_url" qui prend un handler en paramètre
+			(détail important = je veux que la fonction "check_url" soit type-hintée)
+			elle utilise ce handler d'une façon particulière qui impose des contraintes (p.ex. le handler doit implémenter la méthode "on_url_response")
+			elle propose par ailleurs deux implémentations simples de handlers : DummyHandler et PrinterHandler
+			je souhaite pouvoir définir mon handler custom (par exemple, qui logge dans une BDD), qui respecte les contraintes des handlers
+			je veux faire ceci sans modifier le code de la librairie, ni le type-hinting de "check_urls"
+			je veux que mypy me prévienne des bugs sur mon implémentation de handler :
+				avertit s'il manque une des 3 méthodes
+				avertit si l'une des 3 méthodes n'a pas la même signature (type de retour, nombre d'arguments, type des arguments (nom des arguments ?))
+			idéalement, je peux utiliser ce handler custom sans avoir à le faire hériter d'autre chose :
+				comme ça, je peux l'appliquer à des types externes que je n'ai pas la possibilité de modifier
+				(ici, c'est le cas, je n'ai pas la main sur les handlers proposés par la lib)
+		SOLUTIONS EXPLORÉES :
+			poc06 = la lib type-hinte le handler attendu par "check_urls" en utilisant Union[Handler1, Handler2, ...]
+				avantage = mypy peut vérifier explicitement que tous les types implémentent bien ce qui est nécessaire
+				inconvénient = je dois modifier le type-hinting à chaque fois que j'utilise un nouveau handler
+				si le type-hinting est dans un code sur lequel je n'ai pas la main, c'est fichu
+				conséquence = si je n'ai pas pu modifier l'Union, mypy va (légitimement) râler, alors que j'utilise un handler tout à fait valide
+			poc07 = la lib propose une classe de base HandlerInterface (définissant les 3 méthodes), et type-hinte check_url pour attendre des HandlerInterface
+				dans la classe de base, les 3 méthodes raise NotImplementedError
+				les handlers de la lib héritent de HandlerInterface
+				mon implémentation custom hérite aussi de HandlerInterface
+				avantage = je peux définir un handler custom (que mypy considère comme valide pour "check_urls") sans modifier le code de la lib
+				inconvénient = je suis obligé de faire hériter mon handler d'une HandlerInterface (si c'est également nécessaire pour 3 ou 4 autres interfaces, ça peut vite être le bordel)
+				inconvénient = rien (notamment pas mypy) ne me force à redéfinir correctement les méthodes nécessaires, mon handler peut laisser l'implémentation par défaut (qui raise NotImplementedError)
+			poc08/poc09 = la lib propose une métaclasse définissant HandlerInterface (qui vérifie que les 3 méthodes existent), et type-hinte check_url pour attendre des HandlerInterface
+				les handlers (y compris mon handler custom) sont bien vus comme des sous-types de HandlerInterface mais ça ne suffit pas à mypy pour "voir" que les handler sont des HandlerInterface
+				du coup, cette POC ne répond à aucun besoin, et mypy ne peut rien type-checker (dit autrement : l'utilisation des métaclasses pour définir des interfaces n'est pas mypy-compliant)
+				(le résultat reste le même, même si on hérite explicitement de ABCMeta)
+			poc10 = idem que poc07, mais les 3 méthodes sont décorées par @abc.abstractmethod
+				avantage = je peux définir mon handler custom, qui est bien accepté par mypy comme un paramètre valide pour "check_urls"
+				avantage = si je n'implémente pas certaines méthodes que j'aurais dû implémenter, mypy le détecte
+				solution parfaite, à ceci près que je dois hériter de HandlerInterface (ce qui n'est pas pratique s'il y en a plusieurs)
+			poc11 = la lib propose un HandlerProtocol, utilisé pour type_hinter "check_urls". Les deux handlers fournis n'ont pas de lien explicite avec HandlerProtocol
+				avantage = je peux définir mon handler custom, qui est bien accepté par mypy comme un paramètre valide pour "check_urls"
+				avantage = si je n'implémente pas certaines méthodes que j'aurais dû implémenter, mypy le détecte
+				avantage = le fait de reconnaître les handlers (ceux de la lib, ou mon handler custom) comme implémentant le HandlerProtocol est fait de façon IMPLICITE
+		RÉFÉRENCES:
+			TODO
+	TECHDAY>
+		TECHDAY, ce qui reste à faire :
+			tester mon cas d'usage avec Zope ?
+			relire les autres références que j'avais, maintenant que je suis mieux armé pour les comprendre
+			préparer un billet de blog sur le sujet ?
+		TECHDAY> interfaces python — références :
+			RÉFÉRENCES VRAC :
+				https://dabeaz.github.io/blog/2021/todo-abc.html  (apparemment, on ne voit plus l'article, mais je retrouve le md) :
+					https://github.com/dabeaz/blog/blob/main/2021/todo-abc.md
+					NOTE : pas fou, rien de particulier d'appris...
+					https://www.reddit.com/r/Python/comments/pfpd51/why_todo_might_be_better_than_an_abstract_base/hb6m9jj/
+						Abstract base classes are not intended as stubs, or prototypes, or work-in-progress constructs. I’ve never even read any suggestion to use them for any such purpose.
+						Abstract base classes are for subclassing - for sharing common functionality among diverse objects. They promote code reuse, efficiency, and robustness.
+				https://threeofwands.com/why-i-use-attrs-instead-of-pydantic/
+					possiblement ceci ?
+				https://www.python.org/dev/peps/pep-0544/
+					protocols
+				https://sobolevn.me/2021/06/typeclasses-in-python
+					il me semble que cet article parlait du sujet
+				https://tutswiki.com/abstract-classes-and-interfaces-in-python/
+					un tuto sur les ABC et les interfaces en python
+				https://opensource.com/article/19/9/zopeinterface-python-package
+				https://zopecomponent.readthedocs.io/en/latest/narr.html
+				https://zopecomponent.readthedocs.io/en/latest/socketexample.html
+				https://muthukadan.net/docs/zca.html
+				Les onglets que j'avais ouverts dans mon téléphone portable :
+					https://realpython.com/python-interface/
+					https://docs.python.org/fr/3/library/abc.html
+				https://mypy.readthedocs.io/en/stable/protocols.html
+			Références à lire :
+				https://glyph.twistedmatrix.com/2009/02/explaining-why-interfaces-are-great.html
+				https://andrewbrookins.com/technology/building-implicit-interfaces-in-python-with-protocol-classes/
+				https://www.python.org/dev/peps/pep-3119/
+			D'après cette page :
+				https://mypy.readthedocs.io/en/stable/protocols.html
+				Hériter de mon interface est du "nominal subtyping" (et ça n'est qu'en le combinant avec abc.abstractmethod que ça fait ce que je veux)
