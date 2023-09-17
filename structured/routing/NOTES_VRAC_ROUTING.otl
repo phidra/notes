@@ -1,0 +1,1283 @@
+META :
+	ces notes sont pseudo-archivées ici, même si elles n'ont pas été cleanées
+	l'idée est de décharger mes journaux dans lesquels elles étaient stockées + de les rendre publiquement accessibles sans attendre
+	(un jour peut-être je ferai le ménage : il y a PLEIN de trucs intéressants là-dedans !)
+
+NOTES VRAC :
+	NOTES VRAC SUR LE ROUTING
+		Ressources qui ont l'air bien :
+			https://jlazarsfeld.github.io/ch.150.project/contents/
+			https://rahvee.gitlab.io/comparison-nearest-neighbor-search/
+			https://www.eecs.tufts.edu/~aloupis/comp150/projects-summer18.html
+		https://www3.cs.stonybrook.edu/~rezaul/papers/TR-07-54.pdf
+			article de 2007 = impact des priority queues sur Dijkstra
+		https://www.redblobgames.com/pathfinding/a-star/introduction.html
+			Les animations sont super : quels outils ont été utilisés ?! Il y a des éléments de réponse dans les commentaires
+			Cette autre page explique comment il fait des tutos interactifs : https://www.redblobgames.com/making-of/line-drawing/
+			Grosso modo, tout le blog est super !!!
+		Pourquoi est-ce que Dijkstra ne trouve pas le Minimum Spanning Tree :
+			https://stackoverflow.com/a/20482220
+		Lien sur le multimodal Valhalla :
+			https://valhalla.readthedocs.io/en/latest/route_overview/
+		NOTES WCH
+			WCH - réflexion sur la customization, en repartant de la thèse :
+				à l'issue du preprocess, on a un graphe original + des shortcuts ajoutés par le preprocess (witnessless, donc exhaustif)
+				la métrique originale lenG associe un cost à tout edge original (et tous les autres costs sont supposés être +∞)
+				l'algorithme 4.1 de customization "contracte" chaque node V dans l'ordre d'ordering
+				exemple pour m'aider à comprendre :
+					notation : U est un prédécesseur de V, W est un successeur de V
+					pour le premier node V contracté (celui qui a le rank le moins élevé), on itère sur ses paires (U,W)
+					on regarde si le poids de l'edge UW est supérieur à la somme des poids UV + VW
+					ici, UW est un shortcut (on laisse de côté le cas où un edge similaire existe pour le moment) donc il a un poids infini +∞
+					UV et VW sont des edges réels, ils ont un poids fini dans la métrique lenG
+					CONCLUSION : on attribue à UW le poids somme, et on sette V comme middle-node de UW
+				mes questions :
+					question 1 = quid si l'edge existait déjà ?
+					question 2 = quid si l'un des demi-edge (ou les deux) est un shortcut ?
+					question 3 = pourquoi ne peut-on pas simplement dire que le poids du shortcut est la somme des poids des deux demi-edges ?
+				question 1 = quid si l'edge existait déjà ?
+					si on n'a pas amélioré son poids, on le laisse intact (avec le poids qu'on n'a pas amélioré, et le middle-node qu'il utilisait)
+					si on a amélioré son poids, on mets à jour son poids et son middle-node
+					in fine, ça ne change pas grand-chose
+				question 2 = quid si l'un des demi-edge (ou les deux) est un shortcut ?
+					le seul point qui peut être gênant, c'est que ces demi-edges peuvent du coup ne PAS avoir encore de métrique (car à la base, seuls les edges originaux ont une métrique, les shortcuts sont à +∞)
+					j'ai pris une note sur le sujet plus haut, mais grosso-modo, le fait de customizer le graphe dans l'ordre donné par l'ordering GARANTIT que même si les demi-edges sont des shortcuts, ils ont déjà une métrique
+				question 3 = pourquoi ne peut-on pas simplement dire que le poids du shortcut est la somme des poids des deux demi-edges ?
+					car si le shortcut UW existe déjà (soit qu'il existe également un arc original UW, soit qu'un autre shortcut UW a déjà été créé précédemment), il faut prendre le meilleur poids des deux !
+					(sans quoi on risque d'écraser le poids précédent avec un poids moins bon)
+				----------------------------------------
+				au passage, je comprends j'ai entendu "on recontracte tout le graphe à chaque customization..."
+				(en revanche, pour la prise en compte des voies fermées dans le POC, on devrait pouvoir utiliser des mises à jour incrémentales)
+				----------------------------------------
+				bon, à l'issue de cette journée d'analyse, même s'il me reste beaucoup d'ordre à donner à mes notes, je pense avoir quasi tout compris à l'implémentation de WCH :-)
+					notamment, j'ai bien compris à quoi sert la construction d'un index des shortcuts (TL;DR : à retrouver facilement un shortcut à partir du couple {source,target})
+						en d'autres termes, ça sert uniquement à pouvoir écrire ça :
+							int shortcut_id = shortcut_indices[index];
+							shortcut_id += successors.get_node_first_edge_id(source_node);
+							QuerySuccessor& shortcut = successors.get_mut_value(shortcut_id);
+						plutôt que quelque chose dans le genre de ça :
+							int shortcut_id = successors.find_first(source_id, target_id)  // Très long, car u
+							QuerySuccessor& shortcut = successors.get_mut_value(
+						En effet, l'implémentation de find_first utilise une coûteuse boucle for :
+							TAdjSize find_first(TNodeId from, TNodeId to) const {
+								TAdjSize end = first_edge_ids[from + 1];
+								for (TAdjSize i=first_edge_ids[from]; i < end; ++i) {
+									if (target_nodes[i] == to) return i;
+								}
+							}
+						en gros, ça ne sert qu'à cette ligne, qui permet d'éviter la boucle for...
+					le seul truc qui m'intrigue, c'est que si j'ai bien suivi, on garde TOUS les shortcuts exhaustifs dans le graphe qui sert au query-time
+					(alors que je me serais attendu à ce que qu'on dégage les shortcuts inutiles)
+					Dit autrement, on semble conserver dans le graphe beaucoup de shortcuts inutiles, car ils ne contribuent pas à un plus court chemin
+					À vérifier dynamiquement avec un bout de code étudiant un graphe WCH ?
+						EDIT = j'ai testé, et j'ai confirmé, en utilisant le graphe de ma POC 10 de GLIFOV :
+							un node N a 3 prédécesseurs (A, B, C) et deux successeurs (X et Y), et le graphe a deux noeuds supplémentaires NORTH et SOUTH
+							il y a donc 6 shortcuts possibles, et le graphe est construit pour que la contraction de N ne nécessite que 4 shortcuts
+							(les autres shortcuts ne sont pas nécessaires car on peut trouver des witness-path passant par SOUTH)
+							en chargeant ce graphe simpliste dans un graphe CH, la contraction ne génère bien que les 4 shortcuts
+							en chargeant ce graphe simpliste dans un graphe WCH, la contraction génère 6 shortcuts !
+							ça confirme donc ce que je pensais = dans le graphe WCH, on ajoute TOUS les shortcuts, peu importe qu'ils soient nécessaires ou non
+							(et du coup, toutes choses étant égales par ailleurs, une requête WCH sera plus lente qu'une requête CH, même si le graphe est identique)
+			Notes très vrac sur la customization (section 4) :
+				NdM :
+					à ce stade, on a fait une première étape de preprocessing sans métrique :
+						pour chaque node (dans l'ordre donnée par l'ordering), on a ajouté tous les shortcuts possibles
+						le graphe dont on dispose est donc le graphe original, augmenté de tous les shortcuts
+					la customization consiste à attribuer un poids à tous les tronçons :
+						les tronçons originaux
+						les shortcuts exhaustifs ajoutés par le preprocessing
+					la donnée d'entrée de la customization :
+						le graphe préprocessé (tronçons originaux + shortcuts)
+						une métrique = le poids de chaque tronçon original
+					naïvement, on pourrait :
+						1. itérer sur chaque tronçon original pour leur attribuer le poids
+						2. itérer sur chaque raccourci pour (récursivement si nécessaire) attribuer le poids du raccourci comme la somme des poids des demi-edges
+				Paragraphe d'intro :
+					il semble y avoir une autre optique qui est d'introduire de PETITS changements sur un graphe qui dispose déjà d'une métrique définie (donc déjà customisé)
+						l'idée sera d'identifier les nodes concernés par le petit changement de métrique (p.ex. l'augmentation du poids d'UN tronçon)
+						il "suffit" alors de refaire la contraction de ces nodes uniquement
+					la section 4 est divisée en deux parties :
+						1 = application d'une métrique sur un graphe sans métrique
+						2 = introduction d'une petite modification sur une métrique existante
+					la performance de la customization est importante, car à la différence du preprocess CH (qui est fait une seule fois, en offline), la customization sera lancée très souvent
+				Section 4.1 = basic approach
+					premier paragraphe = le couple WCH {witnessless preprocess + customization} devrait in fine conduire au même résultat qu'un preprocess CH classique
+					inputs :
+						graphe original
+						weak contraction (= le graphe original + les shortcuts exhaustifs)
+						ordering α
+						métrique LEN
+					steps :
+						1 = calculer le poids des shortcuts
+						2 = mettre à jour (pour les raccourcir si besoin) le poids des arcs originaux concernés (les arcs originaux AB pour lesquel le plus court chemin est différent (par exemple AXYB), dont il existe un shortcut AB)
+						3 = récupérer le middle-node (que la thèse appelle le "supporting node") de chaque shortcut (ou des arcs originaux dont le poids a été diminuér à cause d'un shortcut). Si l'edge est original et non diminué, le middle-node est nul.
+					l'algorithme 4.1 donne le principe de base de la customization :
+						itérer sur tous les nodes v dans l'ordre donné par l'ordering α
+						itérer sur tous les shortcuts passant par v (i.e. tous les couples {prédécesseur,successeur} de v) (NdM : vu que le preprocess les a créés exhaustivement, ils sont tous là normalement)
+						si le cost du shortcut (qui était initialisée à l'infini, sauf pour les edges originaux) est supérieure à la somme des deux demi-edges, alors on update le cost du shortcut, et on marque v comme middle-node du shortcut
+					je ne prends pas de notes sur les microinstructions vu qu'elles ne sont pas utilisées au final
+					macro-instructions :
+						pour chaque node, on s'intéresse aux paires d'arcs {input, output} (chaque paire d'arc correspond à un shortcut exhaustif)
+						on stocke alors pour chaque paire d'arc le shortcut correspondant
+						cette façon de faire nous permet de retrouver facilement les shortcuts d'un node donné
+						du coup lorsqu'on cherche à mettre à jour les poids des arcs incidents à un node donné, il nous suffit alors d'itérer sur ses shortcuts par ce moyen
+						lorsque le poids des shortcuts est défini/amélioré via ce node, on peut alors utiliser ce node comme middle-node
+					NdM : fort de tout ça, à quoi je m'attends du côté de l'implémentation WCH :
+						phase de preprocessing = on ajoute au graphe tous les shortcuts d'un node donné exhaustivement
+						phase de preprocessing = on remplit une structure permettant de retrouver tous les shortcuts d'un node donné (i.e. toutes les paires {in-edge,out-edge})
+						phase de customization = on itère sur tous les noeuds, dans l'ordre de l'ordering
+							on itère sur tous les shortcuts exhaustif du noeud
+							pour chacun des shortcuts, si son poids est supérieur à la somme des poids des deux demi-edges, ont met à jour le poids du shortcut, et on sette son middle-node)
+							(note : "shortcut" au sens large, l'edge peut également être un edge original, s'il existe deux chemins pour faire AB : un edge direct AB, et deux edges AXB)
+							(note : comme on itère dans l'ordre de l'ordering, pour le node courant, on est sûr que même si certains de ses in-edges/out-edges sont des shortcuts, ils se sont déjà vus attribuer un poids par une itération précédente)
+					NdM : à ce stade, à l'issue de la customization, tous les edges (notamment : tous les shortcuts exhaustifs) du graphe se sont vus attribuer un poids. Mais on a tout de même beaucoup trop d'edge par rapport à une CH classique ?!
+				Section 4.2 = Incremental Metric Updates :
+					NdM : a priori pas utilisé, car on sette le poids de tous les tronçons (en utilisant l'information histo) au début de chaque customization ?
+			Notes thèse WCH :
+				https://i11www.iti.kit.edu/_media/teaching/theses/weak_ch_work-1.pdf
+				Notes en cours :
+					SECTION 2 PRELIMINARIES
+						Terminologie : Node discover
+						K-heap = plus efficace que heap (et fiboheap) pour dijkstra
+					SECTION 3 CONTRACTION HIÉRARCHIES
+						minimal contraction hiérarchie (pour un orderering donné) = la CH où on n'a ajouté QUE les shortcuts nécessaires. Dit autrement, on a mené chaque local search jusqu'à son terme.
+						Comme ils ne contiennent que des edges qui montent les ranks, les graphes upward et downward sont acycliques
+						3.2 = spécificité wch = witnessless node contraction
+						3.3 définition formelle d'une ch, et d'une weak ch
+						En gros, une wch, c'est une ch avec de possibles shortcuts en trop
+						Une maximal wch, c'est une wch avec tous les shortcuts possibles en trop. On l'obtient d'ailleurs suite à une witnessless contraction.
+						Très fort lien de la maximal wch avec l'élimination game. En effet, l'élimination game correspond à la witnessless contraction, sur un graphe undirected, selon un certain ordre. Du coup, à l'issue de celle-ci, une fois que le nœud contracté a été supprimé, ses voisins forment une clique (vu qu'on les a tous reliés par des shortcuts).
+						Le résultat d'une Max-wch (et de élimination game) est un graphe chordal.
+						Élimination tree (flemme de prendre des notes, mais il est décrit après la définition 3.6, page 11).
+						Théorème 3.8 : le search Space Size d'une wch est borné par le search Space Size dans l'elimination tree. (Je saute la preuve par récurrence, mais elle a l'air à peu près compréhensible).
+						Ce résultat est important, car on dispose déjà d'heuristiques permettant de trouver un ordering limitant la hauteur de l'élimination tree !
+						L'une d'entre elles est... La nested dissection 😉
+						Section 3.4 = nested dissection order
+						Nested dissection = application récursive d'un node separator.
+						Nested dissection order = "ordering guidé par la nested dissection" = on ranke les nodes de S plus haut que ceux de R et L.
+						(Au sein de S, ou au sein de L ou R, on est libre de ranker comme on veut ; mais si R est lui même subdivisé en RS, RR, RL, alors les nodes de RS devront eux aussi être rankés plus haut que ceux de RR et RL)
+						Section 3.5 = lien entre ndorder et ch
+						Application à des gridgraphs dont chaque dimension est une puissance de deux moins un.
+						Les exemples sont donnés sur un gridgraph 2^3-1 , 2^2-1 (soit : 7,3).
+						Sur cet exemple, le séparateur coupe le graphe en deux le long de la plus petite dimension.
+						Très très intéressante illustration du process (à noter que l'ordering issu d'une nested dissection est partiellement arbitraire ce qui explique qu'on contracte d'abord toute la partie droite alors qu'il reste des nodes blancs à gauche, cf. le dernier paragraphe juste avant la section 3.5)
+						In fine, l'objectif de cette section 3.5 est de comprendre avec les mains la conséquence d'un ndorder sur la contraction ch. Il y a pas mal de conclusions utiles, qu'il faudra que j'annote proprement.
+						Si je résume, pour le moment, j'ai une idée assez claire de comment ordonner + contracter.
+					SECTION 4 = CUSTOMIZATION
+						À partir d'une ch, appliquer de petits changements de poids d'edges. L'idée maîtresse est d'identifier facilement les nodes impactés, et de ne recontracter QUE ces nodes.
+						Point important = la customisation va être faite souvent, elle doit être RAPIDE.
+						J'arrête là les notes, mais je continue la lecture.
+				REPRENDRE LES NOTES À :
+					4.1 basic approach.
+				REPRENDRE LA LECTURE À :
+					4.2 incremental metric updates
+				Autres notes liées aux customizable contraction hierarchies = les algos de partitionning (et la rapide présentation des CCH/WCH dans leur article) :
+					FlowCutter :
+						https://arxiv.org/abs/1504.03812
+						https://arxiv.org/pdf/1504.03812.pdf
+						des papiers qui semblent intéressants - issus du papier sur FlowCutter (algo partitionnant les graphes) :
+							Un papier qui semble intéressant : [graph partitioning with natural cuts](https://www.microsoft.com/en-us/research/wp-content/uploads/2010/12/punchTR.pdf) en 2010
+							Un algo de partitioning encore plus récent (qui s'appuie sur FlowCutter) = https://drops.dagstuhl.de/opus/volltexte/2019/11173/
+							Un algo de partitioning spécifiquement adapté à CCH : https://arxiv.org/abs/1906.11811
+						le papier présentant FlowCutter apporte plusieurs "overviews" intéressants :
+							La section 3.3 du papier sur FlowCutter donne un excellent overview de CCH.
+							Le papier donne également une Overview du lien entre le partitioning et l'ordering.
+							La section 3.4 donne un résumé de la théorie des tree decompositions, et donne des liens vers des surveys
+							La fin de la section 3.5 donne un rapide overview des nested dissection.
+							Si un jour j'ai le temps de m'intéresser aux maths derrière le partitionnement du graphe (qui font que WCH marche bien), la section 3 de ce papier sera précieuse.
+					FlowCutter + InertialFlow = InertialFlowCutter
+						Faster and Better Nested Dissection Orders for Customizable Contraction Hierarchies
+						https://arxiv.org/abs/1906.11811
+						https://arxiv.org/pdf/1906.11811.pdf
+						https://github.com/kit-algo/InertialFlowCutter
+		ONBOARDING> NOTES VRAC ROUTING À METTRE QQPART :
+			Autres notes vrac :
+				Du point de vue des PCC, quand on est sur un niveau de la hiérarchie, on a accès (grâce aux raccourcis) à un graphe réduit, mais sur lequel tous les pcc sont préservés !
+				Note : on peut toujours forger un graphe sur lequel ch marchera mal, d'où 1 la difficulté à donner une complexité asymptotique garantie, et 2 la dépendance de celle-ci à des paramètres dépendants de la topologie du graphe (highway dimension et treewidth), car les graphes routiers vérifient tous certaines contraintes vis à vis de ces paramètres.
+				Questions intéressantes issues de ce papier :
+					Highway Dimension, Shortest Paths, and Provably Efficient Algorithms
+					Can one prove sublinear query bounds for these heuristics on a non-trivial class of networks? For what graphs does the preprocessing/query framework lead to algorithms with provably good performance? Specifically, what properties of road networks imply provably good performance for the (de facto excellent) heuristics above? Finally, is there a plausible explanation as to why real road networks actually satisfy such conditions?
+				Notion issue du même papier : highway dimension caractérise la tendance des shortest paths à se concentrer dans certains nodes. (Et ce serait pour ça que les graphes routiers ont une highway dimension faible : car cette caractéristique vient naturellement quand on essaye de créer un réseau routier efficace. Par exemple, les transit nodes du réseau usa ne sont que 10000)
+				Our motivation for the definition of highway dimension were the experiments performed by Bast et al. [1, 2], who exploited a very intuitive observation: when driving on a shortest path from a compact region of a road network to points that are “far away,” one must pass through one of a very small number of access nodes.
+			Notes sur le papier CCH (en cours de lecture) :
+				Ci dessous, les notes sur le papier CCH
+				Section 1
+				Apparemment, les queries cch sont plus rapides que les queries ch ! Dit autrement, l'ordering metric-independent est meilleur que metric-dependent ?!
+				(Du coup, tester l'ordering cch pour le preprocess tch ?)
+				Intéressant : pour un orderering donné, cch sait contracter avec un nombre optimal (ie minimal) de shortcut. Dit autrement, il n'y a pas d'approximation dans la recherche de witness-path
+				Apparemment, les graphes routiers présentent la structure de séparation récursive requise pour que un orderering basé sur les nested dissection conduise à un search Space intéressant
+				Le facteur qu'ils retiennent pour considérer un séparateur balanced est 2/3 = 0.66
+				Détail intéressant : un graphe upward est nécessairement acyclique (c'est un arbre, quoi)
+			Un article intéressant sur ALT (dans GraphHopper) :
+				https://www.graphhopper.com/blog/2017/08/14/flexible-routing-15-times-faster/
+		AGRÉGÉ DES NOTES DE PRÉPARATION DE LA PRÉSENTATION sur les CH :
+			AUTRE = amélioration de ma connaissance des CH :
+				pour ma culture = plotter les noeuds les plus importants d'une CH ? (je m'attends à ce que ce soit des noeuds CENTRAUX, i.e. sur beaucoup de plus courts chemins)
+					question = pourquoi l'ordering les classe en dernier ?
+					ma réponse = normalement, parce qu'ils vont générer un shortcut pour CHAQUE paire de leurs noeuds incidents (du coup, leur edge-difference sera très mauvaise)
+				lorsque les deux propagation (ou une seule en fait) atteignent un certain niveau dans la hiérarchie, seul une sous-partie du graphe leurs sont accessibles.
+					en l'occurence la sous-partie du graphe avec les nodes supérieurs au niveau de hiérarchie où on est
+				D'où la notion de "rejoindre" des niveaux élevé dans la hiérarchie (qui se comprend mieux à partir de Highway Hierarchies)
+				On passe de ~2100 noeuds settled en unidir à ~1500 en bidir (-600 = divisé par 1.4 au lieu de 2) -> j'attribue ça au fait que vu le graphe, les cercles ne sont pas ronds.
+					(on a donc moins à économiser)
+				Un autre truc intéressant : si un noeud a tendance à concentrer beaucoup de plus court chemin (c'est le cas à monaco), il a intérêt à être en haut de la hiérarchie
+					s'il est en bas, le contracter tôt va générer beaucoup de shortcuts
+				Encore un truc intéressant : depuis un noeud donné, on monte dans la hiérarchie par bonds (plutôt que consécutivement) :
+					par exemple, si le dijkstra forward commence au noeud de rank 1200, et qu'il a 4 out-edges (vers 1418, 2200, 1850 et 1870)
+					à la prochaine itération, on sera déjà au noeud de rank 1418 : on aura fait un bond de 218 dans la hiérarchie
+					et le raisonnement sera le même pour tous les noeuds : les out-edges des noeuds n'ont que peu de chances d'être de rank consécutifs -> on fait forcément des "bonds" dans la hiérarchie
+				l'idée maîtresse c'est qu'en sautant 200 ranks, c'est AUTANT de nodes qu'on fait disparaître du graphe !
+					c'est la troisième et principale raison qui fait que CH va plus vite
+					(avec le fait qu'on n'ajoute pas de shortcuts pour les edges qui ne sont pas des PCC, et le fait qu'on ajoute des shortcuts pour aller uniquement vers des edges de rank supérieur)
+					(les noeuds 1014 et 1015 de la présentation sont de bons exemples de ça)
+				Ce qu'il faudra que j'aie fait pour la présentation :
+					lecture de la thèse
+					lecture du papier ?
+				TÂCHE DE REPRISE 1 = documenter dans mes notes github le code de la contraction et les structures ContractionHierarchy (cf. mes POCs)
+					Explication rapidos (à mieux formuler, et pérenniser avec des liens vers le code) de la contraction :
+						au moment de contracter un node, par définition, il ne reste plus dans le graphe QUE des nodes d'ordre supérieur
+						on peut donc ajouter ses out-nodes comme successeurs dans la CH (ce qui est fait)
+						une façon de voir les choses, c'est que la notion "d'ordre supérieur" ne concerne QUE les voisins immédiats d'un node
+						du coup, il serait TRÈS intéressant de calculer et afficher le graphe upward (ou downward)
+					concernant les structures ch.forward  et  ch.backward, je les ai analysées en profondeur dans mes POCs sur RoutingKit, notamment ma POC5
+				Ce qui serait top, ce serait de pouvoir visualiser la profondeur d'un BFS qui part d'un level donné :
+					EDIT : TL;DR = c'est stupide comme idée, car le graphe étant connexe, il visitera tous les nodes
+					sur mon graphe original, undirected, à 2259 noeuds, tous les noeuds sont reliés (le graphe est connexe)
+					lorsque je contracte un noeud et que je le supprime du graphe, je rajoute des edges pour préserver les shortest path !
+					quoi qu'il arrive, à chaque étape de la contraction, la connexité du graphe avec TOUS les noeuds restants est conservée
+					du coup, le cardinal (en nombre de noeuds) d'un BFS (ou d'un search-space sur un graphe en cours de contraction) sera égale au nombre de noeuds total sur le graphe !
+			AUTRE = inclassable :
+				Ce tuto a l'air pas mal pour un projet minimaliste python installable :
+					https://packaging-guide.openastronomy.org/en/latest/minimal.html
+				TODO RoutingKit : je pense qu'il y a un bug dans l'implémentation, je peux soumettre un correctif :
+					https://github.com/RoutingKit/RoutingKit/blob/fb5e83bcd4cf85763fb6877a0b5f8d5736c9a15b/src/contraction_hierarchy.cpp#L1028
+					CODE ACTUEL :
+						ch.backward.shortcut_second_arc[xy] = head[a];
+					CODE CORRIGÉ :
+						ch.backward.shortcut_second_arc[xy] = tail[a];
+					C'est pour être cohérent avec ce commentaire, qui (actuellement) n'est vrai que si le demi-edge est le PREMIER :
+						https://github.com/RoutingKit/RoutingKit/blob/fb5e83bcd4cf85763fb6877a0b5f8d5736c9a15b/include/routingkit/contraction_hierarchy.h#L60
+						std::vector<unsigned>shortcut_second_arc;// contains input tail node ID if not shortcut
+					À faire avant de soumettre la review :
+						confirmer : sans doute que ça ne pose pas souci dans l'unpacking, car celui-ci utilise le first-edge pour unpacker les résultats ?
+						écrire un code montrant le problème (comme ma POC)
+				RoutingKit : essayer de reproduire le bug en forçant l'ordering sur un graphe simple ?
+					du coup, s'il y a un bug à l'unpacking, je pourrai peut-être contribuer
+			À tester / vérifier :
+				le fait que `estimate_node_importance` est la plus consommatrice de temps de contraction
+				on dirait qu'on peut contracter en respectant un ordering particulier -> ça pourra m'être utile pour mes tests :
+					https://github.com/phidra/RoutingKit/blob/a0776b234ac6e86d4255952ef60a6a9bf8d88f02/src/contraction_hierarchy.cpp#L754
+					void build_ch_given_rank(
+						Graph&graph,
+						ContractionHierarchy&ch,
+						ContractionHierarchyExtraInfo&ch_extra,
+						const std::vector<unsigned>&rank,
+						unsigned max_pop_count,
+						const std::function<void(std::string)>&log_message
+					)
+				essayer de contracter en ordre inverse et vérifier que ça fait exploser à la fois le nombre d'edge et la profondeur du search-space d'un node donné (en moyenne)
+				essayer de visualiser l'ordering des nodes d'un graphe simple pour comprendre comment c'est ordonné
+				essayer de contracter le graphe de Monaco avec des orderings modifiés :
+					score non-modifié (qui sert de référence)
+					avec et sans chacun des trois critères pour voir son impact
+					avec uniquement l'un des trois critères
+					en random
+					en order "anti-optimal"
+					----------------------------------------
+					il me faut de quoi visualiser/comprendre les conséquences de l'ordering :
+						taille des search-space
+						visualiser sur une carte les N nodes les plus (resp. moins) importants
+						(éventuellement, visualiser le score d'ordering de chaque critère pour chaque node, à chaque étape de contraction ? Attention que ça fait N² scores à mémoriser)
+						mesurer l'écart de rank moyen entre un node et ses successeurs dans le graphe ch.forward ?
+					NOTE : ce que je cherche à faire, c'est :
+						1. faire une hypothèse sur ce que la modification d'un crtière va avoir comme impact (e.g. "si j'ignore le critère sur les hops, je m'attends à des contractions un peu moins réparties)
+						2. trouver une métrique pour vérifier mon hypothèse (e.g. l'écart moyen de rank entre un node et ses successeurs dans le propagation-graph ch.forward devrait DIMINUER + la taille des search-space devrait augmenter)
+						3. calculer la métrique pour vérifier mon hypothèse
+				illustrer le besoin de répartition de contraction des nodes (avec la dead-end valley)
+				faire des essais sur ordering / contraction pour mieux comprendre :
+					il se passe quoi si on utilise un mauvais ordering ? (augmentation de la taille du search space size dans ce cas ?)
+					combien d'edges réels survivent ?
+					combien de shortcuts sont créés ? (de quelle taille ?)
+					mesurer la taille exhaustive du search-space depuis un node quelconque dans le propagation-graph (puis, de TOUS les nodes : c'est une métrique de la qualité de l'ordering)
+					faire ça en C++ avec un binding python ?
+			ce qui n'est pas encore clair :
+				le fait que le graphe nécessite une notion de hiéararchie (avec certains shortest paths qui se concentrent sur certains noeuds) pour que les CH fonctionnent
+				le lien entre cette notion de hiérarchie, et le fait que l'ordering contracte en dernier les nodes "intéressants"
+				QUESTION 1 = pourquoi faut-il que les nodes "importants" soient contractés en dernier pour que la CH résultante soit efficace ?
+					raison pragmatique = les nodes importants vont créer beaucoup de shortcuts
+				QUESTION 2 = comment les heuristiques utilisées pour l'ordering arrivent-elles à contracter en dernier les nodes "importants" ?
+				Pourquoi limiter le quotient des hops est un facteur intéressant ?
+					piste = peut-être non pas pour l'efficacité de la CH, mais plutôt pour faciliter l'ordering ?
+					piste = pour faciliter l'utilisation des CH pour transit-node routing ?
+					piste = pour accélérer l'unpacking ?
+				Quel est l'intérêt/impact du troisième facteur utilisé notre moteur (maxSearchSpaceSize) ?
+		Notes et ressources algorithmiques à mettre ailleurs :
+			Cette page a un point de vue intéressant sur les tas :
+				https://docs.python.org/fr/3.7/library/heapq.html#theory
+				(où on voit le tas comme le résultat final d'un tournoi sportif ! — à chaque étage, les "vainqueurs" de l'étage précédent, avec le gagnant en haut de la pyramide)
+			Quelques ressources intéressantes pour le calcul d'iti :
+				site:i11www.iti.kit.edu filetype:pdf route
+				site:i11www.iti.kit.edu/_media/members filetype:pdf
+				https://i11www.iti.kit.edu/_media/members/torsten_ueckerdt/torsten_ueckerdt-habilitationsschrift.pdf
+					graph coloring
+			RESSOURCES DIVERSES :
+				Pas directement lié à l'algorithmique des graphes :
+					http://blog.notdot.net/tag/damn-cool-algorithms
+				WOW : extraordinaire source de vidéos :
+					https://www.youtube.com/channel/UCBvRy0gXDEQaf_dl8UUAE7g/videos
+						les vidéos ALGO 2020
+						chacun a sans doute un papier qui va avec !
+					https://www.youtube.com/watch?v=URhbkWsi_vo
+						ESA.7.8 Space efficient, Fast and Exact Routing in Time dependent Road Networks
+					https://www.youtube.com/watch?v=iCuP0OqQD5c
+						(pour ma culture)
+						ESA.4.3 Dynamic Matching Algorithms in Practice
+					https://www.youtube.com/watch?v=quP6ebMjT5E
+						(pour ma culture)
+						ESA.1.3 Compact Oblivious Routing in Weighted Graphs
+					https://www.youtube.com/watch?v=sG7KsfrxbKA
+						(pour ma culture)
+						ESA.5.9 Single Source Shortest Paths and Strong Connectivity in Dynamic Planar Graphs
+					https://www.youtube.com/watch?v=3lMruK5e3uE
+						ESA.7.4 Lower Bounds and Approximation Algorithms for Search Space Sizes in Contraction Hierarchies
+					https://www.youtube.com/watch?v=8uBkJBTQ3Og
+						ATMOS.3.1 Time Dependent Alternative Route Planning
+					https://www.youtube.com/watch?v=N4EfmVqxKWA
+						ATMOS.1.1 Cheapest Paths in Public Transport Properties and Algorithms
+					https://www.youtube.com/watch?v=LMdQCo4vREc
+						ATMOS.6.2 Customizable Contraction Hierarchies with Turn Costs
+				Ressources papiers / biblio :
+					https://github.com/papers-we-love/papers-we-love
+					https://lamport.azurewebsites.net/pubs/time-clocks.pdf
+					https://www.youtube.com/channel/UCoj4eQh_dZR37lL78ymC6XA/videos
+				Cette ressource a plein de choses chouettes sur les implémentations des graphes :
+					https://www.researchgate.net/publication/47843190_Algorithms_and_Data_Structures_The_Basic_Toolbox
+			Notes en lien avec la graph theory :
+				http://glaros.dtc.umn.edu/gkhome/projects/gp/publications
+					les publications metis sur le graph partitioning
+				introduction au graph partitioning en deux parties, dans ce qui semble être un cours sur le parallel programming :
+					https://people.eecs.berkeley.edu/~demmel/cs267/lecture18/lecture18.html
+					https://people.eecs.berkeley.edu/~demmel/cs267/lecture20/lecture20.html
+					----------------------------------------
+					https://people.eecs.berkeley.edu/~demmel/cs267/
+					Applications of Parallel Computers (spring 1996)
+					Le lien avec le calcul parallèle est que si on partitionne un graphe, on peut traiter ses différentes partitions en parallèle :
+						We think of a node n in N as representing an independent job to do, and weight Wn as measuring the cost of job n.
+						An edge e=(i,j) in E means that an amount of data We must be transferred from job j to job i to complete the overall task
+						Avec ce formalisme, les edges qui "traversent" des partitions représentent des besoins de synchro entre des jobs.
+					Almost all the algorithms we discuss are only for graph bisection, i.e. they partition N = N1 U N2.
+					They are intended to be applied recurively, again bisecting N1 and N2, etc., until the partitions are small and numerous enough.
+				des ressources intéressantes, notamment sur les algos parallèles ou les IOs :
+					https://www.cs.cmu.edu/afs/cs/project/pscico-guyb/realworld/www/slidesS18/
+					https://www.cs.cmu.edu/afs/cs/project/pscico-guyb/realworld/www/indexS18.html
+				papier sur la compression de graphe (ressource qui explique CSR) :
+					https://www.cs.cmu.edu/afs/cs/project/pscico-guyb/realworld/www/slidesS18/compression6.pdf
+					----------------------------------------
+					il y a quelques exemples de graphe publiquement accessibles
+					cas concret d'optimisation de graphe avec Netflix (90% de mémoire en moins) :
+						https://netflixtechblog.com/netflixgraph-metadata-library-an-optimization-case-study-6cc7d5eb2946
+					autre cas concret = rex de facebook sur graph reordering :
+						https://research.fb.com/publications/compressing-graphs-and-indexes-with-recursive-graph-bisection/
+					CSR = cache friendly method of storing graph in memory
+					Apparemment, la notation CSR est utilisée pour les out-edges, on parle de CSC pour les in-edges.
+					Intéressante comparaison des différentes représentations d'un graph (adjmatrix, edge-list, adj-list, CSR) :
+						scan_graph
+						get_neighbours
+						is_edge
+						insert_edge
+						delete_edge
+						----------------------------------------
+						on y voit notamment que CSR n'est pas très efficace s'il faut ajouter/supprimer des edges
+					Ils présentent CSR comme un format non-compressé (et effectivement, c'est le cas).
+					Pour compresser, on tire parti des particularités du graphe (e.g. dans le web, les liens proches ont tendance à référencer les mêmes pages)
+					La conclusion est un résumé intéressant :
+						Compressed representations important (memory isn’t free)
+						Efficient representations important
+						Tradeoffs between space-efficiency and fast decoding
+						Formats should be amenable to parallelization
+						Real world graphs are highly compressible!
+						Real world graphs have much smaller separators than expected
+				un papier intéressant sur graph partitioning (par recursive bisection) :
+					https://ldhulipala.github.io/papers/RecursiveBisection.pdf
+				implémentations libres de CH :
+					https://gist.github.com/systemed/be2d6bb242d2fa497b5d93dcafe85f0c
+						listing de plein d'implémentations
+					https://github.com/UDST/pandana/
+						C++
+						a l'air à peu près propre
+					https://courses.cs.washington.edu/courses/cse332/20wi/homework/contraction/
+						peut-être qu'il y aura une implémentation ici
+					Arf, je suis à peu près sûr d'être tombé sur une implémentation "pédagogique" en python, mais je ne la retrouve pas
+			visualisation à faire (un jour peut-être) :
+				plotter le temps de contraction en fonction du pourcentage du node (on démarre à 0%, un node à 10% correspond au fait qu'il reste 90% de nodes à contracter)
+				je m'attends à ce que ça augmente fortement à la fin
+		Notes sur la complexité Dijkstra :
+			https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm#Running_time
+			La page anglaise de Dijkstra a une explication intéressante de la complexité en la séparant en deux termes :
+				TERME 1 = E × Tdecreasekey = on va mettre à jour le tentative cost  (et possiblement decrease la Key d'un node dans la queue) autant de fois qu'il y a d'edges
+				En effet, vu :
+					1. que chaque noeud n'est settled qu'une fois
+					2. que c'est quand on settle un nœud qu'on relaxe ses out-edges, et donc qu'on peut mettre à jour la clé du head-node dans la queue,
+					3. que chaque out-edge est unique à un tail-node donné...
+				Alors il s'ensuit qu'on decreasekey au pire une fois par (out-)edge dans le graphe.
+				----------------------------------------
+				TERME 2 = V × Textractminimum = à chaque fois qu'on s'apprête à settle un nœud, il faut rechercher celui à coût min (ce qui se fait en temps constant) et L'EXTRAIRE, ce qui se fait en Textractminimum
+			Avec une priority queue classique, les deux T sont en  log(V), ce qui donne la version "de base" (i.e. sans utiliser de fibonacci-heap) de la complexité de Dijkstra = |E+V| × log(V)
+		Qui utilise les CH ?
+			graphhopper
+			la lib python dont j'ai oublié le nom
+			navitia
+			osrm
+		Les trucs intéressants (à retenir) du talk d'Hannah BAST :
+			différence entre :
+				relaxer un edge particulier = calculer le coût pour joindre le head-node via cet edge, et mettre à jour le tentative-cost du head-node si l'edge l'améliore.
+				settle un node = sortir un node de la priority-queue (son tentative-cost devient alors son cost définitif)
+				----------------------------------------
+				en gros, dijkstra alterne entre les deux :-)
+			17:00 La raison pour laquelle on veut contacter les autoroutes en dernier, c'est qu'elles participeront sans doute à beaucoup de plus courts chemins.
+				Si on les contactait en premier, on ajouterait dès le début beaucoup de shortcuts.
+			19:40 avec un bon orderering, le nombre de shortcuts est censé être petit devant le nombre d'edges originaux.
+				TODO = le vérifier.
+			47:00 en fait, exploiter la hiérarchie du network, c'est également l'idée qui est derrière l'amélioration des transfer patterns à échelle nationale (qui utilise du clustering)
+		Note sur la notion de hiérarchie :
+			il y a plusieurs façons de voir cette notion de hiérarchie, mais l'idée maîtresse est que toutes les sections n'ont pas la même valeur
+			une vision n°1 qui me parle beaucoup = notion de fréquence de section :
+				pour un graphe à N nodes, on peut calculer exhaustivement tous les N² PCC possibles entre les N² paires de noeuds possibles
+				l'idée est que certaines sections "contribuent" à plus de PCC que d'autres
+				dit autrement, les PCC passent statistiquement plus par certaines sections que d'autres
+				par exemple, des sections de l'autoroute A10 apparaîtront sur beaucoup de PCC, alors que la petite Impasse-machin à Trifouillis n'apparaîtra que sur les PCC en provenance (ou à destination) de l'impasse
+				on peut donc considérer que les sections de l'A10 sont PLUS IMPORTANTES que celle de l'impasse
+				si on calcule le "score" de chaque section, on peut donc classer les sections des moins importantes aux plus importantes, et établir une hiérarchie
+				statistiquement, il sera plus important de rejoindre facilement les sections de l'A10 que celle de l'impasse, d'où la nécessité d'attribuer à ces sections importantes un rank élevé
+			une vision n°2 que j'ai trouvée dans un papier (je sais plus lequel) :
+				tout PCC d'une longueur suffisamment élevée va obligatoirement chercher à rejoindre un réseau restreint (e.g. le réseau d'autoroute)
+				dit autrement, à partir d'une longueur de chemin suffisamment élevée, TOUS les PCC vont emprunter une autoroute
+				du coup, les autoroutes sont plus importantes que d'autres sections, et il est intéressant de pouvoir les emprunter plus facilement (donc de leur attribuer un rank élevé)
+		notes de compréhension CH> TODO = mettre ça quelque part :
+			Ooooh, je vienx de comprendre un principe important des CH !
+			contexte = j'ai acquis cette compréhension en essayant de forger un graphe dans lequel contracter deux nodes consécutivement n'ajoute pas les mêmes shortcuts selon l'ordre dans lequel on les contracte
+			La conséquence : si un noeud "pas important" est en haut de la hiérarchie, on va "perdre du temps" à le rejoindre en relaxant les edges qui y mènent (vu que le noeud est haut dans la hiérarchie)
+			or, comme le noeud n'est pas important, rejoindre ce noeud... ne servira à rien : il ne sera JAMAIS (ou rarement) un meeting-node !
+			Une autre façon de voir les choses = une propagation dijkstra CH va (grosso-modo) settle/relaxer tous les noeuds/edges en haut de la hiérarchie...
+			... alors si on veut en settle/relaxer PEU, il faut que tous ces noeuds soient UTILES (et contribuent à beaucoup de plus courts chemins)
+			dit autrement :
+				un noeud important (qui contribue à beaucoup de plus courts chemins) doit être placé en haut de la hiérarchie, certes...
+				... mais c'est surtout vrai dans l'autre sens : un noeud non-important, s'il est placé en haut de la hiérarchie, ajoute des edges à relaxer inutiles !
+			d'où la phrase de Hannah BAST dans un de ses calls : "pour que les CH marchent, il faut qu'il y ait une notion de hiérarchie dans le graphe"
+				il faut que certains nodes soient plus importants que d'autres... (car comme on va souvent les settle vu qu'ils sont en haut, ils ont plus de chance d'être des meeting-nodes)
+				...et donc que certains nodes soient MOINS importants que d'autres
+				et placer les nodes en BAS de la hiérarchie a pour effet de diminuer le nombre d'edges à relaxer lors de la propagation
+			note : une autre façon d'expliquer l'influence de l'ordering
+				l'intérêt si on contracte un node plus tard, c'est que certains de ses voisins V (vers lesquels le node N était sur le plus court chemin) auront disparu
+				du coup, le fait que N contribue à un plus court chemin vers V n'entraine plus l'ajout d'un shortcut
+				on pourrait objecter : mais dans ce cas, il faudra peut-être ajouter un shortcut de N vers "le successeur de V vers lequel la contraction de V a créé un shortcut" ?
+				deux éléments de réponse :
+					d'abord : oui, si le couple N+V est sur le plus court chemin vers ce successeur (de A vers F, dans mon exemple), alors il est logique qu'il y ait un shortcut au final (pour conserver les PCC sur le remaining-graph)
+					mais quand on y regarde de plus près, le fait d'avoir contracté un node avant "augmente" la distance entre le prédécesseur et le successeur lors de la local-search (c'est l'une des raisons pour laquelle le local-search est si longue)
+					du coup, on a plus de chanes de trouver un plus court chemin entre A et F qui contourne le couple N+V
+			encore une autre façon de voir les choses pour enfoncer le clou :
+				dans mon exemple, N contribue aux plus courts chemins vers X, MAIS pas aux plus courts chemins vers les successeurs de X
+				dit autrement : les seuls plus courts chemins auxquels N contribue sont les plus courts chemins vers X
+				du coup, contracter X *avant* N permet de le supprimer du graphe... et N ne contribue donc plus à aucun plus court chemin !
+		Tentative de compréhension de la construction des shortcuts ULTRA :
+			SECTION 3.1 = OVERVIEW :
+				on prend tous les journeys J1 (de station à station, i.e. sans diffusion/rabattement) qui utilisent exactement UN transfert
+					(NdM : a priori, ces journeys comprennent donc l'ensemble des transferts possibles, qui sont les CANDIDATES TRANSFERS pour les shortcuts)
+					à ce stade, même si c'est pas hyper clair, probablement que les transferts sont sur le graphe COMPLET (et non uniquement les transfers restreints, du GTFS)
+				pour chaque journey J1, on regarde s'il existe un autre journey J2 (qui, lui, peut avoir de la diffusion ou du rabattement) :
+					on supprime alors ceux qui sont dominés par un autre journey
+					en effet, leurs transfers ne sont pas nécessaires, vu que le journey qui domine (et son transfer) ira de toutes façons plus vite
+					les journeys dominants sont des witness (car ils témoignent que le transfer du journey dominé n'est pas nécessaire)
+				un point important : les witness de station à station peuvent utiliser le graphe piéton (et pas uniquement les transferts)
+					note : en premier abord, ça semble contredire le fonctionnement décrit précédemment, mais en réalité, il faut distinguer :
+						le set J1 (qui n'utilise pas le graphe piéton, en dehors du transfert entre ligne A et ligne B)
+						le set J2 (qui utilise le graphe piéton, y compris pour rabattement/diffusion)
+					dit autrement si pour faire le journey Sa>T>Sb (où A et B sont des lignes, Sa est un stop particulier de la ligne A ; et Sb de la ligne B et T le transfer piéton entre les deux lignes)
+					alors on s'autorise à faire (Sa) T1>Sx>T...>S...>T2 (Sb)
+					c'est à dire que même en partant de Sa (et en arrivant à Sb), on s'autorise à ne pas prendre le TC à Sa, mais plutôt à marcher au départ ou à l'arrivée
+					si on fait ça, ça veut dire que le transfert T (de Sa>T>Sb) est peut-être dominé par un autre transfert (ci-dessous, T3) :
+						Sa>T1>Sx>T2>Sy>T3>Sb
+					à la limite, il peut même être dominé par un journey sans TC (on fait à pied le trajet entre Sa et Sb) :
+						Sa>T1>Sb
+					ou même par un trajet sans transfert (on rejoint à pied la ligne B) :
+						Sa>T1>Sx>Sb
+				L'idée clé, c'est que si, pour un journey donné, on ne trouve aucun witness, alors son transfer est nécessaire, et le shortcut est ajouté au graphe.
+			Implémentation :
+				naif = énumérer tous les journeys du set J1, et pour chacun, rechercher des witness dans le set J2
+				naïf impraticable car il y a trop de journeys
+				utilisation d'un rRaptor modifié (pour limiter à deux rounds = un seul transfert piéton)
+					-> TODO = comprendre rRaptor
+					rRaptor = répond à des one-to-all rangeQueries
+				un point qui semble important : le self-pruning assure que beaucoup de dominated journeys sont éliminés rapidement
+			Algorithme 1 = ULTRA transfer shortcut computation :
+				INPUT = le GTFS et le graphe piéton G (V,E)
+				OUTPUT = un sous-graphe G' (S, E') qui ne comporte que les vertices des stops, et que le subset des edges E' nécessaires pour conserver les PCC
+				ETAPES : l'algorithme itère sur tous les stops S :
+					dijkstra one-to-many = calculer la distance piétonne entre S et tous les autres stops
+					classer tous les trips qui partent de S par departure_time
+					itérer sur les trips qui partent de S, par ordre INVERSE (i.E. on commence l'itération par le DERNIER trip qui part de S)
+						(round 1) pour chaque trip, collecter les routes (y compris celles qui impliquent de la marche à pied unrestricted), et marquer tous les stops désservis
+						relaxer les transfers de ces stops (pas clair : en utilisant le graphe piéton complet ? Ou juste les transfers du GTFS ? EDIT : a priori, MR-∞ implique je suppose l'utilisation de TOUT le graphe)
+						(round 2) scanner les routes qui ont été mises à jour par les transfers
+						récupérer les stops qui ont été mis à jour -> ce sont les unwitnessed candidates
+					plus de détail sur ce dernier point : si parmi les stops mis à jour, le stop est atteint via un candidate journey (i.e. un journey qui ne nécessite pas de rabattement/diffusion)...
+					... alors le transfer de ce journey est prouvé comme nécessaire, et ajouté aux shortcuts
+				à noter que la phrase suivante laisse à penser que les "shortcuts" ne sont pas des shortcuts au sens CH, mais simplement des edges directs de station à station :
+					Thus, we extract the intermediate transfer of the found candidate journey and add it as an edge to the shortcut graph
+				je pense qu'à ce stade, les "shortcuts" sont simplement des "edges"
+			SECTION 3.2 = implémentation details :
+				ils utilisent une variante de MCR (MR-∞) ; idéalement, il faudrait que je lise le papier
+				la relaxation des stops utilise donc a priori TOUT le graphe piéton
+				autre phrase en vrac :
+					As shown for MCR [10], the transfer relaxation is often the bottleneck of multi-modal routing algorithm
+				ULTRA se parallélise naturellement bien, vu qu'on traite chaque stop indépendament les uns des autres
+				NdM : on stoppe la contraction lorsque le core (graphe non-contracté) atteint un certain degré -> on peut tradeoff le preprocess-time vs. le query-time
+			rRAPTOR sur le papier original = section 4.2 :
+				on part d'un stop S, sur un range de temps Δ
+				conceptuellement, il s'agit "simplement" de collecter toutes les heures de départ τ des trips qui sont dans Δ (ce qui forme le set Ψ), puis de lancer un RAPTOR "classique" pour chaque τ ∈ Ψ
+				en pratique, parmi les résultats de ces multiples RAPTOR, certains seront dominés
+					(e.g. s'il y a deux TC consécutifs qui partent de S à 10h10 et 10h15 mais font arriver tous les deux à 11h à destination, alors le premier est dominé par le second)
+				du coup, on ordonne tous les τ ∈ Ψ par heure de départ DÉCROISSANTE, et quand on travaille sur un τ donné, on conserve la meilleure heure d'arrivée aux stops d'un τ précédent
+				ainsi, si on voit qu'on arrive plus tard, on sait déjà que le τ actuel est dominé par un τ ultérieur, et on peut le pruner
+				autre note d'optimisation = on peut paralléliser en découpant Ψ en plusieurs morceaux
+			QUESTIONS :
+				comment sont calculés les journeys J2 ? Ça revient à résoudre le problème pour lequel on conçoit ULTRA à la base !
+					d'ailleurs, on pourrait peut-être utiliser les hubs pour accélérer cette étape ?
+				on semble assimiler shortcut à transfer, dans la description de la section 3.1...
+					or, pour moi, les shortcuts sont des notions liées aux CH, et les transfers peuvent représenter l'agrégat de plusieurs shortcuts
+			Bon, clairement, le détail du calcul des shortcuts ULTRA n'est pas clair, et mériterait que je le bosse un peu plus pour le comprendre.
+				je peux donner les quelques clés que je comprends, toutefois
+				le parcours se fait sur l'ensemble de la plage de temps (en ordre inverse), comme rRAPTOR
+		Tentative de compréhension de la construction du bucket-CH :
+			SECTION 4 = query algorithms :
+				TL;DR : bucket-CH = une façon de répondre efficacement aux queries de type one-to-many ou many-to-one
+				explication de bucket-CH :
+					step1 = calcul de la CH d'un graphe donné (i.e. ordering + contraction)
+					step2 = à partir du set des targets (ici, du set des stops), attribuer à chaque vertex V du graphe d'un bucket contenant les distances de V à chaque target
+						la phrase suivante n'est pas claire : This is done by adding every target to the buckets of all vertices in its reverse CH search space.
+					step3 = ... pas clair non plus
+				bref, pour le moment, bucket CH n'est pas clair
+			La section 3.2 de ULTRA-trip-based formule différemment la requête bucket-CH :
+				(mais je ne comprends toujours pas comment le bucket-CH est calculé)
+				https://drops.dagstuhl.de/opus/volltexte/2020/13140/pdf/OASIcs-ATMOS-2020-4.pdf
+				First, a standard CH query from s to t with departure time τdep is performed.
+				This yields :
+					the minimal arrival time τmin at the target via a direct transfer,
+					the forward CH search space Vs of s,
+					and the backward CH search space Vt of t.
+				If, τmin < ∞ holds, then we have found an s-t-journey with arrival time τmin that uses zero trips
+				Afterwards, we evaluate the buckets containing vertex-to-stop transfer times for vertices in Vs, which provides us with the arrival time τarr(s,v) for each stop v with τarr(s,v) ≤ τmin.
+					c'est ça qui n'est pas clair : si j'ai DÉJÀ un bucket qui contient les vertex-to-sop transfer-times, je n'ai qu'à l'évaluer pour connaître l'heure à laquelle je peux arriver à chaque stop :thinking-face:
+				Similarly, we evaluate the buckets containing stop-to-vertex transfer times for vertices in Vt, in order to obtain transfer times τt(v,t) for all stops v with τt(v,t) ≤ τmin−τdep
+				EDIT : j'ai l'impression qu'il s'agit surtout de connaître le temps d'initialisation de chaque stop
+					(mon interrogation reste : j'ai l'impression que c'est simplement τ + durée(SOURCE, STOP)  pour chaque stop...)
+					à noter qu'on dirait qu'on ne garde que les stops qui sont plus intéressants qu'un trajet direct de S à T
+					(c'est logique : si je veux aller de Trifouillis à Denfert, et que je mets 1h à pied, inutile que je m'intéresse aux stops qui sont à plus d'1h de Trifouillis, ou à plus d'1h de Denfert)
+			Aha, ce papier m'aide un peu plus à comprendre :
+				https://drops.dagstuhl.de/opus/volltexte/2020/13137/pdf/OASIcs-ATMOS-2020-1.pdf
+				je pense que la clé, c'est que je peux attribuer la distance d'un vertex v à l'un des stops, UNIQUEMENT s'il est dans son reverse-search-space !
+				dit autrement : tous les vertices vdu graphe ne peuvent pas se voir attribuer un bucket avec la distance qui relie v à chaque stop s
+				du coup, ça me fait une première raison qui fait que je ne peux pas simplement "lire dans son bucket" la plus courte distance de V à chaque stop S : il se peut que certains stops ne soient pas dans le bucket
+				et de toutes façons, il y a une deuxième raison plus importante : le bucket de V ne contient pas la PLUS COURTE distance de V à Sx !
+					EDIT : possiblement, si en fait... si c'est bien le cas, c'est uniquement la première raison qui fait qu'on ne peut pas juste "lire" la distance dans le bucket
+						(en effet, a priori, s'il y a un chemin entre Sx et V dans le backward search-space, c'est le PCC par construction)
+					----------------------------------------
+					en effet, considérer que la distance de V à Sx lue dans le bucket est la plus COURTE distance revient à dire que V était le meeting-point du bidirectional dijkstra
+					or, V est en quelque sorte juste "un meeting-point parmi d'autres", et il se peut qu'un chemin encore plus court existe, ayant pour meeting-point un autre node N dans le G↑ de V
+					(du coup, la formulation des explications d'ULTRA est plus claire)
+			Ma compréhension de l'algo bucket-CH :
+				preprocessing = je veux précalculer les buckets de chaque vertex du graphe :
+					STEP1 = obtenir une CH du graphe :
+						calculer l'ordering + la contraction du graphe
+						on dispose d'une CH (i.e. d'un graphe contracté sur lequel on peut run des queries)
+					STEP2 = itérer sur chaque stop S du graphe :
+						faire un reverse-dijkstra qui part du stop
+						ce reverse-dijkstra explorera l'intégralité des vertices du downard graph G↓
+						(un point important, c'est que G↓ ne contient pas TOUS les vertices du graphe initial G)
+						pour chaque vertex V de G↓, on stocke la distance entre V et S dans le bucket de V
+					au final, à l'issue de ces deux steps, chaque vertex V du graphe dispose d'un bucket à N items, où N = |STOPS|
+					le bucket d'un vertex V contient N items = la distance entre V et chacun des N stops
+					à noter (et c'est le point qui me manquait pour comprendre l'algo) que certains items pourront être égaux à +∞ !!!
+					en effet, pour un stop donné Sx et un vertex donné V, si jamais V n'était pas dans le graphe downward G↓ du stop Sx, alors V ne connaîtra pas sa distance à Sx (et restera à +∞)
+					c'est ce qui explique que la query n'est pas simplement "je regarde dans le bucket de V pour connaître la distance jusqu'à chaque stop"
+				query = à partir d'un vertex V du graphe, je veux connaître sa distance à chacun des stops du graphe :
+					STEP3 = prenons pour exemple un stop en particulier Sx (mais en réalité, c'est bien la distance vers CHACUN DES STOPS qui m'intéressse)
+						je fais un forward-search en partant de V
+						à chaque fois que je relaxe un node N (y compris le premier node relaxé = V), je regarde si dans le bucket de N, il y a une distance vers Sx
+						si oui, ça veut dire que j'ai trouvé (en quelque sorte) un meeting-point du bidirectional-dijkstra : c'est N
+						la distance (candidate) entre V et Sx est alors d(V→N) + d(N→Sx)
+							avec d(V→N) qui est donnée par le foward-search depuis V
+							et d(N→Sx) qui est "lue" dans le bucket-CH de N, calculée lors du preprocess
+						la somme des deux me donne donc une distance candidate entre V et Sx...
+						... mais ça n'est pas forcément la plus courte !
+						Naïvement, il faut que je continue à relaxer les nodes jusqu'à ce que je j'ai exploré TOUT le forward-search-space partant de V
+						(en pratique, peux m'arrêter dès que la distance de V à N (où N est le prochain noued settled) est supérieure à la plus courte distance de V à Sx déjà trouvée)
+					note : si dans le bucket de V je trouve une distance D0 vers Sx (i.e. V était bien dans le reverse-search-space de Sx), ÇA NE VEUT PAS DIRE que D0 est la PLUS COURTE DISTANCE vers Sx
+						en effet, le fait que V a bien Sx dans son bucket veut "juste" dire qu'on a trouvé un meeting-point du bidirectional dijkstra
+						mais peut-être qu'il existe un meilleur meeting point ailleurs dans le forward-search-space de V
+					Et du coup, en faisant ça pour tous les stops en même temps, il me suffit d'un forward-search-space depuis V pour connaître la meilleure distance de V à chacun des stops S
+			NdM : il faut voir si le preprocess servant à calculer les bucket-CH est lourd ou pas, mais conceptuellement, je pense qu'on peut remplacer bucket-CH par hub-labeling
+				(en effet, il permet lui aussi de connaître la distance entre V et tous les stops, de façon relativement efficace)
+		TODO = pérenniser mes notes ci-dessous sur GTFS:
+			En fait, dans le format GTFS, l'élément central, c'est le trip (= le voyage d'un véhicule physique) :
+				le trip est associé à une route, uniquement pour connaître des méta-infos sur la route (p.ex. son nom) | les méta-infos de chaque route sont définies dans routes.txt
+				le trip est associé à une série de stops (c'est implémenté dans l'autre sens : chaque stop a un trip_id, et une série de stops donné ayant le même trip_id constitue les "stops d'un trip")
+				à la différence de ce qui est attendu par les papiers de recherche, le format GTFS permet tout à fait de définir des trips d'une même route ayant des stops différents
+				dit comme ça, on dirait que le GTFS permet de définir des trips d'une même route, ayant un set de stops différents ?
+				Effectivement, la doc du format GTFS ne mentionne pas explicitement que les stops des trips d'une même route doivent être identiques :
+					https://developers.google.com/transit/gtfs/reference?hl=fr#dataset_files
+					Itinéraires en transports en commun. Un itinéraire est un ensemble de trajets présentés aux usagers comme relevant du même service.
+		ULTRA> Ce papier donne la définition du core CH utilisé dans ULTRA :
+			TODO = mettre à jour mes notes sur le sujet (et au passage, merger ma branche de notes sur ULTRA)
+			https://ad-publications.cs.uni-freiburg.de/GIS_personal_FS_2015.pdf
+			Dans le chapitre 3.1 (Customizable CH), sous-section "Accelerating Customization"
+			TL;DR : le core, ce sont les nodes qu'on a délibérément choisi de ne pas contracter lors de la contraction (pour éviter que celle-ci diverge).
+			c'est un tradeoff qui ralentit un peu le query-time pour accélérer le preprocessing-time
+				l'extrême dans un sens, c'est si on requête sur un graphe : le preprocess est instantané, mais la query est lente = celle d'un dijkstra bi-directionnel classique
+				l'extrême dans l'autre sens, c'est si on requête sur un graphe complètement contracté :  le preprocess est le plus lent possible, mais la query grandement accélérée
+			note : à mon avis, lorsqu'on fait une query sur un graphe partiellement contracté, on modifie la contrainte "ne garder que les edges vers les nodes de rank supérieurs" en :
+				"ne garder que les edges vers les nodes de rank supérieurs, ou les edges depuis/vers des nodes appartenant au core"
+			et même, la phrase suivante de l'article laisse à penser que c'est même plus subtil :
+				Optimal query answering can still be guaranteed when considering edges between core nodes in the bidirectional Dijkstra run as well.
+		Ce qui n'a pas sa place dans mes notes bibliographiques sur CH :
+			Goal-directed technique = algos orientant la recherche de la solution "vers" la cible (e.g. A*)
+			Il y a également une définition et quelques exemples de techniques) dans [ce papier](https://publikationen.bibliothek.kit.edu/1000014952) :
+				Goal-Directed Approaches direct the search towards the target t by preferring edges that shorten the distance to t and by excluding edges that cannot possibly belong to a shortest path to t. Such decisions are usually made by relying on preprocessed data.
+			Dans un arbre, il n'existe qu'un seul chemin possible entre deux noeuds.
+		Graphes :
+			Tout problème où on affecte des ressources (e.g. créneau horaire) à des acteurs (e.g. prof) en respectant des contraintes d'incompatibilité se modélise bien en coloriant un graphe (bipartite ?) où :
+				les edges sont les contraintes,
+				les acteurs sont les nœuds
+				les ressources sont les couleurs des noeuds
+			Exemple = création de planning
+			Nombre chromatique borné min par taille du sous graphe induit complet, et borné max par degrémax+1
+		ROUTING> Nouveaux papiers à imprimer :
+			https://www.microsoft.com/en-us/research/wp-content/uploads/2010/12/punchTR.pdf  2010 "Graph partitioning with natural cuts"
+			https://drops.dagstuhl.de/opus/volltexte/2020/13145/pdf/OASIcs-ATMOS-2020-9.pdf  <--- customizable contraction hierarchies with turn costs !
+			https://arxiv.org/pdf/1311.3144.pdf   <-- récent survey sur les techniques de graph partitioning
+			https://arxiv.org/abs/1906.11811   Amélioration du partitionnement WCH !!!
+			https://drops.dagstuhl.de/opus/volltexte/2020/12947/   Amélioration de TCH !!!
+			http://perso.ens-lyon.fr/eric.thierry/Graphes2009/thorup.pdf
+			https://i11www.iti.kit.edu/extra/publications/dssw-erpa-09.pdf  (même s'il est plus ancien et plus court que l'autre survey, il peut être intéressant tout de même)
+			papier ancien (test-of-time award) mais intéressant sur la parallélisation de dijkstra :
+				Delta-Stepping: A Parallel Single Source Shortest Path Algorithm.
+			https://hal.inria.fr/hal-01359084v2
+			https://hal.inria.fr/inria-00471716
+			Public transit routing with unrestricted walking (ATMOS 2017)
+			http://tpajor.com/assets/paper/ddpww-cmjp-13.pdf  (vérifier que je ne l'ai pas déjà imprimé)
+			papier 2 = Personalized Route Planning in Road Networks
+				https://ad-publications.cs.uni-freiburg.de/GIS_personal_FS_2015.pdf
+				https://dl.acm.org/doi/10.1145/2820783.2820830
+			papier 3 = Contraction Hierarchies on Grid Graphs
+				https://link.springer.com/chapter/10.1007/978-3-642-40942-4_21
+				https://ad-publications.cs.uni-freiburg.de/KI_gridCH_S_2013.pdf
+			lire le papier que mon collègue a linké + le papier sur WCH
+				https://arxiv.org/pdf/1910.12726.pdf
+				idée clé = au lieu de stocker la TTF complète, on stocke juste les chemins différents
+				pour le moment, rien de nouveau, si ce n'est une optimisation de la taille des graphes TCH
+					en effet, les TTFs sont expand de façon lazy
+					ça se fait donc au prix d'un cache, qu'il faudra remplir petit à petit
+					période donc "froide" (et pas forcément parallel-friendly...)
+					seul avantage = on ne remplit pas le cache avec les itis inutilisés
+				amélioration potentielle de la contraction WCH
+				dixit Kevin "plus de section closed in real-time graph" -> on a déjà tout ce qu'il faut pour ça !
+				elimination tree au lieu d'un simple dijkstra bidirectionnel
+			https://i11www.iti.kit.edu/extra/publications/dw-lbrdg-07.pdf      (ALT)
+			https://drops.dagstuhl.de/opus/volltexte/2017/7897/pdf/OASIcs-ATMOS-2017-3.pdf
+				Time-dependent + customizable !!
+			https://www.cs.bgu.ac.il/~elkinm/thorup_zwick.do.pdf
+			amélioration autour du vélo (bicriteria) :
+				https://drops.dagstuhl.de/opus/frontdoor.php?source_opus=5458
+			J'ai plusieurs papiers sur le hub-labelling et leur application dans les PTN que je n'ai pas imprimés. Dans le papier de Laurent Viennot, il s'agit de 1, 2,8, 10, 20. De plus, Viennot utilise 9 en pratique
+			Par ailleurs, 19 a l'air intéressant
+			https://i11www.iti.kit.edu/_media/teaching/theses/ma-sauer-18.pdf ??
+			https://drops.dagstuhl.de/opus/frontdoor.php?source_opus=13145
+			https://www.researchgate.net/publication/40646194_Combining_Hierarchical_and_Goal-Directed_Speed-Up_Techniques_for_Dijkstra%27s_Algorithm
+				Combining Hierarchical and Goal-Directed Speed-Up Techniques for Dijkstra's Algorithm
+				2010
+				PDF librement accessible
+				papier qui semble très intéressant et qui est une revue des techniques permettant de COMBINER les CH avec des techniques goal-directed
+				(j'y vois notamment l'intérêt de pouvoir garder la puissance de personnalisation des goal-directed techniques, et la vitesse des CH ?)
+			https://www.researchgate.net/publication/288889992_Fast_Computation_of_Isochrones_in_Road_Networks
+				Fast Computation of Isochrones in Road Networks
+				2015
+		ROUTING> les choses à faire en rapport avec le routing :
+			BIBLIO> sujets de routing qui me restent à défricher :
+				dijkstra multi-critère
+					ça a l'air d'être un domaine riche : rechercher label-setting dijkstra / label-correcting dijkstra etc.
+					e.g. Multi-criteria Shortest Paths in Time-Dependent Train Networks
+					https://link.springer.com/chapter/10.1007/978-3-540-68552-4_26
+					utilisé à la query (mais ce n'est PAS le MC-dijkstra utilisé pour le calcul des TP)
+					----------------------------------------
+					le survey de 2015 indique "Multicriteria Label Setting" avec plusieurs références.
+						au lieu d'associer un tentative-cost à chaque node, on associe un bag de labels non-dominés (avec autant de labels dans le bag que de critères)
+						la priority-queue trie par label plutôt que par tentative-cost
+					le survey de 2015 indique également "Multicriteria Label Correcting" avec d'autres références.
+				QUESTION : label-correcting vs. label-setting ?
+					ça répond à quelle question ?
+					c'est utilisé dans quel contexte ?
+					lequel est meilleur ?
+				TODO = comprendre pourquoi RAPTOR est du ressort du dynamic-programming ?
+				TODO = comprendre pourquoi DIJKSTRA peut-être vu comme du ressort du dynamic-programming ?
+				----------------------------------------
+				Highway hierarchies, et les différences avec CH
+				A*, landmark, triangle inequality = ALT = https://www.microsoft.com/en-us/research/wp-content/uploads/2004/07/tr-2004-24.pdf
+					https://www.cs.princeton.edu/courses/archive/spr09/cos423/Lectures/reach-mit.pdf
+					ALT : https://www.microsoft.com/en-us/research/wp-content/uploads/2004/07/tr-2004-24.pdf
+				Papiers issus de ALGO 2019 : https://algo2019.ak.in.tum.de/index.php/algo-program
+					A Graph- and Monoid-Based Framework for Price-Sensitive Routing in Local Public Transportation Networks
+						https://drops.dagstuhl.de/opus/volltexte/2019/11424/
+					Robust Routing in Urban Public Transportation: How to Find Reliable Journeys Based on Past Observations
+						https://hal.inria.fr/hal-00871734/document
+				C'est intéressant : une partie des papiers concerne l'aide à la conception de réseaux de transports publics :
+					https://drops.dagstuhl.de/opus/volltexte/2018/9713/
+					https://drops.dagstuhl.de/opus/volltexte/2018/9721/
+				Il y a aussi des papiers orientés "voiture autonome", ou avions.
+				Public Transit Routing with Unrestricted Walking  (note : plus ancien qu'ULTRA)
+					https://drops.dagstuhl.de/opus/volltexte/2017/7891/
+				Fast and Exact Public Transit Routing with Restricted Pareto Sets
+					https://www.researchgate.net/publication/330098838_Fast_and_Exact_Public_Transit_Routing_with_Restricted_Pareto_Sets
+				A label correcting algorithm for the shortest path problem on a multi-modal route network.
+					http://www.lix.polytechnique.fr/Labo/Leo.Liberti/sea12c.pdf
+			comprendre comment la génération du hubs-labeling fonctionne :
+				on dirait que l'algo utilisé par hub-labeling est pruned landmark labeling + random sampling
+				il semble au moins mentionné ici : http://www.vldb.org/pvldb/vol11/p445-li.pdf
+				voir aussi : https://www.researchgate.net/publication/300450292_Hub_Labels_Theory_and_Practice
+				et également : https://www.researchgate.net/publication/221131726_A_Hub-Based_Labeling_Algorithm_for_Shortest_Paths_in_Road_Networks
+			Pas facile = trouver où mettre ce genre d'informations :
+				intéressant (mais difficile à classer) = calculer le PCC de longueur maximale :
+					https://files.inria.fr/gang/road/diameter.html
+				à référencer quelque part :
+					https://tristramg.eu/histoire-calcul-iti/
+				pages expliquant le fonctionnement de Valhalla  :
+					https://valhalla.readthedocs.io/en/latest/route_overview/
+					https://valhalla.readthedocs.io/en/latest/thor/path-algorithm/
+					https://github.com/valhalla/valhalla/blob/master/docs/sif/dynamic-costing.md
+			Papier sur un nouveau algo dans la famille des RAPTOR :
+				https://gitmemory.cn/repo/alexdray86/McRAPTOR
+				Our work consists of a robust journey planner, which finds journeys between stops within a 15km radius around Zurich Hbf and computes their probability of success based on the distribution of delays over the past years.
+				Given a source stop, a target stop, a latest acceptable arrival time, and a lowest acceptable probability of success for the entire journey, our journey planner finds the journey whose departure time is latest among all acceptable options.
+		BIBLIO — SAUVEGARDE :
+			Les trucs à ajouter à ma biblio :
+				Stefan FUNKE
+					https://www.researchgate.net/publication/357617040_Distance_Closures_Unifying_Search-_and_Lookup-based_Shortest_Path_Speedup_Techniques
+						Distance Closures: Unifying Search- and Lookup-based Shortest Path Speedup Techniques
+						unifier les approches search (e.g. CH) et les approches lookup (e.g. hub-labeling)
+						this allows for new and (practically very attractive) space-time tradeoffs for shortest-path computation
+						leur permet d'avoir des résultats sur le planet OSM soit un graphe avec 500M nodes
+					https://www.researchgate.net/publication/353564222_Sublinear_Search_Spaces_for_Shortest_Path_Planning_in_Grid_and_Road_Networks
+						Sublinear Search Spaces for Shortest Path Planning in Grid and Road Networks
+						In this paper, we use the very intuitive notion of bounded growth graphs to describe road networks and also grid graphs. We show that this model suffices to prove sublinear search space
+						Analyse du search-space size théorique pour : CH, transit node, et hub-labels
+					https://www.researchgate.net/publication/351860228_A_Lower_Bound_for_the_Query_Phase_of_Contraction_Hierarchies_and_Hub_Labels_and_a_Provably_Optimal_Instance-Based_Schema
+						A Lower Bound for the Query Phase of Contraction Hierarchies and Hub Labels and a Provably Optimal Instance-Based Schema
+						We prove a Ω(n) lower bound on the query time for contraction hierarchies (CH) as well as hub labels,
+						Précurseur du papier ci-dessus ?
+					https://www.researchgate.net/publication/345609814_Scalable_Unsupervised_Multi-Criteria_Trajectory_Segmentation_and_Driving_Preference_Mining
+						Scalable Unsupervised Multi-Criteria Trajectory Segmentation and Driving Preference Mining
+						Méthode d'analyse de jeux de trajectoires, pour trouver (p.ex.) des choses intéressantes sur les routes, ou bien les préférences d'un utilisateur.
+					https://www.researchgate.net/publication/343909768_Seamless_Interpolation_Between_Contraction_Hierarchies_and_Hub_Labels_for_Fast_and_Space-Efficient_Shortest_Path_Queries_in_Road_Networks
+						Seamless Interpolation Between Contraction Hierarchies and Hub Labels for Fast and Space-Efficient Shortest Path Queries in Road Networks
+						We propose a conceptually simple, yet very effective extension of the highly popular Contraction Hierarchies (CH) speedup technique improving query times for shortest paths in road networks by one order of magnitude with very modest space overhead.
+					https://www.researchgate.net/publication/337255087_Improved_Contraction_Hierarchy_Queries_via_Perfect_Stalling
+						Improved Contraction Hierarchy Queries via Perfect Stalling
+						dérivé de CH, 33% plus rapide que CH (avec un pré-calcul, pas clair s'il y a de l'overhead par rapport à CH)
+					https://www.researchgate.net/publication/336975544_Alternative_Routes_for_Next_Generation_Traffic_Shaping
+						Alternative Routes for Next Generation Traffic Shaping
+						Alternative route computations so far have mostly been considered as producing a small set of reasonable routes for a human driver to select from. In the not too distant future most cars will be self-driving, and choosing from a very large set of alternative routes might become a very effective means for balancing traffic loads on the road network. Therefore, in this paper we consider the problem of finding a large set of reasonable alternative routes.
+					https://www.researchgate.net/publication/332883401_Identifying_Preferred_Areas_in_Road_Networks
+						Identifying Preferred Areas in Road Networks
+						We consider the problem of identifying preferred areas on a map which are characterized by a conjunction of minimum or maximum distance conditions from or to (classes of) points of interest.
+						En gros, on cherche à trouver facilement les endroits d'une carte qui vérifient un set de plusieurs contraintes simultanées (e.g. moins de 15 min d'une crèche, moins de 10 min de courses, moins de 2h des parents, moins de 4h des grands parents)
+					https://www.researchgate.net/publication/330095787_Alternative_Multicriteria_Routes	
+						Alternative Multicriteria Routes
+					https://www.researchgate.net/publication/327637915_Generating_Concise_and_Robust_Driving_Directions
+						Generating Concise and Robust Driving Directions
+						We consider the problem of generating concise and robust driving directions that avoid overly detailed turn-by-turn instructions as long as one is not too close to the final destination.
+						Our approach is based on a deliberate selection of cities as landmarks that are likely to appear on road signs along the route.
+						For a route from Stuttgart to Flensburg, the route description could read "Go towards Frankfurt, then Kassel, then Hanover, then Hamburg". A
+					https://www.researchgate.net/publication/315499814_URAN_A_Unified_Data_Structure_for_Rendering_and_Navigation
+						URAN: A Unified Data Structure for Rendering and Navigation
+						plutôt que d'utiliser CH d'un côté, et mapnik de l'autre, le papier propose un unique jeu de données servant à la fois au routing et à la carto
+					https://www.researchgate.net/publication/312078433_Map_Simplification_with_Topology_Constraints_Exactly_and_in_Practice
+						Map Simplification with Topology Constraints: Exactly and in Practice
+						(c'est un sujet carto, plutôt)
+					https://www.researchgate.net/publication/312426473_Deducing_individual_driving_preferences_for_user-aware_navigation
+						Deducing individual driving preferences for user-aware navigation
+						Analyse des trajets passés de l'utilisateur pour déduire ses préférences.
+					https://www.researchgate.net/publication/300217991_Provable_Efficiency_of_Contraction_Hierarchies_with_Randomized_Preprocessing
+						Provable Efficiency of Contraction Hierarchies with Randomized Preprocessing
+						Analyse théorique des CH.
+					https://www.researchgate.net/publication/282948617_Placement_of_Loading_Stations_for_Electric_Vehicles_No_Detours_Necessary
+						Placement of Loading Stations for Electric Vehicles: No Detours Necessary!
+						we consider the problem of placing as few loading stations as possible so that on any shortest path there are sufficiently many not to run out of energy.
+					https://www.researchgate.net/publication/290119360_Energy-Efficient_Routing_Taking_Speed_into_Account
+						Energy-Efficient Routing: Taking Speed into Account
+						calcul de routes energy-efficient
+						we do not only make use of variation of the routes to save energy but also allow variation of driving speed along the route to achieve energy savings.
+					https://www.researchgate.net/publication/261851619_Sequenced_route_queries_Getting_things_done_on_the_way_back_home
+						Sequenced route queries: Getting things done on the way back home
+						We consider the problem of planning an optimal route (quickest or shortest) that visits facilities of the respective type on the way home
+						En gros, trouver le "plus court chemin qui rentre chez moi qui passe par une banque"
+				Sabine STORANDT
+					https://www.researchgate.net/publication/357618850_Polyline_Simplification_under_the_Local_Fr'echet_Distance_has_Subcubic_Complexity_in_2D
+						Polyline Simplification under the Local Fr\'echet Distance has Subcubic Complexity in 2D
+						simplification de polylines
+					https://www.researchgate.net/publication/357018928_FISSION_Practical_Algorithms_for_Computing_Minimum_Balanced_Node_Separators
+						FISSION: Practical Algorithms for Computing Minimum Balanced Node Separators
+					https://www.researchgate.net/publication/355920589_Barrier-Free_Pedestrian_Routing_with_Contraction_Hierarchies
+						Barrier-Free Pedestrian Routing with Contraction Hierarchies
+						Trouver des chemins qui traversent de l'indoor et de l'outdoor (e.g. aller de chez soi à tel magasin dans un grand centre commercial)
+						Faire ceci, en ne s'intéressant qu'aux trajets accessibles en fauteuil roulant.
+					https://www.researchgate.net/publication/335212094_PATHFINDER_Storage_and_Indexing_of_Massive_Trajectory_Sets
+						PATHFINDER: Storage and Indexing of Massive Trajectory Sets
+					https://www.researchgate.net/publication/328944331_Sensible_edge_weight_rounding_for_realistic_path_planning
+						Sensible edge weight rounding for realistic path planning
+						Comment arrondir les poids des edges d'un graphe (pour minimiser l'espace nécessaire au stockage, ou le coût de leur manipulation) d'une façon intelligente.
+					https://www.researchgate.net/publication/324540575_Region-Aware_Route_Planning
+						Region-Aware Route Planning
+						Faire des trajets d'un point A à un point B en passant par "une région" au milieu
+				Julian DIBBELT
+					https://www.researchgate.net/publication/346089870_Modeling_and_Engineering_Constrained_Shortest_Path_Algorithms_for_Battery_Electric_Vehicles
+						Modeling and Engineering Constrained Shortest Path Algorithms for Battery Electric Vehicles
+						Since battery capacities are limited, fastest routes are often infeasible. Instead, users are interested in fast routes on which the energy consumption does not exceed the battery capacity. For that, drivers can deliberately reduce speed to save energy. Hence, route planning should provide both path and speed recommendations.
+				Daniel DELLING :
+					https://www.researchgate.net/publication/328519301_Traffic-Aware_Routing_in_Road_Networks
+						Traffic-Aware Routing in Road Networks
+						Avoir de meilleures routes qui contournent le traffic (e.g. ne pas passer par des stations services, ou des zones résidentielles, sans non plus les dégager du graphe)
+				Renato WERNECK
+					https://www.researchgate.net/publication/298393314_Accelerating_Local_Search_for_the_Maximum_Independent_Set_Problem
+						Accelerating Local Search for the Maximum Independent Set Problem
+					https://www.researchgate.net/publication/317756946_Finding_near-optimal_independent_sets_at_scale
+						Finding near-optimal independent sets at scale
+				Peter SANDERS
+					https://arxiv.org/abs/2011.02601
+						Fast, Exact and Scalable Dynamic Ridesharing
+						adresse le problème de choisir comment attribuer des chauffeurs de VTC (e.g. uber) à des clients qui en ont besoin
+					https://www.researchgate.net/publication/337878107_Real-time_Traffic_Assignment_Using_Engineered_Customizable_Contraction_Hierarchies
+						Real-time Traffic Assignment Using Engineered Customizable Contraction Hierarchies
+						sert à l'urban planning = connaître l'encombrement d'un réseau routier donné au vu des itinéraires qui vont être effectués dessus
+					https://arxiv.org/abs/1907.03535
+						More Hierarchy in Route Planning Using Edge Hierarchies
+						Plutôt que de créer une hiérarchie de nodes (comme dans les CH), étudie la question de créer une hiérarchie d'edges.
+						Travail encore prospectif : Our findings indicate that this can lead to considerably smaller search spaces in terms of visited edges. Currently, this rarely implies improved query times so that it remains an open question whether edge hierarchies can lead to consistently improved performance.
+				Dominik SCHULTES (et d'autres)
+					https://www.researchgate.net/publication/227728083_Bidirectional_A_Search_on_Time-Dependent_Road_Networks
+						Bidirectional A* Search on Time-Dependent Road Networks
+						article de 2012, mais qui peut s'avérer intéressant :+1:
+				Tobias ZÜNDORF :
+					https://www.researchgate.net/publication/354898825_Robustness_Generalizations_of_the_Shortest_Feasible_Path_Problem_for_Electric_Vehicles
+						Robustness Generalizations of the Shortest Feasible Path Problem for Electric Vehicles
+						Problème adressé = quel sont les chemins qu'on peut faire avec tel niveau de batterie, tout en gardant un peu de marge pour être robuste aux erreurs d'estimation sur la batterie restante, ou sur le temps de trajet.
+				Dorothea WAGNER :
+					https://www.researchgate.net/publication/358088043_An_Axiomatic_Approach_to_Time-Dependent_Shortest_Path_Oracles
+						An Axiomatic Approach to Time-Dependent Shortest Path Oracles
+						we can provide time-dependent distance oracles that provably exhibit subquadratic preprocessing time and space, query time sublinear on the network size or the actual Dijkstra rank of the query at hand, and small stretch factor (approximation error).
+					https://www.researchgate.net/publication/350160090_Nearest-Neighbor_Queries_in_Customizable_Contraction_Hierarchies_and_Applications
+						Nearest-Neighbor Queries in Customizable Contraction Hierarchies and Applications
+						Pas clair quel est le problème adressé...
+					https://www.researchgate.net/publication/350114463_Space-Efficient_Fast_and_Exact_Routing_in_Time-Dependent_Road_Networks
+						Space-Efficient, Fast and Exact Routing in Time-Dependent Road Networks
+						CATCHup = implémentation de TDCH
+						https://github.com/kit-algo/catchup
+						https://github.com/kit-algo/rust_road_router/
+					https://www.researchgate.net/publication/335862773_Faster_and_Better_Nested_Dissection_Orders_for_Customizable_Contraction_Hierarchies
+						Faster and Better Nested Dissection Orders for Customizable Contraction Hierarchies
+				Ben STRASSER
+					https://www.researchgate.net/publication/336868609_A_with_Perfect_Potentials
+						A* with Perfect Potentials
+						Problème adresser = quelle heuristique utiliser pour A* ?
+				Christos ZAROLIAGIS
+					SA PAGE A AJOUTER = https://www.researchgate.net/profile/Christos-Zaroliagis
+					https://www.researchgate.net/publication/355343436_Incentivizing_Truthfulness_in_Crowdsourced_Parking_Ecosystems
+						Incentivizing Truthfulness in Crowdsourced Parking Ecosystems
+						Problème adressé = quand on utilise de l'info crowdsourcée sur la disponibilité des parkings, comment être robuste à son manque de fiabilité ?
+					https://www.researchgate.net/publication/353395576_Time-Dependent_Alternative_Route_Planning_Theory_and_Practice
+						Time-Dependent Alternative Route Planning: Theory and Practice
+						papier récent (juillet 2021)
+				Spyros KONTOGIANNIS
+					SA PAGE À AJOUTER = https://www.researchgate.net/profile/Spyros-Kontogiannis
+					https://www.researchgate.net/publication/340864671_Renewable_Mobility_in_Smart_CitiesTheMOVESMART_Approach
+						Renewable Mobility in Smart Cities:TheMOVESMART Approach
+						MOVESMART = projet européen autour de la mobilité
+				Tim ZEITZ
+					SA PAGE À AJOUTER = https://www.researchgate.net/scientific-contributions/Tim-Zeitz-2134414785
+					https://www.researchgate.net/publication/340805727_Efficient_Route_Planning_with_Temporary_Driving_Bans_Road_Closures_and_Rated_Parking_Areas
+						Efficient Route Planning with Temporary Driving Bans, Road Closures, and Rated Parking Areas
+						We study the problem of planning routes in road networks when certain streets or areas are closed at certain times. For heavy vehicles, such areas may be very large since many European countries impose temporary driving bans during the night or on weekends.
+						In this setting, feasible routes may require waiting at parking areas, and several feasible routes with different trade-offs between waiting and driving detours around closed areas may exist.
+					https://arxiv.org/abs/1910.12526
+						A Fast and Tight Heuristic for A* in Road Networks
+						Utiliser CH pour l'heuristique A* !
+						On garde la possibilité de "customizer" le trajet grâce à A*, mais en continuant à répondre rapidement, grâce à de bons choix d'heusistiques avec CH.
+				AUTEURS INDEPENDANTS :
+					https://drops.dagstuhl.de/opus/volltexte/2021/13785/
+						O'Reach: Even Faster Reachability in Large Graphs
+						Problème addressé = Given a directed graph and two vertices s and t, can s reach t via a path?
+					https://arxiv.org/abs/2102.01540
+						Targeted Branching for the Maximum Independent Set Problem
+						Problème addressé = trouver un maximum independent set
+					https://arxiv.org/abs/2107.00761
+						On the Bike Spreading Problem
+						Problème adressé = comment attribuer les vélos aux stations de sorte que les flux d'usage les répartissent équitablement (pour éviter leur concentration dans certaines zones)
+					https://drops.dagstuhl.de/opus/volltexte/2021/14872/
+						Towards Improved Robustness of Public Transport by a Machine-Learned Oracle
+						Problème adressé = comment évaluer la robustness aux retards de trajets TC.
+						an existing pool of solutions (i.e., public transport plans) can be significantly improved by finding a number of new non-dominated solutions, providing better and different trade-offs between robustness and travel time
+					https://drops.dagstuhl.de/opus/volltexte/2021/14584/
+						Bi-Objective Search with Bi-Directional A*
+					https://dl.acm.org/doi/10.1145/3474717.3483955
+						Most Diverse Near-Shortest Paths
+						Problème adressé = trouver des routes alternatives les plus diverses tout en ne s'écartant trop pas du temps de parcours minimal.
+					https://dl.acm.org/doi/10.1145/3474717.3483652
+						Weighted Stackelberg Algorithms for Road Traffic Optimization
+						Problème addressé = comment guider ses utilisateurs de façon à ne pas dégrader le traffic collectif du réseau, tout en étant suffisamment bons individuellement pour que l'utilisateur continue d'utiliser l'outil.
+					https://dl.acm.org/doi/10.1145/3474717.3483961
+						Robust Routing Using Electrical Flows
+						Problème addressé = calculer des routes alternatives qui soient robustes aux changements des conditions traffic.
+					https://dl.acm.org/doi/abs/10.1145/3474717.3484259
+						Dual-Attention Multi-Scale Graph Convolutional Networks for Highway Accident Delay Time Prediction
+						Problème addressé = essayer de modéliser et prévoir à quel point un accident donné va perturber la circulation.
+					https://dl.acm.org/doi/10.1145/3474717.3484267
+						Tiering in Contraction and Edge Hierarchies for Stochastic Route Planning
+						Problème adressé = Stochastic route planning = route-planning où le poids des edges n'est pas déterministe, mais suit une loi de probabilités.		
+					https://dl.acm.org/doi/10.1145/3474717.3483913
+						Hierarchical Neural Architecture Search for Travel Time Estimation
+						AI pour estimer le travel time des edges
+					https://arxiv.org/pdf/2110.06456.pdf
+						Updating Street Maps using Changes Detected in Satellite Imagery
+						Problème adressé = comment utiliser les images satellites pour mettre à jour les cartes routières.
+					https://dl.acm.org/doi/10.1145/3474717.3484262
+						Online Route Replanning for Scalable System-Optimal Route Planning
+						Semble s'intéresser à la question de retarder son départ pour avoir de meilleures conditions de trajet.
+					https://dl.acm.org/doi/abs/10.1145/3474717.3484253
+						Predicting Road Accident Risk Using Geospatial Data and Machine Learning (Demo Paper)
+				Theodoros CHONDROGIANNIS
+					SA PAGE À AJOUTER = https://www.researchgate.net/profile/Theodoros-Chondrogiannis
+					https://www.researchgate.net/publication/305280942_ParDiSP_A_Partition-Based_Framework_for_Distance_and_Shortest_Path_Queries_on_Road_Networks
+						ParDiSP: A Partition-Based Framework for Distance and Shortest Path Queries on Road Networks
+						Problème adressé = proposer un framework à la foix efficace pour trouver le plus court CHEMIN et la plus courte DISTANCE (alors que traditionnellement, les technos efficaces pour l'un ne sont pas les plus efficaces pour l'autre).
+					https://www.researchgate.net/publication/285235064_Alternative_Routing_k-Shortest_Paths_with_Limited_Overlap
+						Alternative Routing: k-Shortest Paths with Limited Overlap
+						Problème addressé = trouver k routes alternatives, suffisamment différentes de la route optimale.
+					https://www.researchgate.net/publication/339418272_Finding_k-shortest_paths_with_limited_overlap
+						Finding k-shortest paths with limited overlap
+						Problème addressé = trouver k routes alternatives, suffisamment différentes de la route optimale.
+					https://www.researchgate.net/publication/345579081_Finding_The_Most_Preferred_Path
+						Finding The Most Preferred Path
+						Problème addressé = étant donné un utilisateur ayant ses petites habitudes de trajet, comment trouver un PCC sur une requête quelconque, qui trouve le bon compromis entre arriver rapidement et lui faire passer par des chemins connus ?
+						Essentially, the objective of optimal routing is no longer to reach the destination as fast as possible but to travel as much as possible inside the preferred network.
+					https://dl.acm.org/doi/10.1145/3468791.3468844
+						Online Landmark-Based Batch Processing of Shortest Path Queries
+						Problème adressé = mutualiser le travail sur un batch de shortest-path queries, pour y répondre efficacement, sans preprocessing.
+			AUTRE SOURCE à ajouter ::
+				https://www.sciencedirect.com/journal/transportation-research-procedia/vol/62/suppl/C = Transportation Research Procedia
+				https://dl.acm.org/toc/trnps/2020/54/5 = Transportation Science
+			Il y a quelques papiers d'analyse du traffic (donc plutôt destiné à Tomtom) :
+				https://dl.acm.org/doi/abs/10.1145/3474717.3483975
+				https://dl.acm.org/doi/abs/10.1145/3474717.3483650
+			Revu les titres des papiers des principales conférences 2021 :
+				ALENEX 2021 = https://www.siam.org/conferences/cm/program/accepted-papers/alenex21-accepted-papers
+				SEA 2021 = https://sea2021.i3s.unice.fr/node/21.html
+				ATMOS 2021 = http://algo2021.tecnico.ulisboa.pt/ATMOS2021/index.html
+				ESA 2021 = http://algo2021.tecnico.ulisboa.pt/ESA2021/accepted.html
+				SIGSPATIAL 2021 = https://sigspatial2021.sigspatial.org/accepted-papers/
+			Lib pour mesurer à quels points deux graphes sont différents :
+				https://www.researchgate.net/publication/333675235_GEDLIB_A_C_Library_for_Graph_Edit_Distance_Computation
+			Regarder d'un peu plus près ce vieil article de 2010 ?
+				https://www.researchgate.net/publication/221131526_Distributed_Time-Dependent_Contraction_Hierarchies
+				Distributed Time-Dependent Contraction Hierarchies
+			Ce livre est possiblement pas mal :
+				https://www.amazon.fr/Sequential-Parallel-Algorithms-Data-Structures/dp/3030252086
+				Sequential and Parallel Algorithms and Data Structures: The Basic Toolbox Relié – 11 septembre 2019
+				L'un des auteurs est Peter SANDERS
+	PERSO> NOTE : wiki technique waze = https://wazeopedia.waze.com/wiki/USA/Main_Page/Technical_links
+	PERSO> Une info importante de CCH = ils peuvent customizer un graphe Europe (certes, petit : 18M vertices + 42M edges) en moins d'une seconde \o/
+	PERSO> NOTES WCH et CCH (graphes cordaux, notamment) :
+		Un point de vue de CCH sur les contraction hierarchies, qui est intéressant :
+			Many techniques work by adding extra edges called shortcuts to the graph that allow query algorithms to bypass large regions of the graph efficiently
+			Donc en gros, ce qui fait que les CH marchent bien, c'est (entre autres) que les shortcuts "regroupent" plusieurs edges.
+			Un point qui serait intéressant : sur N requêtes sur les CH, regarder le nombre d'edges du PCC (ou bien relaxés) en contracté d'une part, et en expanded d'autre part
+			(l'idée sera de montrer qu'on n'a exploré que 200 edges contractés, mais que ça représentait 2000 edges réels)
+		plus généralement, si je veux vraiment bien comprendre les CH, il me faut un framework pour jouer avec :
+			contracter un graphe
+			mesurer des choses sur le graphe contracté
+			lancer N requêtes d'itinéraires et les inspecter
+			voire lancer TOUTES les requêtes d'itinéraires possible pour (p.ex.) mesurer le nombre moyen de nœuds settled, et voir sa variation en fonction de l'ordering ?
+			etc.
+		NOTE sur la witnessless-contraction, et le lien avec les graphes coraux :
+			Après la contraction de N, ses voisins forment une clique !
+			En effet, à la différence des contractions CH de notre moteur, le graphe est undirected
+			Il n'y a pas de notion de prédécesseur/successeur vu qu'il n'y a pas de directionalité : il n'y a que des "voisins" qui sont tous équivalents.
+			Du coup, dans un graphe undirected, l'équivalent des couples {prédécesseur+successeur} est un couple {voisin1+voisin2} pour CHAQUE voisin
+			Du coup, on ajoutera des edges entre CHAQUE paire de voisin, ce qui formera une clique.
+			(Ceci n'est plus vrai si la contraction est directed et que ça n'est que l'ordering qui est undirected)
+		Je comprends mieux l'apport de WCH :
+			1. Un moyen d'ordonner efficacement les nodes sans métrique (alors que le papier indique bien que sans métrique, l'ordering classique diverge)
+			2. les macro instructions pour accélérer la customization (sinon, c'est trop long)
+			TODO = modifier ma prez CH pour dire qu'on pourrait essayer d'ordonner comme d'habitude (minimiser edge-difference + hierarchy-depth), mais sans tenir compte de la métrique, sauf que ça diverge
+		Note à la lecture du papier cch : je me suis planté sur le critère d'arrêt ?! Cf. Le haut de la page 16
+			Once the radius of one of the two searches is larger than the shortest path found so far, we stop the search because we know that no shorter path can exist.
+			Mon critère  était plutôt qu'on ne pouvait pas arrêter avant que les DEUX radius soient plus large !
+			TODO = regarder ce que fait notre moteur ; EDIT : c'est bien "mon" critère qui est suivi : on ne poursuit pas UNE propagation si elle est moins intéressante que le meilleur chemin jusqu'ici, mais on continue l'autre
+			TODO = regarder ce que fait routing-kit ; EDIT : c'est bien "mon" critère qui est suivi : on n'arrête le Dijkstra que si les DEUX propagations sont vides ou plus chères que le meilleur chemin jusqu'ici.
+		Autre point important : le stall on demand ne marche pas pour CCH, qui a plus d'edges à tester que ch (cf. Page 30)
+			TL:DR : avec CCH, on a ajouté beaucoup plus de shortcuts qu'avec CH (à cause de la witnessless contraction)
+				le stall-on-demand a besoin de tester beaucoup d'edges pour choisir d'arrêter une propagation sur un vertex non-optimal
+				avec CH, il y a peu d'edges, donc le fait d'arrêter la propagation tôt sur certains apporte des gains suffisants pour compenser le fait d'avoir à tester des edges
+				avec CCH, il y a BEAUCOUP d'edges, donc devoir tester tous ces edges pour savoir si on peut stall devient trop coûteux par rapport aux gains apportés par arrêter la propagation tôt
+			As already observed by the original CH authors, we confirm that the stall-on-demand heuristic
+			improves running times by a factor of 2–5 compared to the basic algorithm for “greedy+w”. Interestingly,
+			this is not the case with any variant using a metric-independent order. This can be explained by the
+			density of the search spaces. While, the number of vertices in the search spaces are comparable between
+			metric-independent orders and metric-dependent order, the number of arcs are not comparable and thus
+			metric-independent search spaces are denser. As consequence, we need to test significantly more arcs in
+			the stalling-test, which makes the test more expensive and therefore the additional time spent in the test
+			does not make up for the time economized in the actual search. We thus conclude that stall-on-demand
+			is not useful, when using metric-independent orders.
+		Amélioration de ram = utiliser un meilleur algo de partitioning que metis = InertialFlowCutter (en effet, trouver des séparateurs plus petits conduit à introduire moins de shortcuts)
+			https://github.com/kit-algo/InertialFlowCutter
+			https://arxiv.org/pdf/1906.11811.pdf
+		Les graphes dont tous les séparateurs minimaux sont des cliques sont les graphes cordaux.
+		Un graphe est cordal ssi il possède un perfect elimination ordering = un ordering tel que chaque sous-graphe {v + voisins de v de rank supérieur à v} est une clique.
+			NOTE : après la witnessless contraction d'un graphe suivant un ordering α, le supergraphe formé par {le graphe original + les shortcuts} est chordal
+			et le perfect elimination ordering de ce supergraphe chordal est justement l'ordering α
+			c'est à relier avec les explications sur le papier weak CH : le dernier nœud entre deux séparateurs forme une clique avec les séparateurs qui l'entourent
+			et quand il a été contracté, les deux séparateurs forment une clique également
+		Un papier assez ancien, mais qui explique plein de notions qui me seront utiles :
+			https://technicalreports.ornl.gov/1992/3445603686740.pdf
+			An introduction to chordal graphs and clique trees
+			Le sommaire est alléchant :
+				Chrodal graphs (avec comme sous-section : perfect elimination ordering)
+				Characterization of clique trees
+				Applications, dont Elimination Trees
+		Autre papier qui pourrait être intéressant au sujet des graphes cordaux :
+			https://www.lrde.epita.fr/~adl/ens/theg/theg6.pdf
+		La page wikipedia des graphes cordaux a également des infos intéressantes :
+			https://fr.wikipedia.org/wiki/Graphe_cordal
+			Rose, Lueker et Tarjan 1976 (voir aussi Habib et al. 2000) montrent qu'un ordonnancement d'élimination parfaite d'un graphe cordal peut être trouvé de manière efficace en utilisant un algorithme [LexBFS]
+				LEXBFS = BFS où on départage les égalités de profondeur (le nœud qui gagne est le nœud dont le parent le plus proche de la racine a été visité le premier)
+				https://www.irif.fr/~habib/Documents/cours5-2012.pdf
+			il est [donc] possible de savoir si un graphe est cordal en temps linéaire.
+			Une phrase juste en dessous laisse à entendre qu'il existe PLUSIEURS perfect elimination ordering possibles pour un graphe chordal donné.
+			Une application de l'ordonnancement d'élimination parfaite est la recherche d'une clique maximum d'un graphe cordal en temps polynomial. Le problème similaire, mais pour un graphe quelconque, est NP-complet.
+			Pour lister toutes les cliques maximales d'un graphe cordal, il suffit de trouver un ordonnancement d'élimination parfaite, de créer une clique pour chaque sommet v avec les voisins de v venant après v dans l'ordonnancement d'élimination parfaite, et de tester pour chacune des cliques ainsi formées si est maximale.
+		Notes sur le papier CCH :
+			le core graphe semble être le graphe de contraction (et j'ai pas des masses analysé quand et comment on peut arrêter la contraction early)
+			----------------------------------------
+			dans le papier CCH, l'ordering et la contraction se font sur un graphe undirected
+			du coup, chaque edge a deux poids : dans un sens et dans l'autre (et si l'edge est à sens unique, l'un des poids est infini)
+			le point intéressant, c'est que les poids sont définis par rapport à l'ordering : on a une métrique UPWARD (i.e. les poids des edges dans le sens qui grimpe les ranks) et une métrique DOWNWARD
+			du coup, on peut se contenter de définir le graphe sans métrique en tant que graphe UPWARD uniquement (pas besoin de définir le graphe downward)
+			En effet, le graphe downward est construit en inversant le graphe upward, et en lui appliquant la métrique downard
+		Notes brutes sur une vidéo sur les treewidths :
+			https://www.youtube.com/watch?v=kEnDGTwSDXY
+			Treewidth Definitions || @ CMU || Lecture 22b of CS Theory Toolkit
+			Commencé à visionner ~2021-12-14
+			Treewidth définition Ryan O'Donnell
+			----------------------------------------
+			Tree = ajout récursif de 1 noeud
+			Séries parallèle graphs = ajout récursif de 2 noeuds
+			Graphe de treewidth k = ajout récursif de k noeuds
+			Tw <= k  ssi G a une triangulation dont la clique maximal est inférieure ou égale à k+1
+			Chordal graphs = maximaux pour leur treewidth : si on leur ajoute un edge de plus, on augmente leur treewidth
+			Autres équivalences : g chordal ssi G a une tree décomposition où chaque bag est une clique ssi G a une perfect élimination ordering
+			Perfect élimination ordering : en partant d'un graphe vide, et ajoutant les vertex dans l'ordre, au moment de son ajout, chaque nouveau vertex est adjacent à une k-clique (i.e. à des vertex connectés par une k-clique). Et k est la treewidth du graphe
+			Cops and robber : treewidth <= k ssi k+1 cops peuvent gagner (et la tree Décomposition donne une stratégie gagnante)
+			Treewidth du grid graph= largeur = racine du nombre de nœuds. Ça fait un exemple de graphe simple avec une grande treewidth.
+			Ndm : ce jeu de cops and robbers est pas mal pour comprendre intuitivement la treewidth
+			Théorème : si un graphe a une treewidth t, alors il a pour mineur une grille en T puissance 1/9
+			Autre vidéo qui a l'air très bien : Daniel lokshtanov tree décompositions
+			Ah, les bags ne contiennent pas que les vertices d'edges !
+			En revanche, si on dessine les bags sur le graphe original, ils semblent "connectés"
+			Notation : width
+			Notation : adhesions = l'intersection de deux bags = le recouvrement de deux bags = le set de vertex dans les deux bags (d'où le fait que les bags sont "connectés" quand on les dessine). Chaque adhésion est un edge de T (la tree Décomposition)
+			Notation : torso = le graphe induit par un bag, auquel on ajoute les edges entre les vertex des adhésions de sorte que les adhésions soient des cliques
+		NOTES CH UN PEU VRAC SUITE À DIVERSES LECTURES :
+			Supporting node = le node dont la contraction est responsable du shortcut.
+			Un point important des CH qui contribue au fait que ça aille vite : lors d'une query, tous les nodes de rank inférieur à s ou t n'existent pas (car des shortcuts les remplacent) !
+				et du coup, si on a ranké un node "important" trop bas, on aura dû ajouter beaucoup de shortcuts pour le remplacer, ce qui est inefficace
+			TODO = utiliser des k-heaps pour la priority queue ?
+			Les graphes contractés sont acycliques ! Ce sont donc des "arbres orientés"?
+		NOTES CH :
+			l'intro du papier search-space size in contraction hierarchies a plein de liens intéressants
+			notamment : faire des CHu multicritère permet de réduire le nombre de graphes nécessaires ? (e.g. pour n'avoir qu'un seul graphe avec et sans péage ?)
+		Infographie sur les graphes cordaux :
+			https://kevinbinz.com/2014/10/08/an-inference-trail-to-chordal-graphs/
+			https://kevinbinz.files.wordpress.com/2014/10/ee512-chordal-inference-trail-infographic.png
+		Un PDF intéressant sur les graphes cordaux :
+			(TODO = prendre des notes biblio ?)
+			https://www.researchgate.net/publication/236366775_An_introduction_to_chordal_graphs_and_clique_trees
+				An introduction to chordal graphs and clique trees
+				janvier 1991
+				Jean R. S. Blair
+				Barry W. Peyton
+			note : un truc qui m'avait échappé : si un nœud appartient à une clique, alors il est simplicial (vu que ses voisins sont tous connectés entre eux et forment une clique eux aussi)
+		PERSO> graph theory = nouvelle série de vidéos de théorie des graphes :
+			chaîne = Luke POSTLE
+				https://www.youtube.com/channel/UCxDmW9HWWPRs07ioPqXsfqA
+				il a plusieurs types de vidéos, celles qui m'intéressent sont celles de théorie des graphes = https://www.youtube.com/watch?v=YNHwa7n_dms&list=PL2BdWtDKMS6mplieDd_vls0TBX9Fq2jht
+			celles que j'ai regardées (ou skimmées) :
+				Graph Theory 6-3: Tree Decompositions and Tree Width
+					https://www.youtube.com/watch?v=gCZrasaG0vA&list=PL2BdWtDKMS6mplieDd_vls0TBX9Fq2jht&index=19
+				Graph Theory 2-1: An Informal Proof of Brooks Theorem
+					https://www.youtube.com/watch?v=Mu3gYvKJuwk&list=PL2BdWtDKMS6mplieDd_vls0TBX9Fq2jht&index=5
+				Graph Theory 2-3: Beyond Brooks' Theorem
+					https://www.youtube.com/watch?v=ePNUdA-NBqU&list=PL2BdWtDKMS6mplieDd_vls0TBX9Fq2jht&index=7
+				Graph Theory 1-4: Coloring and Brooks' Theorem.
+					https://www.youtube.com/watch?v=YEzMWEVCx1o
+			notes brutes :
+				Graph labelling = attribuer un label à chaque noeud (éventuellement en respectant une contrainte)
+				Colouring = un labelling particulier.
+				C'est aussi un moyen de "découper" le graphe (e.g. en indépendent sets, les colour classes)
+				Trouver si un graphe est 2-colorable a  un algo polynomial
+				Par contre, à partir de 3, le problème est np complet.
+				Même des approximations sont nos complètes : colorier un graphe, c'est difficile !
+				Upper bound = degmax + 1 = Théorème de Brook
+				Lower bound de chi(g) = Omega (g) = clique Number of g = maximum size of a clique in g (terminologie : stricte sensu, clique désigne uniquement le set de vertex et t pas leur sous graphe induit)
+				C'est logique.
+				Les deux bounds sont identiques pour le graphe complet
+				Les vidéos suivantes prouvent Brooks, et donnent d'encore meilleurs bornes supérieures si on contraint un peu plus le graphe
+	Notes CH à pérenniser = (note pour moi à pérenniser concernant les CH et plus précisément le nd-ordering) :
+		dans mon grid graphe d'exemple, j'ai DEUX séparateurs centraux qui coupent le graphe en deux moitiés égales : un horizontal de 7 nœuds et un vertical de 3 nœuds
+		dans ce cas, le séparateur qui contient le MOINS de nœuds et le plus intéressant
+		en effet, dans ce cas, on répartit les chemins intéressants = ceux qui passent d'une moitié du graphe à une autre en MOINS de nœuds
+		du coup, les nœuds des petits séparateurs "contribuent" individuellement à PLUS de PCC que les nœuds des grands séparateurs
+		(en négligeant le fait que la taille des moitiés identiques change un peu en fonction du nombre de nœud dans le séparateur)
+		et du coup, les PETITS séparateurs doivent être préférés aux grands, même si dans les deux cas, le graphe est coupé en deux moitiés égales
+	Multicriteria CH :
+		https://algo2.iti.kit.edu/download/geisberger_badherrenalb08.pdf
+		point de vue intéressante de Geisberger à la slide 20 = la notion de "hiérarchie" dépend du problème :
+			le problème "trouver la route la plus rapide" est plus hiérarchique que le problème "trouver la route la plus courte"
+			(en effet, les autoroutes, et plus généralement les grands axes qui vont vite, seront naturellement en haut de la hiérarchie)
+			(à l'inverse, si on cherche à minmiser le nombre de kilomètres, rejoindre les grands axes n'est plus systématiquement le plus intéressant)
+			du coup, faire du multi-critère interfère avec la notion même de hiérarchie
+	PERSO> Théorie des graphes et mes questions à ma collègue :
+		Vidéo sur la tree-decomposition : treewidth :
+			https://www.youtube.com/watch?v=gCZrasaG0vA
+		À voir avec ma collègue :
+			mineurs
+			pathwidth / treewidth
+			elimination game
+		Ressources intéressantes :
+			mineurs :
+				https://fr.wikipedia.org/wiki/Graphe_planaire#Caract%C3%A9risation_de_Kuratowski_et_de_Wagner
+				https://fr.wikipedia.org/wiki/Hom%C3%A9omorphisme_de_graphes
+				https://fr.wikipedia.org/wiki/Contraction_d%27ar%C3%AAte
+				https://fr.wikipedia.org/wiki/Th%C3%A9or%C3%A8me_de_Robertson-Seymour
+				https://fr.wikipedia.org/wiki/Mineur_(th%C3%A9orie_des_graphes)
+				https://fr.wikipedia.org/wiki/Isthme_(th%C3%A9orie_des_graphes)   isthme = bridge en anglais
+				https://www.ams.org/journals/bull/2006-43-01/S0273-0979-05-01088-8/S0273-0979-05-01088-8.pdf   <-- graph minor theory
+			décompositions arborescentes :
+				https://www.labri.fr/perso/courcell/CoursMaster/DecsArbosVersLongue.pdf   <-- Décompositions arborescentes
+				https://fr.wikipedia.org/wiki/D%C3%A9composition_arborescente
+				https://fr.wikipedia.org/wiki/Largeur_arborescente
+			autres :
+				https://fr.wikipedia.org/wiki/Liste_des_algorithmes_de_la_th%C3%A9orie_des_graphes
+		Encore un batch de liens wikipedia, en lien avec la treewidth :
+			https://fr.wikipedia.org/wiki/Largeur_arborescente
+				Pour tout graphe H, on note ω(H) l'ordre de la plus grande clique de H. La largeur arborescente d'un graphe G est la plus petite valeur prise par ω(H)-1, parmi toutes les triangulations H de G.
+				Les arbres ont largeur d'arbre 1. La clique de taille n a largeur d'arbre n-1. La grille carrée de taille n a une largeur d'arbre égale à n2.
+				Le concept de décomposition arborescente a un lien très fort avec les graphes triangulés.
+			https://fr.wikipedia.org/wiki/Stable_(th%C3%A9orie_des_graphes)
+				un stable – appelé aussi independent set en anglais – est un ensemble de sommets deux à deux non adjacents.
+			https://fr.wikipedia.org/wiki/Probl%C3%A8me_du_stable_maximum
+				Le [...] maximum independent set problem est un problème d'optimisation qui consiste [...] à trouver un stable de cardinal maximum, c'est-à-dire un sous-ensemble de sommets du graphe, le plus grand possible, tel que les éléments de ce sous-ensemble ne soient pas voisins.
+			https://fr.wikipedia.org/wiki/Invariant#En_th%C3%A9orie_des_graphes
+				On dit qu'un nombre associé à un graphe est un invariant (de graphe), s'il n'est pas modifié par un isomorphisme de graphes. Par exemple, le nombre chromatique est un invariant de graphe.
+			https://fr.wikipedia.org/wiki/Triangulation_de_graphe
+				On travaille sur un graphe non orienté. Un graphe est triangulé si tout cycle de longueur supérieure à 3 admet une corde. On dit aussi qu'il est cordal.
+				La triangulation d'un graphe non triangulé consiste à le rendre triangulé.
+				La triangulation d'un graphe n'est pas unique et la recherche de la triangulation optimale (au sens du nombre d'arêtes ajoutées minimum) est un problème NP-Complet.
+				L'algorithme le plus utilisé pour vérifier si un graphe est triangulé est un parcours en largeur lexicographique (dit Lex-BFS).
+			https://fr.wikipedia.org/wiki/LexBFS
+				semble être un BFS avec des règles spéciales pour résoudre les égalités de profondeur (i.e. pour choisir comment ordonner les nœuds à la même distance de la racine du BFS)
+			https://en.wikipedia.org/wiki/Planar_separator_theorem
+				Théorème intéressant, qui peut s'appliquer aux graphes routiers (qui sont presque planaires)
+				any planar graph can be split into smaller pieces by removing a small number of vertices.
+				Specifically, the removal of O(sqrt(n)) vertices from an n-vertex graph can partition the graph into disjoint subgraphs each of which has at most 2n/3 vertices.
+	BIBLIO CH :
+		Nouveaux articles à étudier sur CH ?
+			Minimum time-dependent travel times with contraction hierarchies (Batz 2013)
+			Time-dependent route planning with generalized objective functions (Batz 2012)
+				http://algo2.iti.kit.edu/download/slides_batz_ESA12.pdf
+				http://algo2.iti.kit.edu/download/gen_obj_func_tch.pdf
+		Résumé de techno utilisées :
+			CH full   = https://algo2.iti.kit.edu/documents/routeplanning/geisberger_dipl.pdf
+			CH short  = http://algo2.iti.kit.edu/schultes/hwy/contract.pdf
+			TCH full  = https://d-nb.info/1072464543/34
+			TCH short = http://algo2.iti.kit.edu/documents/tdch.pdf
+			ATCH      = https://algo2.iti.kit.edu/download/sea10_atch.pdf
+			WCH       = https://i11www.iti.kit.edu/_media/teaching/theses/weak_ch_work-1.pdf
+	NOTES CH À CREUSER :
+		quelque chose n'est pas encore clair avec le stalling... :
+			le coeur du stalling, c'est que le chemin par lequel on rejoint un node n'est pas optimal, qu'on le sait, et qu'on arrête donc la propagation
+			ça, ça va...
+			mais comment se fait-il que le chemin optimal ne soit pas trouvé par la forward-propagation ?
+			en effet, dans la mesure où tout chemin passant par un noeud de rank inférieur est remplacé par un chemin allant vers le prochain noeud de rank supérieur...
+			alors on devrait tout de même pouvoir emprunter le node avec le bon cost ?
+			----------------------------------------
+			il faut que je travaille un peu le sujet pour me convaincre de pourquoi c'est comme ça
+			je sens confusément que c'est lié au fait que la forward propagation ne settle pas tout le search-space -> il doit donc bien y avoir des noeuds non-settled...
+			par ailleurs, peut-être que certes on arrive aux noeuds de rank supérieur, mais que c'est pas ça qui compte ?
+	Un collègue trouve un nouveau papier qui peut être intéressant :
+		https://drops.dagstuhl.de/opus/volltexte/2020/13137/pdf/OASIcs-ATMOS-2020-1.pdf
+		An Efficient Solution for One-To-Many Multi-Modal Journey Planning
+		Combinaison de ULTRA et (R)PHAST
+	PERSO> à mettre quelque part (possiblement, dans mon premier blogpost des CH, qui concernera Dijkstra ?) :
+		NOTATION IMPORTANTE POUR DIJKSTRA, lien entre reached/settled/relaxed :
+			reached = node adjacent à un node settled
+			(un node est reached lorsqu'on a relaxé l'edge entre son node settle et ce node reached)
+			chaque noeud reached est dans la priority-queue, et l'action de settle un node correspond au fait d'extraire le noeud min de la priority-queue
+			du coup, avec ce vocabulaire, le critère d'arrêt du Dijkstra est : "tant qu'il reste des noeuds reached mais pas settled, on continue"
+			autre point de vocabulaire = tentative-distance d'un meeting-node
+			NOTE : faire un slide de vocabulaire sur Dijkstra ?
+		À dire sur la local-search et sur Dijkstra :
+			une autre façon de voir les choses = si le plus court chemin fait 1 km, alors on aura calculé TOUS les plus courts chemins possibles dans un rayon de 1 km
+			... et idem si le plus court chemin fait 500 km, on calcule beaucoup, beaucoup de plus courts chemins plus petits et inutiles
+	Papiers sur les isochrones :
+		https://arxiv.org/pdf/1512.09090.pdf
+		https://i11www.iti.kit.edu/_media/teaching/theses/ma-buchhold-15.pdf
+	Papiers CH intéressants, qui concernent les bornes théoriques et comportements asymptotiques des CH :
+		Lower Bounds and Approximation Algorithms for Search Space Sizes in Contraction Hierarchies
+			https://kops.uni-konstanz.de/bitstream/handle/123456789/50799/Blum_2-7tivdcd91s0c9.pdf?sequence=1
+			ESA 2020
+			Attention : il se concentre sur la LOWER bound (alors que c'est plutôt la UPPER bound qui m'intéresse)
+		A Lower Bound for the Query Phase of Contraction Hierarchies and Hub Labels and a Provably Optimal Instance-Based Schema
+			https://www.mdpi.com/1999-4893/14/6/164
+			2021
+			Ici aussi le papier semble se concentrer sur une LOWER bound.
+		Search Space Size in Contraction Hierarchies
+			https://i11www.iti.kit.edu/_media/teaching/theses/da-columbus-12.pdf  <-- "thèse" (diplomarbeit) de 130 pages, 2012
+			https://www.sciencedirect.com/science/article/pii/S0304397516303176  <-- article 16 pages
+			2016
+			Semble le plus prometteur
+	NOTE TECHNIQUE = La démarche (du papier sur le restricted pareto-set) où on calcule des itis canoniques, et où on n'en dévie que peu est intéressante :
+		si on la généralise, elle permet de répondre à des questions du genre "est-ce que c'est intéressant de gagner 5 minutes de temps d'arrivée contre 5 minutes de voiture de plus"
+		le keypoint est de savoir calculer des itis canoniques
+	NOTES BIBLIO À ÉCLUSER :
+		Ce papier (2002) semble explicitement dédié au 2-hops labeling :
+			Reachability and distance queries via 2-hop labels
+			https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.2127&rep=rep1&type=pdf
+			même si trouver un 2-hop labeling est NP-difficile, leur algo est efficace en pratique, et trouve un 2-hop labeling "presque optimal"
+			presque optimal = la taille du 2-hop labeling trouvé par leur algo est plus grand que la taille optimale d'un facteur qui est au pire logarithmique
+		Ce papier (2015) est la dernière famille de technique pour calculer des itis TC que je n'ai pas encore explorée :
+			https://www.microsoft.com/en-us/research/wp-content/uploads/2015/06/ddpw-ptl-15.pdf
+			Public Transit Labeling
+			S'appuie sur 1. le calcul des 2-hops labels et 2. time-expanded model des timetables
+			Apparemment, en mixant les deux, ça fournit un moyen très rapide de répondre aux requêtes d'itinéraires, avec un peu de preprocessing.
+			résultat = 2 à 3 ordres de grandeur plus rapide que RAPTOR pour répondre aux queries !
+			apparemment, beaucoup plus rapide aussi que TP, malgré un préprocessing plus court d'un ordre de grandeur
+			le preprocessing semble tout de même très important : ~50h sur Londres
+			l'algo utilisé pour calculer les hubs est un algo "boîte-noire" = RXL (du papier Robust Exact Distance Queries on Massive Networks)
+		Ce papier (2014) propose un algo permettant de calculer un 2-hop labeling :
+			https://www.microsoft.com/en-us/research/wp-content/uploads/2014/07/complexTR-rev2.pdf
+			Robust Exact Distance Queries on Massive Networks
+			il est utilisé comme boîte norie par Public Transit Labeling
+		À noter que pour la question du calcul du trajet optimisant le prix, ce papier (2020) est intéressant :
+			https://drops.dagstuhl.de/opus/volltexte/2020/13149/pdf/OASIcs-ATMOS-2020-13.pdf
+			Cheapest Paths in Public Transport: Properties and Algorithms
+			le papier semble s'intéresser aux propriétés des systèmes de tarification, et au lien avec les algos calculant le trajet le moins cher entre deux stops
+			le problème est est rendu compliqué par le fait que les systèmes de tarification sont très divers et très différents les uns des autres
+			(rigolo : la traduction de "à vol d'oiseau" est 'beeline')
+
