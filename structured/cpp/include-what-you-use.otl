@@ -1,0 +1,105 @@
+META :
+	j'avais arrêté de jouer avec IWYU, je passe ces notes sur mon repo public au cas où, mais elles restent en OTL
+
+
+PERSO> TOOLING = IWYU (notes à pérenniser) :
+	https://www.fluentcpp.com/2021/01/01/include-what-you-use/
+	----------------------------------------
+	sudo apt install iwyu
+	CXX=/usr/bin/iwyu make -k -C _build build-ultra-binary-data
+	https://github.com/include-what-you-use/include-what-you-use/blob/master/README.md
+	https://www.incredibuild.com/blog/include-what-you-use-how-to-best-utilize-this-tool-and-avoid-common-issues
+	https://blog.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwyu-cpplint-and-cppcheck/
+	----------------------------------------
+	/usr/bin/iwyu -I/media/DATA/git_projects/ULTRA/_build/_deps/cppgtfs-src/src -I/media/DATA/git_projects/ULTRA/MyCustomUsage/MutualizedPreprocess -I/home/myself/.conan/data/rapidjson/1.1.0/_/_/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include -I/media/DATA/git_projects/ULTRA/MyCustomUsage  -Wall -Wextra -Werror -Wunused-parameter -Wno-unused-parameter -Wno-infinite-recursion -Wno-unused-variable -Wno-sign-compare  -O2 -g -DNDEBUG   -std=gnu++17 -o /tmp/polygon.cpp.o -c /media/DATA/git_projects/ULTRA/MyCustomUsage/MutualizedPreprocess/Graph/polygon.cpp
+		depuis : /media/DATA/git_projects/ULTRA/_build/MutualizedPreprocess/Graph
+	----------------------------------------
+	In file included from /media/DATA/git_projects/ULTRA/MyCustomUsage/MutualizedPreprocess/Graph/polygon.cpp:1:
+	In file included from /usr/bin/../lib/gcc/x86_64-linux-gnu/9/../../../../include/c++/9/iostream:39:
+	In file included from /usr/bin/../lib/gcc/x86_64-linux-gnu/9/../../../../include/c++/9/ostream:38:
+	In file included from /usr/bin/../lib/gcc/x86_64-linux-gnu/9/../../../../include/c++/9/ios:38:
+	In file included from /usr/bin/../lib/gcc/x86_64-linux-gnu/9/../../../../include/c++/9/iosfwd:40:
+	In file included from /usr/bin/../lib/gcc/x86_64-linux-gnu/9/../../../../include/c++/9/bits/postypes.h:40:
+	In file included from /usr/bin/../lib/gcc/x86_64-linux-gnu/9/../../../../include/c++/9/cwchar:44:
+	/usr/include/wchar.h:35:10: fatal error: 'stddef.h' file not found
+	#include <stddef.h>
+			 ^~~~~~~~~~
+		----------------------------------------
+		je recherche l'emplacement de stddef.h :
+			préalablement, je constate que ma version de clang est la 10.0 :
+				clang --version
+			locate stddef.h
+				[...]
+				/usr/lib/llvm-10/lib/clang/10.0.0/include/stddef.h
+				[...]
+		je modifie manuellement la commande iwyu pour inclure le chemin suivant :
+			/usr/lib/llvm-10/lib/clang/10.0.0/include
+		ça donne :
+			/usr/bin/iwyu -I/usr/lib/llvm-10/lib/clang/10.0.0/include -I/media/DATA/git_projects/ULTRA/_build/_deps/cppgtfs-src/src -I/media/DATA/git_projects/ULTRA/MyCustomUsage/MutualizedPreprocess -I/home/myself/.conan/data/rapidjson/1.1.0/_/_/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include -I/media/DATA/git_projects/ULTRA/MyCustomUsage  -Wall -Wextra -Werror -Wunused-parameter -Wno-unused-parameter -Wno-infinite-recursion -Wno-unused-variable -Wno-sign-compare  -O2 -g -DNDEBUG   -std=gnu++17 -o /tmp/polygon.cpp.o -c /media/DATA/git_projects/ULTRA/MyCustomUsage/MutualizedPreprocess/Graph/polygon.cpp
+		et hop, ça corrige mon problème :-)
+		----------------------------------------
+		d'après cette page, l'emplacement des includes est relatif à l'emplacement du binaire clang :
+			https://clang.llvm.org/docs/FAQ.html#i-get-errors-about-some-headers-being-missing-stddef-h-stdarg-h
+		le binaire clang est ici :
+			/usr/lib/llvm-10/bin/clang
+		Du coup, le chemin relatif au répertoire accueillant le binaire sera quelque chose comme :
+			../lib/clang/10.0.0/include/stddef.h
+	----------------------------------------
+	-I/usr/lib/llvm-10/lib/clang/10.0.0/include
+	----------------------------------------
+	Bon, en fait c'est pas clair ce que fait include what you use :
+		est-ce qu'il indique les includes qui manquent et qui font qu'un symbole n'est pas défini ?
+			NON : c'est le boulot du compil
+		du coup, je ne vois que deux choses :
+			1. le fait qu'il indique quand un symbole n'est inclus que transitivement (alors qu'on voudrait l'inclure explicitement)
+			2. le fait qu'il y a des headers qui n'apportent rien
+				c'est surtout ça qui est intéressant : en temps normal, supprimer un header qui n'apporte rien peut être très chiant
+				en effet, ils sont utilisés par transitivité
+				si on suit la règle iwyu, comme chaque fichier qui a besoin d'un symbole l'inclut lui-même, IL NE DÉPEND DE PERSONNE D'AUTRES POUR SES SYMBOLES
+				du coup, on peut supprimer sans risque les headers qui ne servent plus
+	----------------------------------------
+	When every file includes what it uses, then it is possible to edit any file and remove unused headers, without fear of accidentally breaking the upwards dependencies of that file. It also becomes easy to automatically track and update dependencies in the source code.
+	----------------------------------------
+	downside 1 = les includes sont très verbeux
+	downside 2 = bug de iwyu qui fait des include relatifs
+	----------------------------------------
+	Un truc super chiant = iwyu définit des includes relatifs complètement tarabiscotés ; c'est un bug connu
+		https://github.com/include-what-you-use/include-what-you-use/issues/532
+		reste à savoir si le jeu en vaut la chandelle
+	----------------------------------------
+	Intégration à cmake :
+		D'après la doc cmake, je m'attendrais à ce que le build faile s'il y a des warnings iwyu, mais ça n'a pas l'air d'être le cas.
+			https://cmake.org/cmake/help/latest/prop_tgt/LANG_INCLUDE_WHAT_YOU_USE.html
+		Ah, mais en fait, on dirait que ça n'est pas facilement possible :
+			https://stackoverflow.com/questions/60743999/how-treat-include-what-you-use-warnings-as-errors-with-cmake
+		En revanche, je peux définir une target cmake pour le lancer facilement :
+			https://stackoverflow.com/questions/30951492/how-to-use-the-tool-include-what-you-use-together-with-cmake-to-detect-unused-he
+		Il faut que je regarde s'il y a un fixer automatique, si oui, ça permettrait de fixer sans trop de casse.
+			(sinon, ça va être chiant)
+	----------------------------------------
+	se conformer à la politique que iwyu vérifie automatique présente plusieurs intérêts, décrits ici :
+		https://github.com/include-what-you-use/include-what-you-use/blob/master/docs/WhyIWYU.md
+		----------------------------------------
+		compilation plus rapide (si on inclut juste le header dont on a besoin plutôt qu'un header englobant)
+		moins de recompilation (en effet, on n'a plus de fausse dépendance vu qu'on utilise réellement tout ce qu'on inclut)
+		facilité de refacto : quand on n'utilise plus les symboles d'un include, on peut supprimer l'include (sans craindre de supprimer par la même occasion une dépendance transitive)
+		self documentation : si on include quelque chose, on utilise réellement au moins un symbole que lui (et seulement lui) apporte
+		faciliter la suppression de dépendance (vu qu'on peut maintenant visualiser pour de vrai les dépendances)
+		utiliser le forward  declare autant que possible
+	la question de savoir si une translation-unit "utilise" un symbole ou non est complexe :
+		https://github.com/include-what-you-use/include-what-you-use/blob/master/docs/WhatIsAUse.md
+	on peut paramétrer le comportement de IWYU avec des commentaires pragma :
+		https://github.com/include-what-you-use/include-what-you-use/blob/master/docs/IWYUPragmas.md
+	certains symboles peuvent provenir de plusieurs includes, dans ce cas un "mapping" permet de setter en dur comment on veut les inclure :
+		https://github.com/include-what-you-use/include-what-you-use/blob/master/docs/IWYUMappings.md
+	la question de savoir "quoi inclure" ne semble pas facile (et la question de savoir quoi forward-declare non plus) :
+		https://github.com/include-what-you-use/include-what-you-use/blob/master/docs/WhyIWYUIsDifficult.md
+	----------------------------------------
+	Ah, ça c'est bien plus embêtant : à cause de ce bug, il lève un warning et me propose de supprimer/réinclure un fichier :
+		Warning: include-what-you-use reported diagnostics:
+		/media/DATA/git_projects/ULTRA/MyCustomUsage/Preprocess/ultra_transfer_data.h should add these lines:
+		#include "DataStructures/RAPTOR/../Intermediate/../Graph/Graph.h"
+		/media/DATA/git_projects/ULTRA/MyCustomUsage/Preprocess/ultra_transfer_data.h should remove these lines:
+		- #include "DataStructures/RAPTOR/../Graph/Graph.h"
+	Hum, je me demande dans quelle mesure ceci est lié au fait que j'inclus le répertoire parent dans les includes ?
+
