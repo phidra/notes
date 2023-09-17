@@ -1280,4 +1280,5 @@ NOTES VRAC :
 			le papier semble s'intéresser aux propriétés des systèmes de tarification, et au lien avec les algos calculant le trajet le moins cher entre deux stops
 			le problème est est rendu compliqué par le fait que les systèmes de tarification sont très divers et très différents les uns des autres
 			(rigolo : la traduction de "à vol d'oiseau" est 'beeline')
-
+	VRAC SUPPLÉMENTAIRE :
+		Distance oracle = une fonction qui prend un couple de vertex (s,t) en entrée, et qui retourne la distance entre s et t, comme une boîte noire.
