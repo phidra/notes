@@ -119,7 +119,7 @@ Intéressant historique ; le keypoint est la dernière phrase : _Database is the
 > - Symmetry: All the adapters, both driver and driven, depends on the hexagon. The application is technology agnostic in both sides.
 > - Asymmetry: Configurable Dependency implementation is different for each side. In the driver side, the application doesn’t know about which adapter is driving it. But in the driven side, the application must know which driven adapter it must talk to.
 
-^ autre intéressant point de vue : selon ce qui nous intéresse (concept derrière l'archi, ou implémentation concrète), l'archi hexagonale est à la fois symétriques et asymétrique.
+^ autre intéressant point de vue : selon ce qui nous intéresse (concept derrière l'archi, ou implémentation concrète), l'archi hexagonale est à la fois symétrique et asymétrique.
 
 ### misconceptions
 
@@ -127,7 +127,7 @@ Derrière, il y a un chapitre intéressant sur les misconceptions :
 
 - il n'y a pas de layers qui s'empilent, juste l'hexagone et le monde extérieur
 - la forme de l'hexagone est juste pratique à dessiner, mais n'a aucune importance réelle, ça pourrait être un carré ou un octogone
-- les ports doivent être dans l'heaxgone (ils sont l'interface de l'hexagone, sa frontière)
+- les ports doivent être dans l'hexagone (ils sont l'interface de l'hexagone, sa frontière)
 
 ### pros/cons
 
@@ -148,7 +148,7 @@ Cons :
 - indirections + conversions :
     > Decoupling application from technology through ports and adapters adds indirection, i.e. extra calls to methods when an adapter converts between port and specific technology interfaces. Besides that, a mapping between application and ouside world objects, may be needed.
 
-Quand il parle du testing, il donne une définition des tests de Nat PRYCE (et depuis mes déboires sur le testing, je suis vigilant sur ce sujet !) :
+Quand il parle du testing, il donne une définition des tests de Nat PRYCE (et depuis mes déboires sur le testing, je suis vigilant sur ce sujet de précision de la nomenclature !) :
 
 > - Unit Tests: For testing single objects inside the hexagon.
 > - Integration Tests: For testing adapters. They ensure that translation between ports and the outside world is done by the adapters correctly.
@@ -266,7 +266,7 @@ NDM : un gros point un peu irréaliste de cet exemple, est que le fonctionnel es
 
 Ce qui est intéressant, c'est qu'à partir des specs de l'application, il montre sa réflexion pour définir ses use cases puis définir l'API du port correspondant en java.
 
-Derrière, il y a un laïus sur les liens entre l'archi hexagonale et une autre méthode de design pat Cockburn, appelée "usecases".
+Derrière, il y a un laïus sur les liens entre l'archi hexagonale et une autre méthode de design par Cockburn, appelée "usecases".
 
 > In hexagonal architecture, interactions link driver actor goals with application responsabilities. The operations that the application offer at a driver port are application responsabilities related to the purpose of the port.
 >
