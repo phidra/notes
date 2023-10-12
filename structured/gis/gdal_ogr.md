@@ -1,15 +1,23 @@
 Contexte = janvier 2022, j'essaye de charger des données `.osm.pbf` dans qgis, ce qui m'amène à m'intéresser à GDAL/OGR.
 
+Contexte bis = septembre 2023, j'essaye de convertir un fichier CSV qui contient des géométries au format WKT en base spatialite.
+
 * [Commandes utiles](#commandes-utiles)
+   * [OSM](#osm)
+   * [conversion CSV vers Spatialite](#conversion-csv-vers-spatialite)
 * [C'est quoi GDAL ? OGR ?](#cest-quoi-gdal--ogr-)
 * [Utilisation](#utilisation)
 * [Configuration](#configuration)
-   * [Fichier osmconf.ini](#fichier-osmconfini)
    * [Chargement des tags OSM](#chargement-des-tags-osm)
    * [Custom indexing](#custom-indexing)
    * [OSM_MAX_TMPFILE_SIZE](#osm_max_tmpfile_size)
+* [Conversion d'un CSV en base spatialite](#conversion-dun-csv-en-base-spatialite)
+   * [SPATIALITE=yes](#spatialiteyes)
+   * [Gestion du SRS](#gestion-du-srs)
 
 # Commandes utiles
+
+## OSM
 
 - trouver une way particulière à partir de son `osm_id` (en l'occurence [la way d'id 176577460](https://www.openstreetmap.org/way/176577460)) :
     ```sh
@@ -26,6 +34,25 @@ Contexte = janvier 2022, j'essaye de charger des données `.osm.pbf` dans qgis, 
 - limiter l'import à une bbox (fonctionne pour `ogrinfo` et `ogr2ogr`, `-spat xmin ymin xmax ymax`) :
     ```sh
     ogrinfo -ro -spat 7.4143945 43.7285819 7.4155760 43.7289873 /tmp/monaco.osm.pbf lines
+    ```
+
+## conversion CSV vers Spatialite
+
+(cf. mes POCs sur le sujet)
+
+À partir d'un CSV contenant une colonne géométrique `geom` :
+
+- vérifier qu'on peut lire le CSV et sa colonne géométrique :
+    ```sh
+    ogrinfo -ro -al input.csv -oo GEOM_POSSIBLE_NAMES=geom -oo KEEP_GEOM_COLUMNS=NO
+    ```
+- convertir le CSV en geojson sur stdout :
+    ```sh
+    ogr2ogr -f GeoJSON /vsistdout/  -oo GEOM_POSSIBLE_NAMES=geom -oo KEEP_GEOM_COLUMNS=NO input.csv
+    ```
+- convertir le CSV en base spatialite :
+    ```sh
+    ogr2ogr -dsco SPATIALITE=yes -f SQLite out.db  -oo GEOM_POSSIBLE_NAMES=geom -oo KEEP_GEOM_COLUMNS=NO input.csv
     ```
 
 # C'est quoi GDAL ? OGR ?
@@ -203,3 +230,71 @@ Ceci peut être un paramètre intéressant à tuner pour optimiser (et éviter d
 > If that database remains under 100 MB it will reside in RAM. \
 > [...] \
 > The 100 MB default threshold can be adjusted with the OSM_MAX_TMPFILE_SIZE configuration option (value in MB).
+
+# Conversion d'un CSV en base spatialite
+
+cf. mes POCs sur le sujet et les docs des drivers GDAL :
+
+- https://gdal.org/drivers/vector/csv.html
+- https://gdal.org/drivers/vector/sqlite.html
+- https://gdal.org/drivers/vector/geojson.html
+
+Quelques notes vrac :
+
+- création automatique des infos srid etc. (c'est logique, GDAL OGR est un tool géographique avant tout)
+- tous les champs sont du varchar (y compris les champs entiers)
+- un champ `ogc_fid` de type `primary key autoincrement` est créé même s'il n'est pas présent dans le CSV
+- une colonne géométrique `GEOMETRY` est crée
+
+## SPATIALITE=yes
+
+Selon qu'on passe `SPATIALITE=yes` ou non (c'est une option du [driver sqlite](https://gdal.org/drivers/vector/sqlite.html)), ogr2ogr ajoute ou non plein de tables, index, et views à la base SQL créée :
+
+```sh
+ogr2ogr -dsco SPATIALITE=yes -f SQLite /tmp/out.sql /tmp/input.csv
+```
+
+Avec `SPATIALITE=yes` :
+
+```sh
+ogrinfo out.sql --debug on
+
+# SQLITE: SpatiaLite v4 DB found !
+# GDAL: GDALOpen(out.sql, this=0x55d90191b110) succeeds as SQLite.
+# INFO: Open of `out.sql'
+#       using driver `SQLite' successful.
+# OGR: GetLayerCount() = 1
+# SQLITE: Loading statistics for input,GEOMETRY
+# SQLITE: Layer input feature count : 2
+# SQLITE: Layer input extent : 0.0,0.0,9.0,9.0
+# 1: input
+# GDAL: GDALClose(out.sql, this=0x55d90191b110)
+# GDAL: In GDALDestroy - unloading GDAL shared library.
+```
+
+Sans `SPATIALITE=yes` :
+
+```sh
+ogrinfo nospatialite.sql --debug on
+
+# SQLITE: OGR style SQLite DB found !
+# GDAL: GDALOpen(nospatialite.sql, this=0x55c5ff87e110) succeeds as SQLite.
+# INFO: Open of `nospatialite.sql'
+# 	  using driver `SQLite' successful.
+# OGR: GetLayerCount() = 1
+# 1: input
+# GDAL: GDALClose(nospatialite.sql, this=0x55c5ff87e110)
+# GDAL: In GDALDestroy - unloading GDAL shared library.
+```
+
+## Gestion du SRS
+
+cf. man ogr2ogr
+
+```
+-a_srs srs_def: Assign an output SRS
+-t_srs srs_def: Reproject/transform to this SRS on output
+-s_srs srs_def: Override source SRS
+```
+
+> Srs_def can be a full WKT definition (hard to escape properly), or a well known definition (i.e. EPSG:4326) or a file with a WKT definition.
