@@ -11,9 +11,11 @@ Ici, j'ai l'intention de regrouper des notes qui concerne des sujets **transvers
 
 En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets tout dans le présent fichier.
 
+
 * [Quotes](#quotes)
 * [Gestion des erreurs](#gestion-des-erreurs)
    * [Recoverable vs. irrecoverable](#recoverable-vs-irrecoverable)
+   * [Erreurs "normales"](#erreurs-normales)
 * [Architecture](#architecture)
    * [Interfaces](#interfaces)
    * [Dependency Injection](#dependency-injection)
@@ -21,8 +23,6 @@ En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets t
 * [Coding guidelines](#coding-guidelines)
    * [Calculs vs. actions](#calculs-vs-actions)
 * [Conduite du changement](#conduite-du-changement)
-
-
 
 
 # Quotes
@@ -35,6 +35,8 @@ Pour créer de l'impact, il faut travailler sur les bons sujets, or la principal
 
 On the topic of comments, I like to say never send a comment to do a name's job, and never send a name to do a comment's job. ([source](https://dev.to/nadaelokaily/don-t-comment-your-code-5e9h)
 
+Some people, when confronted with a problem, think, “I know, I’ll use threads,” and then two they hav erpoblesms. (Net BATCHELDER ; [source](https://bitbashing.io/async-rust.html#fnref:2))
+
 
 # Gestion des erreurs
 
@@ -44,6 +46,12 @@ Au sujet des exceptions ([source](https://quuxplusone.github.io/blog/2022/12/14/
 
 > A use-after-free is definitely a logic bug in the program, not a runtime condition that can be “handled” by a catch handler.
 > So rather than throw an exception, we’d really prefer to assert-fail as soon as possible, get a coredump, and go fix the bug.
+
+## Erreurs "normales"
+
+Notion proche de ce qui précède ([source](https://medium.com/@mattklein123/crash-early-and-crash-often-for-more-reliable-software-597738dd21c5)) :
+
+> The only error checking a program needs are for errors that can actually happen during normal control flow.
 
 
 # Architecture
