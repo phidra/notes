@@ -6,6 +6,8 @@ De ce que j'en comprends, ça permet des optimisations lorsqu'on bosse avec des 
 
 Par exemple, si on doit travailler sur un subset de colonnes, ça permet d'ignorer le reste des colonnes, et donc des portions entières du fichier ; alors que dans un format orienté ligne, même si une unique colonne nous intéresse, il faut "toucher" à chaque ligne.
 
+(tools parquet = [lien1](https://github.com/hangxie/parquet-tools), [lien2](https://github.com/ktrueda/parquet-tools))
+
 # Geoparquet
 
 https://geoparquet.org/
