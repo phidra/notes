@@ -5,7 +5,7 @@
 - **auteur** = [Jesse DUFFIELD](https://jesseduffield.com/about/) = dev australien, auteur de lazygit ; on dirait que j'aime bien son approche
 - **date de publication** = 2022-03-05
 - **source** = [son blog](https://jesseduffield.com/)
-- **tags** = language>agnotic ; topic>testing ; level>intermediate
+- **tags** = language>agnostic ; topic>testing ; level>intermediate
 
 
 **TL;DR** : Faut-il tester les méthodes privées ? Un article un peu long, mais très bien écrit, avec un point de vue agréablement nuancé qui me parle énormément, et plein de trucs utiles.
