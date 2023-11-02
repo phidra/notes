@@ -25,6 +25,10 @@ En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets t
 * [Conduite du changement](#conduite-du-changement)
 * [Testing](#testing)
    * [Faut-il tester des membres privés ?](#faut-il-tester-des-membres-privés-)
+      * [Points de vue nuancés](#points-de-vue-nuancés)
+      * [Points de vue en défaveur du testing de trucs privés](#points-de-vue-en-défaveur-du-testing-de-trucs-privés)
+      * [Arguments pour tester des trucs privés](#arguments-pour-tester-des-trucs-privés)
+
 
 
 # Quotes
@@ -126,7 +130,9 @@ Mon avis à moi = j'aime le point de vue de Jesse DUFFIELD ci-dessous.
 
 Sans aller jusqu'à parler de consensus, beaucoup de gens pensent que tester des fonctions privées est plutôt un code-smell. Pour ma part, je me retrouve plutôt dans les quelques avis nuancés que je croise (lorsqu'ils sont bien argumentés).
 
-Du coup, je les mets en premier :
+Du coup, je les mets en premier.
+
+### Points de vue nuancés
 
 https://jesseduffield.com/Testing-Private-Methods/
 
@@ -168,6 +174,19 @@ C'est pour les mêmes raisons qu'on déconseille de tester les méthodes privée
 
 ----
 
+https://github.com/google/googletest/blob/main/docs/advanced.md#testing-private-code
+
+> If you change your software's internal implementation, your tests should not break as long as the change is not observable by users. Therefore, per the black-box testing principle, most of the time you should test your code through its public interfaces.
+>
+> If you still find yourself needing to test internal implementation code, consider if there's a better design. The desire to test internal implementation is often a sign that the class is doing too much. Consider extracting an implementation class, and testing it. Then use that implementation class in the original class.
+>
+> If you absolutely have to test non-public interface code though, you can
+
+^ googletest déconseille (sans proscrire) de tester des trucs privés, mais fournit de quoi le faire en cas de besoin.
+
+### Points de vue en défaveur du testing de trucs privés
+
+
 https://stackoverflow.com/questions/3676664/unit-testing-of-private-methods-in-c/3676724#3676724
 
 > I don't think unit test cases would be required for private methods.
@@ -193,9 +212,7 @@ https://stackoverflow.com/questions/8997029/i-want-to-test-a-private-method-is-t
 - on teste des fonctionnalités plutôt que du code
 - quand le test d'une fonctionnalité privé pète, est-ce que c'est 1. problématique parce qu'on a introduit une régression, ou 2. pas grave car le comportement public n'a pas été modifié ?
 
-----
-
-On retrouve aussi des arguments allant dans le sens du testing des méthodes privées :
+### Arguments pour tester des trucs privés
 
 https://www.codeproject.com/Tips/5249547/How-to-Unit-Test-a-Private-Function-in-Cplusplus
 
@@ -208,5 +225,4 @@ Autre argument : certaines fonctions "utilitaires" sont beaucoup, beaucoup, beau
 - par exemple, une fonction privée de conversion de format, ou de gestion du datetime (e.g. prise en compte de l'heure d'été), et une fonction publique qui reçoit une requête et fabrique une réponse dont l'un des champs est le datetime ou le format...
 - si on voulait tester tous les edge-cases de conversion par la fonction publique, il faudrait systématiquement wrapper ce qu'on veut tester dans un cycle requête->réponse, alors qu'on ne veut que tester la conversion...
 - (certes, on pourrait argumenter qu'une telle fonction gagnerait à être publique plutôt que privée, mais ça reste une bonne illustration)
-
 
