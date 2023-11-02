@@ -23,6 +23,8 @@ En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets t
 * [Coding guidelines](#coding-guidelines)
    * [Calculs vs. actions](#calculs-vs-actions)
 * [Conduite du changement](#conduite-du-changement)
+* [Testing](#testing)
+   * [Faut-il tester des membres privés ?](#faut-il-tester-des-membres-privés-)
 
 
 # Quotes
@@ -114,3 +116,97 @@ Si je généralise : quand quelque chose est pourri, au lieu de ne voir que deux
 ... il faut essayer de trouver un état intermédiaire permettant d'introduire des changements dans le bon sens, sans tout refaire.
 
 J'ajoute que l'état intermédiaire est "pérenne" (au moins autant que l'état pourri = c'est améliorable, mais on peut vivre longtemps avec si on ne veut pas investir plus de billes pour le corriger).
+
+# Testing
+
+## Faut-il tester des membres privés ?
+
+
+Mon avis à moi = j'aime le point de vue de Jesse DUFFIELD ci-dessous.
+
+Sans aller jusqu'à parler de consensus, beaucoup de gens pensent que tester des fonctions privées est plutôt un code-smell. Pour ma part, je me retrouve plutôt dans les quelques avis nuancés que je croise (lorsqu'ils sont bien argumentés).
+
+Du coup, je les mets en premier :
+
+https://jesseduffield.com/Testing-Private-Methods/
+
+Très très bon article sur le sujet, un peu long, mais très bien écrit, avec un point de vue agréablement nuancé qui me parle énormément, et plein de trucs utiles. Je l'ai annoté ([lien](../../2023-10-21-no-consensus-on-testing-private-methods.md)), je duplique ici mon takeway = il faut rester pragmatique :
+
+- essayer de designer ses APIs publiques de façon frugale, en y mettant le strict minimum nécessaire pour effectuer le métier
+- si on se retrouve à vouloir tester une méthode privée, c'est peut-être le un avertissement d'un mauvais design : ne faudrait-il pas sortir la méthode privée dans une classe à part ?
+- si la réponse _indépendamment de notre problématique de testing_ est oui, on corrige le design, ce qui règle en passant notre problème de testing
+- si la réponse est non, alors on s'autorise à tester la méthode privée
+
+----
+
+https://stackoverflow.com/questions/8997029/i-want-to-test-a-private-method-is-there-something-wrong-with-my-design/8997128#8997128
+
+^ très bon point de vue, bien rédigé ; morceaux choisis :
+
+> Your class's API is flexible enough, but underneath the public methods it has some pretty complicated private methods going on underneath.
+>
+> [this] is the case where it's OK to test private methods. There are various tricks for that. For production code, these are better than exposing your method to the API user (making it public) just so you can test it. Or splitting related functionality into 2 classes just so you can test it.
+
+^ les méthodes privées peuvent valoir la peine d'être testées ; quand ça arrive, c'est une mauvaise idée que de rendre publique la méthode juste pour la tester, car ça pollue l'API publique ; mieux vaut trouver une façon de les tester sans polluer l'API publique de la classe.
+
+
+> Instead of thinking in terms of "code smells", which is imprecise and subjective, you can think in terms of information hiding.
+
+^ préférer réfléchir en terme de information hiding plutôt que code-smell.
+
+> Design decisions that are likely to change should not be exposed in your public API. Preferably, design decisions that are likely to change should not be exposed to your unit tests either -- that's why people recommend against testing private methods.
+
+^ les design decisions susceptibles de changer ne devraient pas être exposées dans l'API publique (car ça complique alors leurs futures modifications).
+
+C'est pour les mêmes raisons qu'on déconseille de tester les méthodes privées.
+
+> But if you really think it's important to unit-test your private method, and if you can't do it adequately via the public methods, then don't sacrifice the correctness of your code! Test the private method.
+>
+> Worst case is your test code is messier, and you have to rewrite the tests when the private method changes.
+
+^ son conseil = rester pragmatique plutôt que dogmatique : si on considère qu'il faut tester une méthode privée, le faire !
+
+----
+
+https://stackoverflow.com/questions/3676664/unit-testing-of-private-methods-in-c/3676724#3676724
+
+> I don't think unit test cases would be required for private methods.
+>
+> If a method is private it can used only within that class. If you have tested all the public methods using this private method then there is no need to test this separately since it was used only in those many ways.
+
+----
+
+https://www.codeproject.com/Tips/5249547/How-to-Unit-Test-a-Private-Function-in-Cplusplus
+
+> One way of thinking here is that only the public interfaces need to be tested, since the private ones are only used by the public functions of the class, so if someone is using our class from outside, she/he only uses the public interfaces and doesn’t have knowledge about the private ones.
+
+----
+
+https://stackoverflow.com/questions/8997029/i-want-to-test-a-private-method-is-there-something-wrong-with-my-design/8997062#8997062
+
+> If it's private, it can't be considered part of your application's API, so testing it is indeed a code smell - when the test breaks, is that OK or not?
+>
+> Unit tests are supposed to be functionality oriented, not code oriented. You test units of functionality, not units of code.
+
+^ deux choses intéressantes ici :
+
+- on teste des fonctionnalités plutôt que du code
+- quand le test d'une fonctionnalité privé pète, est-ce que c'est 1. problématique parce qu'on a introduit une régression, ou 2. pas grave car le comportement public n'a pas été modifié ?
+
+----
+
+On retrouve aussi des arguments allant dans le sens du testing des méthodes privées :
+
+https://www.codeproject.com/Tips/5249547/How-to-Unit-Test-a-Private-Function-in-Cplusplus
+
+> On the other hand, one important KPI is the code coverage and to reach 100% code coverage, the easiest way is to test the private functions separately. In some cases, the private functions are really complex and it is difficult to test all the corner cases through the public functions.
+
+----
+
+Autre argument : certaines fonctions "utilitaires" sont beaucoup, beaucoup, beaucoup plus simples à tester unitairement que via leur utilisation dans une fonction publique.
+
+- par exemple, une fonction privée de conversion de format, ou de gestion du datetime (e.g. prise en compte de l'heure d'été), et une fonction publique qui reçoit une requête et fabrique une réponse dont l'un des champs est le datetime ou le format...
+- si on voulait tester tous les edge-cases de conversion par la fonction publique, il faudrait systématiquement wrapper ce qu'on veut tester dans un cycle requête->réponse, alors qu'on ne veut que tester la conversion...
+- (certes, on pourrait argumenter qu'une telle fonction gagnerait à être publique plutôt que privée, mais ça reste une bonne illustration)
+
+

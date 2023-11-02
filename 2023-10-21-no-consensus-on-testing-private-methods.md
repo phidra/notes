@@ -14,7 +14,7 @@ Son conseil en takeaway, c'est qu'il faut rester pragmatique :
 
 - essayer de designer ses APIs publiques de façon frugale, en y mettant le strict minimum nécessaire pour effectuer le métier
 - si on se retrouve à vouloir tester une méthode privée, c'est peut-être le un avertissement d'un mauvais design : ne faudrait-il pas sortir la méthode privée dans une classe à part ?
-- si la réponse est oui _indépendamment de notre problématique de testing_, on corrige le design, ce qui règle en passant notre problème de testing
+- si _indépendamment de notre problématique de testing_ la réponse est oui, on corrige le design, ce qui règle en passant notre problème de testing
 - si la réponse est non, alors on s'autorise à tester la méthode privée
 
 ----
