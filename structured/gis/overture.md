@@ -17,6 +17,25 @@
    * [admins](#admins)
       * [administrative boundary](#administrative-boundary)
       * [locality](#locality)
+* [Analyse avec duckdb](#analyse-avec-duckdb)
+   * [En résumé](#en-résumé)
+   * [Commun à tous les thèmes](#commun-à-tous-les-thèmes)
+   * [transportation](#transportation-1)
+      * [Volume des données](#volume-des-données)
+      * [Source des données](#source-des-données)
+      * [Schéma et samples de lignes](#schéma-et-samples-de-lignes)
+   * [admin](#admin)
+      * [Volume des données](#volume-des-données-1)
+      * [Source des données](#source-des-données-1)
+      * [Schéma et samples de lignes](#schéma-et-samples-de-lignes-1)
+   * [places](#places-1)
+      * [Volume des données](#volume-des-données-2)
+      * [Source des données](#source-des-données-2)
+      * [Schéma et samples de lignes](#schéma-et-samples-de-lignes-2)
+   * [buildings](#buildings-1)
+      * [Volume des données](#volume-des-données-3)
+      * [Source des données](#source-des-données-3)
+      * [Schéma et samples de lignes](#schéma-et-samples-de-lignes-3)
 
 
 # C'est quoi, ça apporte quoi ?
@@ -29,7 +48,7 @@ On retrouve des grands noms dans les membres du comité : Tomtom, tous les GAFAM
 
 Mon avis (à froid) :
 
-- pour un graphe routable, peu de valeur ajoutée par rapport à OSM, vu que toute la data est justement issue d'OSM pour le moment (ça pourrait changer dans le futur)
+- pour un graphe routable, peu de valeur ajoutée par rapport à OSM, vu que toute la data est justement issue d'OSM pour le moment = septembre 2023 (ça pourrait changer dans le futur)
 - possible intérêt sur le fait que la donnée est "raffinée" (cf. daylight)
 - possible intérêt sur le fait que la donnée suit un schéma connu (par rapport à la data OSM brute dont les tags sont un joyeux foutoir)
 - intérêt probable sur l'agrégation d'autres sources de données qu'OSM, notamment sur les POIs (qui semblent être l'un des points noirs d'OSM)
@@ -331,3 +350,477 @@ Et un autre champ `type` décrit la locality qui peut être `["country","county"
 
 Les `administrativeLocality` contiennent des propriétés en plus, notamment `adminLevel` pour positionner la localité dans la hiérarchie (est-ce une région ? un département ? une commune ?)
 
+
+# Analyse avec duckdb
+
+## En résumé
+
+**transportation** : toute la donnée transportation provient d'OSM, il y a 294 millions de sections, et 330 millions de connectors (soit 624 millions d'objets dans le graphe en tout !)
+
+**admin** : on a 99k admins, avec une écrasante majorité de frontières administratives et quelques localities... On dirait que les sources principales sont Tomtom et ESRI.
+
+**buildings** : il y a 785 millions de buildings, et à part quelques sources locales à certaines grandes villes, on est sur le triplet :
+
+- ESRI
+- OSM
+- Microsoft ML Buildings
+
+**places** : 59 millions de POIs, de sources variées (certains POIs ont 175 sources !), et notamment :
+
+- des POI msft (que je suppose être microsoft)
+- des POI meta (que je suppose être facebook)
+
+## Commun à tous les thèmes
+
+L'analyse ci-dessous est faite en septembre 2023.
+
+Comme overture agrège des données de plusieurs sources différentes, chaque feature est associée à sa source.
+
+Je n'indique que les requêtes à destination des fichiers sur AWS, mais pour analyser la data téléchargée en local, il suffit de passer le chemin vers les fichiers locaux :
+
+```sql
+SELECT DISTINCT len(sources) FROM read_parquet("/path/to/OVERTURE/places/*/*");
+```
+
+## transportation
+
+### Volume des données
+
+624 millions d'objets (!)
+
+294 millions de sections, et 330 millions de connectors.
+
+```sql
+SELECT COUNT(*) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=transportation/*/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ count_star() │
+-- │    int64     │
+-- ├──────────────┤
+-- │    624933749 │
+-- └──────────────┘
+
+SELECT COUNT(*) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=transportation/type=segment/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ count_star() │
+-- │    int64     │
+-- ├──────────────┤
+-- │    294327662 │
+-- └──────────────┘
+
+SELECT COUNT(*) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=transportation/type=connector/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ count_star() │
+-- │    int64     │
+-- ├──────────────┤
+-- │    330606087 │
+-- └──────────────┘
+```
+
+### Source des données
+
+TL;DR = toute la donnée transportation provient d'OSM.
+
+Connaître le nombre de sources pour la donnée transportation :
+
+```sql
+SELECT DISTINCT len(sources) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=transportation/*/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ len(sources) │
+-- │    int64     │
+-- ├──────────────┤
+-- │            1 │
+-- └──────────────┘
+```
+
+^ toute la donnée transportation (aussi bien segment que connector) a une seule source de données ; une deuxième requête montre que tout vient d'OSM :
+
+```sql
+SELECT DISTINCT sources[1]['dataset'] FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=transportation/*/*', filename=true, hive_partitioning=1);
+-- ┌───────────────────────┐
+-- │ sources[1]['dataset'] │
+-- │       varchar[]       │
+-- ├───────────────────────┤
+-- │ [OpenStreetMap]       │
+-- └───────────────────────┘
+```
+
+### Schéma et samples de lignes
+
+Analyse des schémas overture + 5 premières lignes :
+
+```sql
+DESCRIBE SELECT * FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=transportation/*/*', filename=true, hive_partitioning=1);
+-- ┌─────────────┬────────────────────────────────────────────────────────────┬─────────┬─────────┬─────────┬─────────┐
+-- │ column_name │                        column_type                         │  null   │   key   │ default │  extra  │
+-- │   varchar   │                          varchar                           │ varchar │ varchar │ varchar │ varchar │
+-- ├─────────────┼────────────────────────────────────────────────────────────┼─────────┼─────────┼─────────┼─────────┤
+-- │ id          │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ updatetime  │ TIMESTAMP                                                  │ YES     │         │         │         │
+-- │ version     │ INTEGER                                                    │ YES     │         │         │         │
+-- │ level       │ INTEGER                                                    │ YES     │         │         │         │
+-- │ subtype     │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ connectors  │ VARCHAR[]                                                  │ YES     │         │         │         │
+-- │ road        │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ sources     │ MAP(VARCHAR, VARCHAR)[]                                    │ YES     │         │         │         │
+-- │ bbox        │ STRUCT(minx DOUBLE, maxx DOUBLE, miny DOUBLE, maxy DOUBLE) │ YES     │         │         │         │
+-- │ geometry    │ BLOB                                                       │ YES     │         │         │         │
+-- │ filename    │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ theme       │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ type        │ VARCHAR                                                    │ YES     │         │         │         │
+-- ├─────────────┴────────────────────────────────────────────────────────────┴─────────┴─────────┴─────────┴─────────┤
+-- │ 13 rows                                                                                                6 columns │
+-- └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+SELECT * FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=transportation/*/*', filename=true, hive_partitioning=1) LIMIT 5;
+-- ┌──────────────────────┬──────────────────────┬─────────┬───────┬─────────┬───┬──────────────────────┬──────────────────────┬──────────────────────┬────────────────┬───────────┐
+-- │          id          │      updatetime      │ version │ level │ subtype │ … │         bbox         │       geometry       │       filename       │     theme      │   type    │
+-- │       varchar        │      timestamp       │  int32  │ int32 │ varchar │   │ struct(minx double…  │         blob         │       varchar        │    varchar     │  varchar  │
+-- ├──────────────────────┼──────────────────────┼─────────┼───────┼─────────┼───┼──────────────────────┼──────────────────────┼──────────────────────┼────────────────┼───────────┤
+-- │ connector.8f3da556…  │ 2023-07-24 00:27:1…  │       0 │       │         │ … │ {'minx': 75.935448…  │ \x01\x01\x00\x00\x…  │ s3://overturemaps-…  │ transportation │ connector │
+-- │ connector.8f2ba010…  │ 2023-07-24 00:27:1…  │       0 │       │         │ … │ {'minx': -72.21874…  │ \x01\x01\x00\x00\x…  │ s3://overturemaps-…  │ transportation │ connector │
+-- │ connector.8f1ea006…  │ 2023-07-24 00:27:1…  │       0 │       │         │ … │ {'minx': 12.223394…  │ \x01\x01\x00\x00\x…  │ s3://overturemaps-…  │ transportation │ connector │
+-- │ connector.8f64ab44…  │ 2023-07-24 00:27:1…  │       0 │       │         │ … │ {'minx': 95.749541…  │ \x01\x01\x00\x00\x…  │ s3://overturemaps-…  │ transportation │ connector │
+-- │ connector.8f489a41…  │ 2023-07-24 00:27:1…  │       0 │       │         │ … │ {'minx': -96.57796…  │ \x01\x01\x00\x00\x…  │ s3://overturemaps-…  │ transportation │ connector │
+-- ├──────────────────────┴──────────────────────┴─────────┴───────┴─────────┴───┴──────────────────────┴──────────────────────┴──────────────────────┴────────────────┴───────────┤
+-- │ 5 rows                                                                                                                                                  13 columns (10 shown) │
+-- └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+SELECT ST_GeomFromWKB(geometry) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=transportation/type=connector/*', filename=true, hive_partitioning=1) LIMIT 5;
+-- ┌────────────────────────────────┐
+-- │    st_geomfromwkb(geometry)    │
+-- │            geometry            │
+-- ├────────────────────────────────┤
+-- │ POINT (75.935448 28.926191)    │
+-- │ POINT (-72.2187488 48.5193487) │
+-- │ POINT (12.2233941 44.9207945)  │
+-- │ POINT (95.7495414 16.4539188)  │
+-- │ POINT (-96.57796 31.165204)    │
+-- └────────────────────────────────┘
+
+SELECT ST_GeomFromWKB(geometry) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=transportation/type=segment/*', filename=true, hive_partitioning=1) LIMIT 5;
+-- ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+-- │                                                                                                       st_geomfromwkb(geometry)                                                                                                             │
+-- │                                                                                                               geometry                                                                                                                     │
+-- ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+-- │ LINESTRING (-107.5873493 37.234346, -107.5878495 37.2342104, -107.5884059 37.2340581, -107.5889411 37.2339061, -107.5898932 37.233646, -107.5907824 37.2333979, -107.5912304 37.2332708, -107.591516 37.2331896, -107.5931535 37.2327326)  │
+-- │ LINESTRING (-104.3583375 50.4686508, -104.356578 50.4685005, -104.356121 50.4683011, -104.3562581 50.4675626, -104.3564493 50.4665338, -104.3563141 50.4660475, -104.3548185 50.4656323, -104.353634 50.4652143…                           │
+-- │ LINESTRING (-76.5928227 39.1155801, -76.5924291 39.113732, -76.592085 39.1121165, -76.5920123 39.1117751, -76.5919797 39.111622, -76.5914504 39.1091364)                                                                                   │
+-- │ LINESTRING (16.8155591 52.3966511, 16.8155481 52.3966656, 16.8155317 52.3966846)                                                                                                                                                           │
+-- │ LINESTRING (7.9296541 52.8704244, 7.9332905 52.8688364, 7.9372954 52.867085, 7.9378862 52.8669101, 7.9384745 52.8667878, 7.938908 52.8667111, 7.9397821 52.8665565, 7.9404575 52.86645, 7.9407112 52.86641…                                │
+-- └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+## admin
+
+### Volume des données
+
+On a 99k admins, avec une écrasante majorité de frontières administratives et quelques localities...
+
+
+```sql
+SELECT COUNT(*) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=admins/*/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ count_star() │
+-- │    int64     │
+-- ├──────────────┤
+-- │        99403 │
+-- └──────────────┘
+
+SELECT COUNT(*) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=admins/type=administrativeBoundary/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ count_star() │
+-- │    int64     │
+-- ├──────────────┤
+-- │        96455 │
+-- └──────────────┘
+
+SELECT COUNT(*) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=admins/type=locality/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ count_star() │
+-- │    int64     │
+-- ├──────────────┤
+-- │         2948 │
+-- └──────────────┘
+```
+
+
+### Source des données
+
+TL;DR : Tomtom et ESRI (= l'entreprise qui édite arcgis) semblent être les contributeurs principaux des admins.
+
+```sql
+SELECT DISTINCT len(sources) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=admins/*/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ len(sources) │
+-- │    int64     │
+-- ├──────────────┤
+-- │            2 │
+-- │            1 │
+-- │           41 │
+-- │           40 │
+-- └──────────────┘
+```
+
+^ soit une ou deux sources, soit... 41 !
+
+```sql
+SELECT DISTINCT sources[1]['dataset'] FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=admins/*/*', filename=true, hive_partitioning=1) WHERE len(sources) = 1;
+-- ┌───────────────────────┐
+-- │ sources[1]['dataset'] │
+-- │       varchar[]       │
+-- ├───────────────────────┤
+-- │ [TomTom]              │
+-- └───────────────────────┘
+```
+
+^ quand il n'y a qu'une source, c'est Tomtom
+
+```sql
+SELECT DISTINCT (sources[1]['dataset'], sources[2]['dataset']) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=admins/*/*', filename=true, hive_partitioning=1) WHERE len(sources) = 2;
+-- ┌────────────────────────────────────────────────────────┐
+-- │ main.row(sources[1]['dataset'], sources[2]['dataset']) │
+-- │             struct( varchar[],  varchar[])             │
+-- ├────────────────────────────────────────────────────────┤
+-- │ {'': [TomTom], '': [Esri Community Maps]}              │
+-- └────────────────────────────────────────────────────────┘
+```
+
+^ quand il y a deux sources, ce sont Tomtom et ESRI.
+
+Pas facile (avec mon niveau de connaissance actuelle sur le nesting duckdb) d'analyser les cas 40 et 41, mais on dirait à l'oeil que les deux seuls providers d'admins sont Tomtom et ESRI...
+
+### Schéma et samples de lignes
+
+```sql
+DESCRIBE SELECT * FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=admins/type=*/*', filename=true, hive_partitioning=1);
+-- ┌──────────────────────┬────────────────────────────────────────────────────────────┬─────────┬─────────┬─────────┬─────────┐
+-- │     column_name      │                        column_type                         │  null   │   key   │ default │  extra  │
+-- │       varchar        │                          varchar                           │ varchar │ varchar │ varchar │ varchar │
+-- ├──────────────────────┼────────────────────────────────────────────────────────────┼─────────┼─────────┼─────────┼─────────┤
+-- │ id                   │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ updatetime           │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ version              │ INTEGER                                                    │ YES     │         │         │         │
+-- │ names                │ MAP(VARCHAR, MAP(VARCHAR, VARCHAR)[])                      │ YES     │         │         │         │
+-- │ adminlevel           │ INTEGER                                                    │ YES     │         │         │         │
+-- │ maritime             │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ subtype              │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ localitytype         │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ context              │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ isocountrycodealpha2 │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ isosubcountrycode    │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ defaultlanugage      │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ drivingside          │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ sources              │ MAP(VARCHAR, VARCHAR)[]                                    │ YES     │         │         │         │
+-- │ bbox                 │ STRUCT(minx DOUBLE, maxx DOUBLE, miny DOUBLE, maxy DOUBLE) │ YES     │         │         │         │
+-- │ geometry             │ BLOB                                                       │ YES     │         │         │         │
+-- │ filename             │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ theme                │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ type                 │ VARCHAR                                                    │ YES     │         │         │         │
+-- ├──────────────────────┴────────────────────────────────────────────────────────────┴─────────┴─────────┴─────────┴─────────┤
+-- │ 19 rows                                                                                                         6 columns │
+-- └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+SELECT * FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=admins/type=*/*', filename=true, hive_partitioning=1) LIMIT 5;
+-- ┌──────────────────────┬──────────────────────┬─────────┬──────────────────────┬───┬──────────────────────┬──────────────────────┬──────────────────────┬─────────┬──────────────────────┐
+-- │          id          │      updatetime      │ version │        names         │ … │         bbox         │       geometry       │       filename       │  theme  │         type         │
+-- │       varchar        │       varchar        │  int32  │ map(varchar, map(v…  │   │ struct(minx double…  │         blob         │       varchar        │ varchar │       varchar        │
+-- ├──────────────────────┼──────────────────────┼─────────┼──────────────────────┼───┼──────────────────────┼──────────────────────┼──────────────────────┼─────────┼──────────────────────┤
+-- │ 83186efffffffff110…  │ 2023-05-28T00:18:0…  │       0 │                      │ … │ {'minx': -0.702928…  │ \x01\x02\x00\x00\x…  │ s3://overturemaps-…  │ admins  │ administrativeBoun…  │
+-- │ 85186a93fffffff110…  │ 2023-05-28T00:18:0…  │       0 │                      │ … │ {'minx': -0.681400…  │ \x01\x02\x00\x00\x…  │ s3://overturemaps-…  │ admins  │ administrativeBoun…  │
+-- │ 83186efffffffff110…  │ 2023-05-28T00:18:0…  │       0 │                      │ … │ {'minx': -0.689162…  │ \x01\x02\x00\x00\x…  │ s3://overturemaps-…  │ admins  │ administrativeBoun…  │
+-- │ 85186a93fffffff110…  │ 2023-05-28T00:18:0…  │       0 │                      │ … │ {'minx': -0.657948…  │ \x01\x02\x00\x00\x…  │ s3://overturemaps-…  │ admins  │ administrativeBoun…  │
+-- │ 85186a93fffffff110…  │ 2023-05-28T00:18:0…  │       0 │                      │ … │ {'minx': -0.681400…  │ \x01\x02\x00\x00\x…  │ s3://overturemaps-…  │ admins  │ administrativeBoun…  │
+-- ├──────────────────────┴──────────────────────┴─────────┴──────────────────────┴───┴──────────────────────┴──────────────────────┴──────────────────────┴─────────┴──────────────────────┤
+-- │ 5 rows                                                                                                                                                            19 columns (9 shown) │
+-- └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+## places
+
+### Volume des données
+
+59 millions de POIs
+
+```sql
+SELECT COUNT(*) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=places/*/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ count_star() │
+-- │    int64     │
+-- ├──────────────┤
+-- │     59175720 │
+-- └──────────────┘
+```
+
+### Source des données
+
+```sql
+SELECT DISTINCT len(sources) AS nb_sources FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=places/*/*', filename=true, hive_partitioning=1) ORDER BY nb_sources;
+```
+
+^ Les patterns de nombre de sources pour chaque features sont assez variés : il y en a 87 en tout.
+
+Ça va de 1 (i.e. certaines places ont une unique source) à 175, i.e. certaines places ont 175 sources (!)
+
+Notamment, il y a des sources variées :
+
+- des POI msft (que je suppose être microsoft)
+- des POI meta (que je suppose être facebook)
+
+### Schéma et samples de lignes
+
+
+```sql
+DESCRIBE SELECT * FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=places/*/*', filename=true, hive_partitioning=1);
+-- ┌─────────────┬─────────────────────────────────────────────────────────────────────────┬─────────┬─────────┬─────────┬─────────┐
+-- │ column_name │                               column_type                               │  null   │   key   │ default │  extra  │
+-- │   varchar   │                                 varchar                                 │ varchar │ varchar │ varchar │ varchar │
+-- ├─────────────┼─────────────────────────────────────────────────────────────────────────┼─────────┼─────────┼─────────┼─────────┤
+-- │ id          │ VARCHAR                                                                 │ YES     │         │         │         │
+-- │ updatetime  │ VARCHAR                                                                 │ YES     │         │         │         │
+-- │ version     │ INTEGER                                                                 │ YES     │         │         │         │
+-- │ names       │ MAP(VARCHAR, MAP(VARCHAR, VARCHAR)[])                                   │ YES     │         │         │         │
+-- │ categories  │ STRUCT(main VARCHAR, alternate VARCHAR[])                               │ YES     │         │         │         │
+-- │ confidence  │ DOUBLE                                                                  │ YES     │         │         │         │
+-- │ websites    │ VARCHAR[]                                                               │ YES     │         │         │         │
+-- │ socials     │ VARCHAR[]                                                               │ YES     │         │         │         │
+-- │ emails      │ VARCHAR[]                                                               │ YES     │         │         │         │
+-- │ phones      │ VARCHAR[]                                                               │ YES     │         │         │         │
+-- │ brand       │ STRUCT("names" MAP(VARCHAR, MAP(VARCHAR, VARCHAR)[]), wikidata VARCHAR) │ YES     │         │         │         │
+-- │ addresses   │ MAP(VARCHAR, VARCHAR)[]                                                 │ YES     │         │         │         │
+-- │ sources     │ MAP(VARCHAR, VARCHAR)[]                                                 │ YES     │         │         │         │
+-- │ bbox        │ STRUCT(minx DOUBLE, maxx DOUBLE, miny DOUBLE, maxy DOUBLE)              │ YES     │         │         │         │
+-- │ geometry    │ BLOB                                                                    │ YES     │         │         │         │
+-- │ filename    │ VARCHAR                                                                 │ YES     │         │         │         │
+-- │ theme       │ VARCHAR                                                                 │ YES     │         │         │         │
+-- │ type        │ VARCHAR                                                                 │ YES     │         │         │         │
+-- ├─────────────┴─────────────────────────────────────────────────────────────────────────┴─────────┴─────────┴─────────┴─────────┤
+-- │ 18 rows                                                                                                             6 columns │
+-- └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+SELECT * FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=places/type=place/*', filename=true, hive_partitioning=1) LIMIT 5;
+-- ┌──────────────────────┬──────────────────────┬─────────┬──────────────────────┬──────────────────────┬─────────────────────┬───┬──────────────────────┬──────────────────────┬──────────────────────┬─────────┬─────────┐
+-- │          id          │      updatetime      │ version │        names         │      categories      │     confidence      │ … │         bbox         │       geometry       │       filename       │  theme  │  type   │
+-- │       varchar        │       varchar        │  int32  │ map(varchar, map(v…  │ struct(main varcha…  │       double        │   │ struct(minx double…  │         blob         │       varchar        │ varchar │ varchar │
+-- ├──────────────────────┼──────────────────────┼─────────┼──────────────────────┼──────────────────────┼─────────────────────┼───┼──────────────────────┼──────────────────────┼──────────────────────┼─────────┼─────────┤
+-- │ tmp_9EF32E0C9C03C9…  │ 2023-07-24T00:00:0…  │       0 │ {common=[{value=Br…  │ {'main': veterinar…  │  0.5989174246788025 │ … │ {'minx': -4.175979…  │ \x01\x01\x00\x00\x…  │ s3://overturemaps-…  │ places  │ place   │
+-- │ tmp_FBB8618B19BE2F…  │ 2023-07-24T00:00:0…  │       0 │ {common=[{value=Tr…  │ {'main': park, 'al…  │  0.9108787178993225 │ … │ {'minx': -58.53305…  │ \x01\x01\x00\x00\x…  │ s3://overturemaps-…  │ places  │ place   │
+-- │ tmp_081A89B04D0E03…  │ 2023-07-24T00:00:0…  │       0 │ {common=[{value=St…  │ {'main': beauty_sa…  │  0.9628990292549133 │ … │ {'minx': -46.59369…  │ \x01\x01\x00\x00\x…  │ s3://overturemaps-…  │ places  │ place   │
+-- │ tmp_45CF77B709A680…  │ 2023-07-24T00:00:0…  │       0 │ {common=[{value=เต้…  │ {'main': thai_rest…  │ 0.47563284635543823 │ … │ {'minx': 99.555783…  │ \x01\x01\x00\x00\x…  │ s3://overturemaps-…  │ places  │ place   │
+-- │ tmp_9EE93E03D9BFDB…  │ 2023-07-24T00:00:0…  │       0 │ {common=[{value=ร้า…  │ {'main': community…  │  0.5783658027648926 │ … │ {'minx': 98.759051…  │ \x01\x01\x00\x00\x…  │ s3://overturemaps-…  │ places  │ place   │
+-- ├──────────────────────┴──────────────────────┴─────────┴──────────────────────┴──────────────────────┴─────────────────────┴───┴──────────────────────┴──────────────────────┴──────────────────────┴─────────┴─────────┤
+-- │ 5 rows                                                                                                                                                                                           18 columns (11 shown) │
+-- └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+## buildings
+
+### Volume des données
+
+785 millions de buildings, quand même !!!
+
+```sql
+SELECT COUNT(*) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=buildings/*/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ count_star() │
+-- │    int64     │
+-- ├──────────────┤
+-- │    785524851 │
+-- └──────────────┘
+```
+
+### Source des données
+
+**TL;DR** : à part quelques sources locales à certaines grandes villes, on est sur le triplet :
+
+- ESRI
+- OSM
+- Microsoft ML Buildings
+
+```sql
+SELECT DISTINCT len(sources) FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=buildings/*/*', filename=true, hive_partitioning=1);
+-- ┌──────────────┐
+-- │ len(sources) │
+-- │    int64     │
+-- ├──────────────┤
+-- │            2 │
+-- │            1 │
+-- └──────────────┘
+```
+
+^ chaque building a une ou deux sources.
+
+Sur les sources à proprement parler, je ne reporte pas les commandes, mais l'analyse sur mon poste des sources des buildings montrait des sources assez diverses :
+
+```sql
+SELECT DISTINCT sources[1]['dataset'] FROM read_parquet("/path/to/local/OVERTURE/buildings/*/*") WHERE len(sources) = 1;
+-- ┌────────────────────────────────────────────────────────────────────────┐
+-- │                         sources[1]['dataset']                          │
+-- │                               varchar[]                                │
+-- ├────────────────────────────────────────────────────────────────────────┤
+-- │ [Esri Buildings | Denver Regional Council of Governments 2D Buildings] │
+-- │ [Miami-Dade County Open Data 3D Buildings]                             │
+-- │ [OpenStreetMap]                                                        │
+-- │ [Microsoft ML Buildings]                                               │
+-- │ [Portland Building Footprint 2D Buildings]                             │
+-- │ [Washington DC Open Data 3D Buildings]                                 │
+-- │ [NYC Open Data 3D Buildings]                                           │
+-- │ [Austin Building Footprints Year 2013 2D Buildings]                    │
+-- │ [City of Cambridge, MA Open Data 3D Buildings]                         │
+-- │ [Denver Regional Council of Governments 2D Buildings]                  │
+-- │ [Boston BPDA 3D Buildings]                                             │
+-- │ [Esri Community Maps]                                                  │
+-- │ [Esri Buildings | Austin Building Footprints Year 2013 2D Buildings]   │
+-- ├────────────────────────────────────────────────────────────────────────┤
+-- │                                13 rows                                 │
+-- └────────────────────────────────────────────────────────────────────────┘
+
+SELECT DISTINCT (sources[1]['dataset'], sources[2]['dataset']) FROM read_parquet("/path/to/local/OVERTURE/buildings/*/*") WHERE len(sources) = 2;
+-- ┌────────────────────────────────────────────────────────┐
+-- │ main.row(sources[1]['dataset'], sources[2]['dataset']) │
+-- │             struct( varchar[],  varchar[])             │
+-- ├────────────────────────────────────────────────────────┤
+-- │ {'': [USGS Lidar], '': [Microsoft ML Buildings]}       │
+-- │ {'': [USGS Lidar], '': [OpenStreetMap]}                │
+-- └────────────────────────────────────────────────────────┘
+```
+
+### Schéma et samples de lignes
+
+```sql
+DESCRIBE SELECT * FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=buildings/*/*', filename=true, hive_partitioning=1);
+-- ┌─────────────┬────────────────────────────────────────────────────────────┬─────────┬─────────┬─────────┬─────────┐
+-- │ column_name │                        column_type                         │  null   │   key   │ default │  extra  │
+-- │   varchar   │                          varchar                           │ varchar │ varchar │ varchar │ varchar │
+-- ├─────────────┼────────────────────────────────────────────────────────────┼─────────┼─────────┼─────────┼─────────┤
+-- │ id          │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ updatetime  │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ version     │ INTEGER                                                    │ YES     │         │         │         │
+-- │ names       │ MAP(VARCHAR, MAP(VARCHAR, VARCHAR)[])                      │ YES     │         │         │         │
+-- │ level       │ INTEGER                                                    │ YES     │         │         │         │
+-- │ height      │ DOUBLE                                                     │ YES     │         │         │         │
+-- │ numfloors   │ INTEGER                                                    │ YES     │         │         │         │
+-- │ class       │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ sources     │ MAP(VARCHAR, VARCHAR)[]                                    │ YES     │         │         │         │
+-- │ bbox        │ STRUCT(minx DOUBLE, maxx DOUBLE, miny DOUBLE, maxy DOUBLE) │ YES     │         │         │         │
+-- │ geometry    │ BLOB                                                       │ YES     │         │         │         │
+-- │ filename    │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ theme       │ VARCHAR                                                    │ YES     │         │         │         │
+-- │ type        │ VARCHAR                                                    │ YES     │         │         │         │
+-- ├─────────────┴────────────────────────────────────────────────────────────┴─────────┴─────────┴─────────┴─────────┤
+-- │ 14 rows                                                                                                6 columns │
+-- └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+SELECT * FROM read_parquet('s3://overturemaps-us-west-2/release/2023-07-26-alpha.0/theme=buildings/*/*', filename=true, hive_partitioning=1) LIMIT 5;
+-- ┌──────────────────────┬──────────────────────┬─────────┬──────────────────────┬───────┬────────┬───┬──────────────────────┬──────────────────────┬──────────────────────┬───────────┬──────────┐
+-- │          id          │      updatetime      │ version │        names         │ level │ height │ … │         bbox         │       geometry       │       filename       │   theme   │   type   │
+-- │       varchar        │       varchar        │  int32  │ map(varchar, map(v…  │ int32 │ double │   │ struct(minx double…  │         blob         │       varchar        │  varchar  │ varchar  │
+-- ├──────────────────────┼──────────────────────┼─────────┼──────────────────────┼───────┼────────┼───┼──────────────────────┼──────────────────────┼──────────────────────┼───────────┼──────────┤
+-- │ tmp_77373230333237…  │ 2019-08-30T18:46:2…  │       0 │ {}                   │       │        │ … │ {'minx': 7.8592489…  │ \x01\x03\x00\x00\x…  │ s3://overturemaps-…  │ buildings │ building │
+-- │ tmp_77323833303735…  │ 2014-05-20T08:11:5…  │       0 │ {}                   │       │        │ … │ {'minx': 2.6939908…  │ \x01\x03\x00\x00\x…  │ s3://overturemaps-…  │ buildings │ building │
+-- │ tmp_38343239323138…  │ 2023-07-01T07:00:0…  │       0 │ {}                   │       │        │ … │ {'minx': -95.77524…  │ \x01\x03\x00\x00\x…  │ s3://overturemaps-…  │ buildings │ building │
+-- │ tmp_77363730303736…  │ 2019-02-12T22:31:1…  │       0 │ {}                   │       │        │ … │ {'minx': 103.14134…  │ \x01\x03\x00\x00\x…  │ s3://overturemaps-…  │ buildings │ building │
+-- │ tmp_77313039353835…  │ 2022-09-19T08:45:2…  │       0 │ {}                   │       │        │ … │ {'minx': 111.90019…  │ \x01\x03\x00\x00\x…  │ s3://overturemaps-…  │ buildings │ building │
+-- ├──────────────────────┴──────────────────────┴─────────┴──────────────────────┴───────┴────────┴───┴──────────────────────┴──────────────────────┴──────────────────────┴───────────┴──────────┤
+-- │ 5 rows                                                                                                                                                                  14 columns (11 shown) │
+-- └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
