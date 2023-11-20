@@ -25,6 +25,7 @@ Notes sur mon workflow de dev
    * [C'est quoi](#cest-quoi)
    * [Installation](#installation-1)
    * [Notes vrac d'utilisation](#notes-vrac-dutilisation)
+* [NerdFonts](#nerdfonts)
 * [JOURNAL](#journal)
    * [Vrac1](#vrac1)
    * [Utilisation de telescope avec nvim](#utilisation-de-telescope-avec-nvim)
@@ -654,6 +655,92 @@ source $ZSH/oh-my-zsh.sh
     ```
 - `just` fournit quelques fonctions pour faire de l'introspection ou de la manipulation de paths ou de strings, cf. https://just.systems/man/en/chapter_30.html
 - modularité : on peut splitter ses justfiles et inclure des fichiers externes
+
+
+# NerdFonts
+
+Contexte : je veux utiliser [NerdFonts](https://www.nerdfonts.com/) ([github](https://github.com/ryanoasis/nerd-fonts)) pour disposer d'icônes sous neovim : principalement avec le file-browser nvim-tree et dans telescope.
+
+À noter : au moins pour nvim-tree, il semblerait qu'en plus de la font, il faille installer le plugin [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons). Et le plugin seul n'est pas suffisant pour avoir les icônes, vu qu'il se contente d'utiliser des NerdFonts, qui doivent donc être préalablement installées.
+
+## Que fait NerdFont
+
+[La doc](https://github.com/ryanoasis/nerd-fonts#font-installation) de nerdfonts est assez vague, elle parle de "patcher" des polices, et recommande vaguement de simplement de télécharger une police (mais où exactement ?) ou d'utiliser une commande pour installer une police spécifique `./install.sh <FontName>`.
+
+En pratique, [cette description](https://docs.rockylinux.org/books/nvchad/nerd_fonts/) m'éclaire un peu plus :
+
+> Nerd Fonts takes the most popular programming fonts and modifies them by adding a group of glyphs (icons).
+
+Donc les NerdFonts **modifient** la police que j'utilise pour lui ajouter des icônes.
+
+Il faut donc que je trouve la police que mon terminal utilise.
+
+## Quelle police mon terminal utilise-t-il ?
+
+De façon surprenant, je n'ai pas trouvé de réponse définitive à cette question, j'ai dû me rabattre sur des moyens détournés pour trouver l'info : mon terminal utilise **DejaVu Sans Mono**.
+
+Déjà, mon terminal est :
+
+- PC fixe `Gnome Terminal 3.44.0` (Préférences > police personnalisée = `Monospace 8`)
+- PC pro `Gnome Terminal 3.36.2` (Préférences > police personnalisée = `Monospace Regular 9`)
+
+Les polices listées par gnome-terminal sont peu nombreuses (beaucoup moins nombreuses que celles contenues dans `/usr/share/fonts`, et elles ont des noms différents, simplifiés, je ne sais pas d'où ils sortent.
+
+Et je n'ai initialement rien sous `~/.local/share/fonts`.
+
+Pour creuser les polices de mon système :
+
+- le gestionnaire de polices qui vient avec ubuntu (gnome-font-manager) refuse de se lancer ou plante...
+- j'installe et utilise `font-manager` :
+    - il accède déjà à beaucoup plus de fonts que Gnome Terminal
+    - je filtre par `monospace`, et je n'ai que 17 fonts possibles
+    - je compare manuellement les caractères de mon terminal avec ceux que montre font-manager pour trouver ma police
+    - j'affiche notamment plein de caractères spéciaux, qui ont plus de chances d'être rendus différemment :
+        ```
+        ! " # $ % & 0 1 2 3 4 5 6 7 8 9 @ ß ™ ∫ ‰ ﬁ ﬂ ∂ Ʊ њ ؇ ⍙
+        ```
+    - au final, je réduis les candidats à :
+        - **Bitstream Vera Sans Mono**
+        - **DejaVu Sans Mono**
+    - mais je n'ai pas d'information sur l'origine du fichier fournissant la police...
+- avec LibreOffice Writer :
+    - Avec LibreOffice Writer, j'ai accès à beaucoup de polices (encore plsu que font-manager... du coup ça fait 3 programmes différents qui listent 3 sets de polices différentes...)
+    - En ouvrant mon texte d'essai sous LibreOffice Writer, je peux alterner facilement entre **Bitstream Vera Sans Mono** et **DejaVu Sans Mono**
+    - Et je constate des différences ! Notamment, ce caractère `∫` (qui s'écrit avec le digraphe vim `In`) me permet de trancher : mon terminal utilise **DejaVu Sans Mono** !
+
+À noter que la page de download des NerdFonts indique que DejaVu Sans est basée sur Bitstream Vera, ce qui explique leur similitude.
+
+À noter enfin que `fc-list` semble pouvoir lister les fonts (mais je ne sais toujours pas d'où Gnome Terminal associe `Monospace Regular` à `DejaVu Sans Mono`).
+
+
+## Installation d'une NerdFont
+
+La doc indique beaucoup de moyens d'installation, mais comme je ne savais initialement pas où télécharger les fonts, j'ai retenu :
+
+```
+cd /tmp
+git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git  # très long !
+cd nerd-fonts
+./install.sh DejaVuSansMono
+# Nerd Fonts installer -- Version 0.7
+# mkdir: création du répertoire '/home/myself/.local/share/fonts/NerdFonts'
+# '/tmp/nerd-fonts/patched-fonts/DejaVuSansMono/Bold-Italic/DejaVuSansMNerdFont-BoldOblique.ttf' -> '/home/myself/.local/share/fonts/NerdFonts/DejaVuSansMNerdFont-BoldOblique.ttf'
+# '/tmp/nerd-fonts/patched-fonts/DejaVuSansMono/Bold/DejaVuSansMNerdFont-Bold.ttf' -> '/home/myself/.local/share/fonts/NerdFonts/DejaVuSansMNerdFont-Bold.ttf'
+# '/tmp/nerd-fonts/patched-fonts/DejaVuSansMono/Italic/DejaVuSansMNerdFont-Oblique.ttf' -> '/home/myself/.local/share/fonts/NerdFonts/DejaVuSansMNerdFont-Oblique.ttf'
+# '/tmp/nerd-fonts/patched-fonts/DejaVuSansMono/Regular/DejaVuSansMNerdFont-Regular.ttf' -> '/home/myself/.local/share/fonts/NerdFonts/DejaVuSansMNerdFont-Regular.ttf'
+# /home/myself/.local/share/fonts/NerdFonts: caching, new cache contents: 4 fonts, 0 dirs
+# /var/cache/fontconfig: not cleaning unwritable cache directory
+# /home/myself/.cache/fontconfig: cleaning cache directory
+# /home/myself/.fontconfig: not cleaning non-existent cache directory
+# fc-cache: succeeded
+```
+
+^ ceci résout le problème sur le PC pro, et j'ai pu vérifier que ce qui résout est d'avoir la font sous `~/.local/share/fonts/NerdFonts` (quand je déplace le répertoire, je n'ai plus les icônes ; `fc-cache` n'a pas l'air d'avoir un impact).
+
+Mais le problème n'est que partiellement résolu sur le PC fixe : il reste quelques mauvaises icônes.
+
+Du coup j'ai contourné comme une brutasse : j'installe toutes les nerd-fonts (`./install.sh` sans argument) et je choisis manuellement sous Gnome Terminal une autre font NerdFont, car les NerdFonts apparaissent dans les fonts disponibles sous Gnome Terminal (j'en essaye plusieurs, pour finir sur `Bitstrom Wera Nerd Font`)
+
 
 # JOURNAL
 
