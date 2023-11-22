@@ -68,7 +68,7 @@ Au sujet de la doc : **attention**, certains liens google renvoient vers une anc
 
 Autocomplétion : gdb autocomplète les commandes et leurs arguments :-)
 
-Commentaires : on peut commneter des lignes avec `#` (pratique pour les intégrer à l'historique sans les exécuter), mais attention : on ne peut commenter qu'une ligne complète (pas de commentaire en fin de ligne comme en python).
+Commentaires : on peut commenter des lignes avec `#` (pratique pour les intégrer à l'historique sans les exécuter), mais attention : on ne peut commenter qu'une ligne complète (pas de commentaire en fin de ligne comme en python).
 
 Aide intégrée :
 
@@ -217,14 +217,14 @@ catch catch
 ## Consulter et supprimer un breakpoint
 
 ```sh
+# voir les breakpoints (montre aussi les catchpoints) :
+info breakpoints
+
 # supprimer TOUS les breakpoints :
 delete breakpoints
 
 # supprimer le 3ième breakpoint :
 delete 3
-
-# voir les breakpoints (montre aussi les catchpoints) :
-info breakpoints
 ```
 
 ## Breakpoints sur une fonction overloadée
