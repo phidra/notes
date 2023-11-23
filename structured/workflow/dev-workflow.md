@@ -2,6 +2,8 @@ Notes sur mon workflow de dev
 
 * [neovim](#neovim)
    * [Notes d'installation](#notes-dinstallation)
+   * [Plugin manager](#plugin-manager)
+   * [Configuration lua](#configuration-lua)
    * [Tips](#tips)
    * [Plugins (neo)vim possiblement intéressants, mais que j'ai choisi de ne pas utiliser](#plugins-neovim-possiblement-intéressants-mais-que-jai-choisi-de-ne-pas-utiliser)
    * [Plugins (neo)vim possiblement intéressants, à regarder](#plugins-neovim-possiblement-intéressants-à-regarder)
@@ -26,6 +28,9 @@ Notes sur mon workflow de dev
    * [Installation](#installation-1)
    * [Notes vrac d'utilisation](#notes-vrac-dutilisation)
 * [NerdFonts](#nerdfonts)
+   * [Que fait NerdFont](#que-fait-nerdfont)
+   * [Quelle police mon terminal utilise-t-il ?](#quelle-police-mon-terminal-utilise-t-il-)
+   * [Installation d'une NerdFont](#installation-dune-nerdfont)
 * [JOURNAL](#journal)
    * [Vrac1](#vrac1)
    * [Utilisation de telescope avec nvim](#utilisation-de-telescope-avec-nvim)
@@ -42,6 +47,7 @@ Notes sur mon workflow de dev
          * [STEP 3 = je force cmake à préciser explicitement le standard dans compile_commands.json](#step-3--je-force-cmake-à-préciser-explicitement-le-standard-dans-compile_commandsjson)
       * [Questions](#questions)
 * [FUTUR](#futur)
+
 
 # neovim
 
@@ -76,6 +82,61 @@ Notes sur mon workflow de dev
     # mais dans mon cas, plutôt :
     rm -rf ~/neovim
     ```
+
+## Plugin manager
+
+En novembre 2023, je passe à [lazy.nvim](https://github.com/folke/lazy.nvim) ; [ce post reddit](https://www.reddit.com/r/neovim/comments/w0ijm3/should_i_use_a_plugin_manager/) de juillet 2022 recommande d'utiliser [packer](https://github.com/wbthomason/packer.nvim), mais à date packer, recommande d'utiliser lazy :
+
+> lazy.nvim: Most stable and maintained plugin manager for Nvim.
+
+Toute la config est dans le vimrc ; il y a un panel d'UI qui permet de tout faire, pour l'afficher :
+
+```
+:Lazy
+```
+
+## Configuration lua
+
+La config est chargée depuis `~/.config/nvim/init.lua ` ; avec ma config (en novembre 2023), ce fichier se contente presque de sourcer mon `~/.vimrc`.
+
+(si un jour je veux découper ma config en plusieurs modules lua, on peut faire tout une hiérarchie de modules à loader au startup, cf. https://neovim.io/doc/user/lua-guide.html#lua-guide-modules)
+
+J'ai splitté mon vimrc en deux : une section vimscript (config de base, utilisable depuis vim) et une section lua (config poweruser, utilisable depuis neovim uniquement).
+
+[La doc](https://neovim.io/doc/user/lua-guide.html) sur comment configurer vim en lua est indispensable ; j'en donne quelques infos importantes :
+
+- il y a plusieurs APIs :
+    - `vim.api` = utiliser l'API officielle neovim
+    - `vim.opt` = permet de définir des options (i.e. équivalent de `:set` en vim classique)
+    - `vim.fn` = permet d'appeler des fonctions vim depuis du lua
+- on peut toujours inliner n'importe quelle commande vimscript dans du lua avec `vim.cmd` :
+    ```lua
+   vim.cmd([[
+       whatever vim commands here
+       even on multiple lines
+   ]])
+    ```
+- quelques équivalents de commandes "directes" vim :
+    ```
+    :highlight                      = vim.cmd.highlight()  (il n'y a pas de strict équivalent pour TOUTES les commandes, mais ça fait le taf pour mes besoins simples)
+    :set expandtab                  = vim.opt.myvar = true
+    :set shiftwidth=4               = vim.opt.shiftwidth=4
+    :let g:loaded_matchparen = 0    = vim.g.loaded_matchparen = 0
+    ```
+- les auto-commandes sont un peu plus verbeuses :
+    ```
+    # en vimscript :
+    autocmd FileType markdown setlocal foldexpr=NestedMarkdownFolds()
+
+    # en lua :
+    vim.api.nvim_create_autocmd({"FileType"}, {
+        pattern = "markdown",
+        callback = function (opts)
+            vim.opt_local.foldexpr = "NestedMarkdownFolds()"
+        end,
+    })
+    ```
+
 
 ## Tips
 
