@@ -17,6 +17,11 @@ Notes sur mon workflow de dev
       * [compile_commands.json](#compile_commandsjson)
       * [construction de l'index clangd](#construction-de-lindex-clangd)
    * [LSP client — native neovim client](#lsp-client--native-neovim-client)
+* [Debugging cpp](#debugging-cpp)
+   * [Les DAP](#les-dap)
+   * [Avec vimspector](#avec-vimspector)
+      * [Installation et dépendance à python](#installation-et-dépendance-à-python)
+      * [Gadgets](#gadgets)
 * [rust](#rust)
    * [Utilisation avec neovim](#utilisation-avec-neovim)
 * [pyenv](#pyenv)
@@ -439,6 +444,78 @@ Pour lancer une fonction LSP de façon synchrone e.g. pour attendre que le forma
   E.g. code formatting: " Auto-format *.rs (rust) files prior to saving them
 autocmd BufWritePre *.rs lua vim.lsp.buf.formatting_sync(nil, 1000)
 ```
+
+# Debugging cpp
+
+**Contexte** : novembre 2023, je veux utiliser vimspector sous neovim pour débugger mon programme.
+
+Au préalable : vérifier que le debugging hors neovim (i.e. directement avec gdb) fonctionne :
+
+- vérifier dans le `compile_commands.json` qu'on est en `-O0 -g`
+- sous meson, c'est le cas car `buildtype=debug` par défaut ([source](https://mesonbuild.com/Builtin-options.html#core-options))
+- sous gdb : `r ; info functions PATTERN ; b myfunction`
+
+## Les DAP
+
+DAP (= [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/)) est un peu l'équivalent de LSP (= Language Server Protocol) pour le debugging :
+
+- LSP :
+    - un outil (e.g. clangd) est capable d'analyser le code-source
+    - un LSP-server wrappe clangd pour analyser le code-source, et sait convetir ce que dit clangd en language LSP
+    - un LSP-client (e.g. le client natif nvim-lsp) est capable de discuter avec les différents LSP-servers pour les utiliser
+    - intérêt = les LSP-server se concentrent sur leur métier (analyser le code-source) sans avoir à s'intéresser à l'UI ou au client + on peut n'utiliser qu'un seul même client pour parler différents langages
+- DAP :
+    - un outil (e.g. gdb) est capable de débugger le programme
+    - un DAP-server wrappe gdb pour débugger le programme, et sait convertir ce que dit gdb en language DAP
+    - un DAP-client (e.g. nvim-dap ou vimspector) est capable de discuter avec les différents DAP-servers pour les utiliser
+
+## Avec vimspector
+
+### Installation et dépendance à python
+
+D'après [la doc](https://github.com/puremourning/vimspector#dependencies), il faut un support de python :
+
+> Neovim 0.8 with Python 3.10 or later (experimental)
+
+Pour vérifier le support de python par neovim (et plein d'autres choses utiles) :
+
+```sh
+nvim +checkhealth  # ou alternativement, une fois neovim lancé :checkhealth
+```
+
+Le check a l'air d'essayer de loader tout un tas de versions de python hardcodée (de 3.12 à 3.7, avec ma version de neovim), et pour chacune, il semble essayer d'importer le module neovim, en faisant quelque chose comme :
+
+```
+python3.11 -c 'import neovim'
+```
+
+Ce module s'installe avec `pynvim`, donc au total avec pyenv :
+
+```sh
+pyenv install 3.11.6
+pyenv global  # system 3.9.13
+pyenv global system 3.9.13 3.11.6
+python3.11 -m pip install --user --upgrade pynvim
+```
+
+### Gadgets
+
+vimspector appelle les debug adapters des "gadgets", qu'il faut installer :
+
+- la liste des gadgets est [ici](https://github.com/puremourning/vimspector#supported-languages)
+- si besoin, la commande autocomplète :
+   ```
+   :VimspectorInstall CodeLLDB
+   ```
+- les gadgets sont installés à cet emplacement :
+   ```
+   ~/.local/share/nvim/lazy/vimspector/gadgets
+   ```
+- et leur fichier de config est ici :
+   ```
+   ~/.local/share/nvim/lazy/vimspector/gadgets/linux/.gadgets.json
+   ```
+
 
 # rust
 
