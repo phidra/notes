@@ -22,6 +22,7 @@ Notes sur mon workflow de dev
    * [Avec vimspector](#avec-vimspector)
       * [Installation et dépendance à python](#installation-et-dépendance-à-python)
       * [Gadgets](#gadgets)
+      * [Playground](#playground)
 * [rust](#rust)
    * [Utilisation avec neovim](#utilisation-avec-neovim)
 * [pyenv](#pyenv)
@@ -515,6 +516,36 @@ vimspector appelle les debug adapters des "gadgets", qu'il faut installer :
    ```
    ~/.local/share/nvim/lazy/vimspector/gadgets/linux/.gadgets.json
    ```
+
+### Playground
+
+Le plugin est packagé avec un mini-projet qui peut être utile pour tester.
+
+```sh
+cd ~/.local/share/nvim/lazy/vimspector/tests/testdata/cpp/simple
+make
+nvim  -Nu  ~/.local/share/nvim/lazy/vimspector/tests/vimrc --cmd "let g:vimspector_enable_mappings='HUMAN'" simple.cpp
+```
+
+Attention, à la différence de ce qu'indique la doc, il faut éditer un fichier de test (ici `simple.cpp`) AVANT de lancer vimspector avec `F5` (car la config vimspector de ce projet de test renseigne que le programme à débugger a le même nom que le fichier source, sans l'extension).
+
+Une fois nvim lancé, on peut placer un breakpoint avec `F9` puis lancer le debugger avec `F5`.
+
+Le plugin prompte deux variables qui sont absente de la config, je trouve quoi répondre sur [cette page](https://github.com/puremourning/vimspector/blob/master/run_tests) :
+
+```
+Enter value for VIMSPECTOR_ARCH:
+mettre le résultat de `uname -m` (e.g. `x86_64`)
+
+Enter value for VIMSPECTOR_MIMODE:
+j'ai mis `gdb`
+```
+
+Pour clore la fenêtre :
+
+```
+:VimspectorReset
+```
 
 
 # rust
@@ -1483,32 +1514,18 @@ Q = comment indiquer à cmake le standard à utiliser ?
         :lnext
         :lprev
         ```
-- réussir à utiliser `ALEFix` avec `clang-format` pour le C++ et `black` pour python (cf. mon journal)
 - profiler le lancement de zsh, qui est assez lent : https://stevenvanbael.com/profiling-zsh-startup (EDIT : c'est en partie dû à nvm)
-- quand le besoin reviendra, essayer de trouver une solution pour avoir une config (neo)vim propre à un projet ([exemple ?](https://github.com/neovim/nvim-lspconfig/wiki/Project-local-settings))
-- essayer d'ajouter clang-tidy comme linter ALE ?
 - Trouver des serveurs LSP pour des langages additionnels ?
     - Shell
     - Cmake
     - JavaScript
     - HTML
     - CSS
-- ALE : [ce post](https://github.com/liuchengxu/vista.vim) montre comment intégrer à la barre de status le nombre d'erreurs/warnings (si je dis pas de bêtises, c'est également le cas du readme d'ALE)
-- TMUX : éventuellement, installer un tmux récent sur mon vieux PC portable ?
-    - sur mon PC fixe :
-        ```
-        tmux -Version
-        tmux 3.0a
-        ```
-    - https://github.com/tmux/tmux/releases/tag/3.0a
-    - https://bogdanvlviv.com/posts/tmux/how-to-install-the-latest-tmux-on-ubuntu-16_04.html
-    - https://jdhao.github.io/2018/10/16/tmux_build_without_root_priviledge/
 - neovim/LSP : quand j'utilise l'omnicompletion avec lsp, ça m'ouvre une fenêtre en bas de mon écran, qu'il faut que je referme manuellement derrière...
     - pour corriger, il faudra que je comprenne mieux la complétion sous vim
     - notamment, quelle différence entre :
         - taper directement `Ctrl+n` (actuellement, ça trigge la complétion "dumb")
         - taper `Ctrl+x` puis `Ctrl+o` (actuellement, ça trigge la complétion "smart")
-- dev C++/python : pouvoir compiler/exécuter/débugger via vim ? (est-ce vraiment une feature pertinente ? le seul intérêt serait de jumper directement aux localisations des erreurs et breakpoints dans le code)
 - Divers liens à écluser :
     - [Vim for Python in 2020 | Vim From Scratch](https://www.vimfromscratch.com/articles/vim-for-python) : Contient quelques plugins à essayer qui ont l'air intéressants
     - [Your ultimate VIM setup for Python](https://casas-alejandro.medium.com/your-ultimate-vim-setup-for-python-b43a522b1152) : Contient quelques plugins à essayer qui ont l'air intéressants + une config
@@ -1526,15 +1543,7 @@ Q = comment indiquer à cmake le standard à utiliser ?
         - Google test + intégration avec vim
     - (N)VIM = Regarder d'un peu plus près les splits vim (utiles pour garder un morceau de code sous le coude) : [lien](https://thoughtbot.com/blog/vim-splits-move-faster-and-more-naturally)
     - https://stackoverflow.com/questions/24232354/vim-set-color-for-listchars-tabs-and-spaces
-- Splitter mon usage de neovim en deux :
-    - éditeur de texte (la config vim doit fonctionner avec neovim AINSI QU'AVEC vim legacy)
-    - IDE (je n'utiliserai que neovim, et m'autorise donc à ce que la config ne soit pas compatible avec vim legacy)
-- Du coup, discriminer mes plugins (neo)vim :
-    - les plugins essentiels à l'édition de texte (e.g. NERDTree ?)
-    - les plugins essentiels au dev (e.g. LSP, telescope)
-    - les plugins non-essentiels
 - python : utiliser [isort](https://github.com/PyCQA/isort) pour les imports.
-- TELESCOPE> lsp_references est top (bien mieux que la loclist) par contre par défaut l'affichage du nom de fichier est trop petit (comme il est mangé par la répétition de la ligne greppée, que j'ai de toutes façons via la preview, je peux customizer la config pour faire sauter le panel central...)
 - TELESCOPE> question : comment tuner la recherche ?
     - toggle une recherche exacte/fuzzy
     - toggle case sensitive ou non
@@ -1542,10 +1551,6 @@ Q = comment indiquer à cmake le standard à utiliser ?
 - TELESCOPE> une feature qui me manque = Ctrl-D pour matcher avec le nom du fichier uniquement (sans son chemin)
 - TELESCOPE> est-ce que j'ai moyen de limiter le grep/find_files au répertoire local ?
 - TELESCOPE> comment ne PAS avoir les symboles de /usr/include comme boost renvoyés par LSP ?
-- TELESCOPE> Le dynamic_workspace_symbol de telescope n'est pas très pratique car dans le panel de gauche, les noms des fichiers sont tronqués par le nom du symbole...
-    - à la limite, comme le match est fuzzy, le nom du symbole reste utile
-    - mais peut-être que son type non ?
-    - et idéalement, quand le chemin du fichier doit être tronqué, mieux que le CHEMIN (et non le nom du fichier) soit tronqué
 - TELESCOPE> jeter un oeil aux extensions ([lien](https://github.com/nvim-telescope/telescope.nvim/wiki/Extensions)). Par exemple = une extension pour visualiser les variables d'environnement = https://github.com/LinArcX/telescope-env.nvim
 - LSP> voir ce que permettent les code actions ? Notamment, utiliser [ce plugin](https://github.com/kosayoda/nvim-lightbulb) pour les rendre visible ? Exemple de code-action :
     - ajouter automatiquement un import manquant
