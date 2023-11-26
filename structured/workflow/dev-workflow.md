@@ -22,7 +22,11 @@ Notes sur mon workflow de dev
    * [Avec vimspector](#avec-vimspector)
       * [Installation et dépendance à python](#installation-et-dépendance-à-python)
       * [Gadgets](#gadgets)
+      * [Fichier de config](#fichier-de-config)
+      * [Choix du programme à débugger](#choix-du-programme-à-débugger)
+      * [Notes à l'usage](#notes-à-lusage-1)
       * [Playground](#playground)
+   * [Avec nvim-dap et nvim-dap-ui](#avec-nvim-dap-et-nvim-dap-ui)
 * [rust](#rust)
    * [Utilisation avec neovim](#utilisation-avec-neovim)
 * [pyenv](#pyenv)
@@ -517,9 +521,115 @@ vimspector appelle les debug adapters des "gadgets", qu'il faut installer :
    ~/.local/share/nvim/lazy/vimspector/gadgets/linux/.gadgets.json
    ```
 
+### Fichier de config
+
+Le plugin est paramétré par un fichier caché `.vimspector.json` (ce qui est triste).
+
+<details>
+  <summary>Cliquer pour voir un sample de fichier de config qui fait le taf</summary>
+
+```json
+{
+  "$schema": "https://puremourning.github.io/vimspector/schema/vimspector.schema.json",
+  "configurations": {
+  "base": {
+    "default": true,
+    "adapter": "vscode-cpptools",
+    "configuration": {
+    "targetArchitecture": "x86_64",
+    "request": "launch",
+    "program": "${workspaceRoot}/path/to/my/binary",
+    "externalConsole": false,
+    "stopAtEntry": false,
+    "stopOnEntry": false,
+    "MIMode": "gdb",
+    "breakpoints": {
+      "exception": {
+        "all": "",
+        "cpp_catch": "",
+        "cpp_throw": "",
+        "objc_catch": "",
+        "objc_throw": "",
+        "swift_catch": "",
+        "swift_throw": ""
+      }
+    },
+    "setupCommands": [
+      {
+      "description": "Enable pretty-printing for gdb",
+      "text": "-enable-pretty-printing",
+      "ignoreFailures": true
+      }
+    ]
+    }
+  }
+  },
+  "adapters": {
+  "lldb-vscode": {
+    "variables": {
+    "LLVM": {
+      "shell": "brew --prefix llvm"
+    }
+    },
+    "attach": {
+    "pidProperty": "pid",
+    "pidSelect": "ask"
+    },
+    "command": [
+    "${LLVM}/bin/lldb-vscode"
+    ],
+    "env": {
+    "LLDB_LAUNCH_FLAG_LAUNCH_IN_TTY": "YES"
+    },
+    "name": "lldb"
+  }
+  }
+}
+```
+
+</details>
+
+Quelques notes vrac :
+
+- Le mini-projet de test donne un autre exemple de fichier de config.
+- le schema du fichier de config est [documenté ici](https://puremourning.github.io/vimspector/schema/vimspector.schema.json)
+- la clé racine `configurations` décrit le programme à débugger (il peut y en avoir plusieurs, et elles peuvent hériter les unes des autres)
+- `stopAtEntry` / `stopOnEntry` = le debugger break dès l'entrée dans le `main`
+- avec gdb, le snippet pour le pretty-printing des conteneurs de la STL est indispensable :
+    ```json
+    "setupCommands": [
+        {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+        }
+    ]
+    ```
+
+### Choix du programme à débugger
+
+Je me serais attendu à ce qu'on puisse choisir dynamiquement le programme à débugger (e.g. retrouver le binaire dans un file-browser), mais on dirait malheureusement que le programme débuggé est défini statiquement dans la config du projet (= le fichier `.vimspector.json` à la racine du projet).
+
+(on peut jouer un peu en définissant une variable `prog` qui sera promptée dynamiquement, mais c'est vraiment pas pratique...)
+
+### Notes à l'usage
+
+Cf. ma config nvim pour les commandes.
+
+Les différentes vues de l'UI vimspector sont des fenêtres vim classiques → on s'y déplace normalement, avec `Ctrl+W`.
+
+Comment choisir la configuration à utiliser (parmi les différentes clés dans le fichier de config) quand on lance vimspector ? [L'intégration avec telescope](https://github.com/nvim-telescope/telescope-vimspector.nvim) semble permettre ça.
+
+Il semblerait que la config pour break sur les exceptions est cassée : il me demande quand même à chaque démarrage ce que je veux faire, même si je renseigne les clés de config...
+
+Pour voir les breakpoints (et leurs conditions), la commande `<Plug>VimspectorBreakpoints` ouvre une fenêtre pour ça, mais ça semble ruiner le layout des fenêtres...
+
+J'aimerais bien visualiser dynamiquement les breakpoints, plutôt que de devoir cliquer... Il faut que je voie s'il y a une intégration avec telescope pour ça.
+
+
 ### Playground
 
-Le plugin est packagé avec un mini-projet qui peut être utile pour tester.
+Le plugin est packagé avec un mini-projet qui peut être utile pour tester :
 
 ```sh
 cd ~/.local/share/nvim/lazy/vimspector/tests/testdata/cpp/simple
@@ -546,6 +656,14 @@ Pour clore la fenêtre :
 ```
 :VimspectorReset
 ```
+
+## Avec nvim-dap et nvim-dap-ui
+
+STILL TO DO :
+
+- plus moderne
+- en lua
+- possibilité d'intégration avec telescope
 
 
 # rust
