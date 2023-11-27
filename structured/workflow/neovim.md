@@ -34,6 +34,22 @@
     - `Ctrl-n` (ou `Ctrl-p`)directement (qui trigge la complétion non-intelligente)
     - `Ctrl-x` suivi de `Ctrl-o` (qui trigge la complétion intelligente utilisant le lsp)
     - `Ctrl-x` suivi de `Ctrl-l` (qui trigge la complétion de ligne)
+- commandes commençant par `<Plug>` (e.g. `<Plug>VimspectorContinue`, [lien](https://github.com/puremourning/vimspector#mappings)) :
+    - cf. la doc :
+    ```
+    :help <Plug>
+    :help using-<Plug>
+    ```
+    - le principe est de définir une chaîne de caractère (qui utilise `<Plug>`) qu'on ne matchera pas par hasard sans le vouloir
+    - par ailleurs, on ne peut pas l'utiliser comme commande, l'idée est d'obligatoirement la mapper
+    - on peut tout de même contourner, mais c'est compliqué :
+    ```
+   :execute "normal \<Plug>VimspectorContinue"
+    ```
+- vimdiff n'existe plus, mais l'équivalent est:
+    ```
+   nvim -d -O file1 file2
+    ```
 
 ## Plugins (neo)vim possiblement intéressants, mais que j'ai choisi de ne pas utiliser
 
