@@ -50,6 +50,12 @@
     ```
    nvim -d -O file1 file2
     ```
+- pour afficher une variable lua, les deux syntaxes suivantes sont équivalentes, mais la deuxième est plus courte :
+    ```
+    :lua =myvar
+    :lua vim.print(myvar)
+
+    ```
 
 ## Plugins (neo)vim possiblement intéressants, mais que j'ai choisi de ne pas utiliser
 

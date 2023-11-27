@@ -341,13 +341,17 @@ Pour avoir les infos du client LSP :
 :LspInfo
 
 :LspLog
-NOTE : les logs LSP sont tous conservés (au lieu d'être clear régulièrement).
-On se mange donc un énorme fichier dans :
-    ~/.cache/nvim/lsp.log
-
 
 Éventuellement précédé de :
 :lua vim.lsp.set_log_level("debug")
+
+NOTE : les logs LSP sont tous conservés (au lieu d'être clear régulièrement).
+On se mange donc un énorme fichier dans l'un de ces fichiers :
+    ~/.local/state/nvim/lsp.log
+    ~/.cache/nvim/lsp.log
+
+L'emplacement exact du fichier de log est renvoyé par :
+:lua =require('vim.lsp.log').get_filename()
 ```
 
 Pour appeler une feature LSP (e.g. `hover`) sans la binder à une commande vim :
