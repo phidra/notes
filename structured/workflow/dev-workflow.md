@@ -153,7 +153,7 @@ https://github.com/nvim-telescope/telescope.nvim
 
 Lancement sans préciser le picker = `:Telescope` (on accède alors à une liste des pickers disponibles).
 
-Sinon, lancement direct sur le picket :
+Sinon, lancement direct sur le picker :
 
 ```
 :Telescope live_grep

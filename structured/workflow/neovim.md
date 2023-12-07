@@ -2,6 +2,7 @@
 
 * [Neovim](#neovim)
    * [Tips](#tips)
+   * [Colorscheme et highlights](#colorscheme-et-highlights)
    * [Plugins (neo)vim possiblement intéressants, mais que j'ai choisi de ne pas utiliser](#plugins-neovim-possiblement-intéressants-mais-que-jai-choisi-de-ne-pas-utiliser)
    * [Plugins (neo)vim possiblement intéressants, à regarder](#plugins-neovim-possiblement-intéressants-à-regarder)
 * [Telescope](#telescope)
@@ -55,6 +56,24 @@
     :lua =myvar
     :lua vim.print(myvar)
 
+    ```
+
+## Colorscheme et highlights
+
+Quand on a un souci de coloration, c'est pas évident de débugger ; quelques tips :
+
+- en complément de lister les highlihts avec `highlight` (éventuellement couplé à `redir`), on peut utiliser Telescope :
+    ```
+    :Telescope highlights
+    ```
+- pour connaître le nom du groupe de couleurs sous le caractère courant (ne semble pas marcher tout le temps, je ne sais pas trop pourquoi) :
+    ```
+    :echo synIDattr(synID(line("."),col("."),1),"name")
+    :echo synIDattr(synID(line("."),col("."),0),"name")
+    ```
+- pour connaître la provenance d'un highlight (ici, `Comment`) :
+    ```
+    :verbose highlight Comment
     ```
 
 ## Plugins (neo)vim possiblement intéressants, mais que j'ai choisi de ne pas utiliser
