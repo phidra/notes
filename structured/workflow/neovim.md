@@ -117,6 +117,10 @@ Ressource pour trouver des plugins neovim = https://github.com/rockerBOO/awesome
 - --- limité à neovim
 - --- uniquement compatible avec le lsp-client builtin (mais qui est très bien en fait)
 
+
+J'ai noté quelques commandes telescope utiles directement en commentaire dans mon vimrc.
+
+
 Les principes de fonctionnement :
 
 - on dirait qu'un picker, c'est une "commande telescope" ; e.g. find_files est un picker qui permet d'utiliser telescope pour trouver des fichiers

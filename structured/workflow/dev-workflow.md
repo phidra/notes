@@ -156,20 +156,19 @@ Lancement sans préciser le picker = `:Telescope` (on accède alors à une liste
 Sinon, lancement direct sur le picker :
 
 ```
+# via une commande vim :
 :Telescope live_grep
 :Telescope lsp_references
-:Telescope man_pages
-:Telescope help_tags
-```
+(...)
 
-Équivalents lua :
-
-```
+# équivalents via une commande lua :
 :lua require('telescope.builtin').live_grep()
 :lua require('telescope.builtin').lsp_references()
-:lua require('telescope.builtin').man_pages()
-:lua require('telescope.builtin').help_tags()
+(...)
 ```
+
+J'ai noté quelques commandes telescope utiles directement en commentaire dans mon vimrc.
+
 
 Une fois dans le picker, deux modes vim sont possibles :
 
