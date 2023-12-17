@@ -11,6 +11,8 @@
 * [chiffrer un fichier](#chiffrer-un-fichier)
 * [éditer un fichier dans un container docker qui n'a pas d'éditeur](#éditer-un-fichier-dans-un-container-docker-qui-na-pas-déditeur)
 * [matcher toute l'arborescence ou juste les fichiers avec zsh](#matcher-toute-larborescence-ou-juste-les-fichiers-avec-zsh)
+* [vider le cache bash](#vider-le-cache-bash)
+
 
 # imagemagick pour calculer la différence entre deux images
 
@@ -189,4 +191,23 @@ nvim **/*
 
 # éditer tous les FICHIERS de l'arborescence actuelle :
 nvim **/*(.)
+```
+
+# vider le cache bash
+
+**tags** : bash, cache
+
+Pour éviter d'avoir à parcourir tous les chemins du `PATH` à chaque commande, bash maintient un cache ; bash indique que le fichier est `hashed`.
+
+Lorsqu'on désinstalle un programme, on peut vouloir faire oublier une entrée au cache :
+
+```sh
+# oublier l'entrée meson
+hash -d meson
+
+# tout rehasher :
+hash -r
+
+# si besoin :
+man bash
 ```
