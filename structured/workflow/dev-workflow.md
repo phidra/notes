@@ -13,6 +13,7 @@ Notes sur mon workflow de dev
       * [compile_commands.json](#compile_commandsjson)
       * [construction de l'index clangd](#construction-de-lindex-clangd)
    * [LSP client — native neovim client](#lsp-client--native-neovim-client)
+* [Installation clang-14 sur ubuntu 20.04 et bonus just pipx meson](#installation-clang-14-sur-ubuntu-2004-et-bonus-just-pipx-meson)
 * [Debugging cpp](#debugging-cpp)
    * [Les DAP](#les-dap)
    * [Avec vimspector](#avec-vimspector)
@@ -53,6 +54,7 @@ Notes sur mon workflow de dev
          * [STEP 3 = je force cmake à préciser explicitement le standard dans compile_commands.json](#step-3--je-force-cmake-à-préciser-explicitement-le-standard-dans-compile_commandsjson)
       * [Questions](#questions)
 * [FUTUR](#futur)
+
 
 
 # neovim
@@ -371,6 +373,85 @@ Pour lancer une fonction LSP de façon synchrone e.g. pour attendre que le forma
   A: Use the `_sync` variant of the function provided by |lsp-buf|, if it exists.
   E.g. code formatting: " Auto-format *.rs (rust) files prior to saving them
 autocmd BufWritePre *.rs lua vim.lsp.buf.formatting_sync(nil, 1000)
+```
+
+# Installation clang-14 sur ubuntu 20.04 et bonus just pipx meson
+
+Ces notes servent de tuto vrac pour installer plein de trucs et compiler un projet C++20 sur ubuntu 20.04 :
+
+- clang-14
+- just
+- pipx
+- meson récent via pipx
+- pre-commit via pipx (si besoin)
+
+On travaille sur un conteneur from scratch :
+
+```sh
+docker run --rm -it ubuntu:20.04
+```
+
+Dans le container, installation de clang-14 sur ubuntu 20.04 depuis un PPA :
+
+```sh
+apt update && apt install -y vim ca-certificates wget gnupg
+
+vim /etc/apt/sources.list
+# deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main
+# deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main
+
+wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+apt update
+
+DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt -y install tzdata  # la commande n'est un peu complexe que pour éviter un prompt interactif
+apt install -y clang-14{,-doc,-examples} clang-{format,tidy,tools}-14 clangd-14 lldb-14 lld-14
+apt install -y g++-10  # g++-10 est nécessaire pour que clang-14 puisse être compatible C++20, et qu'il puisse `#include <concepts>`
+```
+
+En dehors du container, copie des sources C++20 vers le container :
+
+```sh
+docker ps  # repérer le nom du container cible, p.ex. inspiring_payne
+cd /path/to/my_sources
+docker cp ../my_sources inspiring_payne:/my_sources
+```
+
+Dans le container, pour compiler le projet avec un justfile qui appelle meson :
+
+```sh
+apt install -y curl cmake ninja-build pkg-config python3 python3-pip python3-venv
+
+# installation de pipx :
+python3 -m pip install --user pipx
+~/.local/bin/pipx ensurepath
+source ~/.profile
+
+# installation via pipx d'un meson récent (car celui dans les dépôts APT est trop ancien) :
+pipx install meson
+
+# à noter que si une ancienne version de meson a été installée depuis les dépôts APT, il faut la purger :
+apt purge meson
+hash -r  # pour cleaner le cache bash
+pipx reinstall meson
+
+# installation de just :
+mkdir /the_bins
+export PATH=/the_bins:$PATH
+curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /the_bins/
+
+# si besoin, adaptation du meson.build pour utiliser le standard c++2a :
+vim /my_sources/meson.build
+# project('my_project', 'cpp', version : '0.1', default_options : ['warning_level=3', 'cpp_std=c++2a', 'werror=true'])
+
+# si besoin, adaptation du justfile pour préfixer les commandes meson afin d'utiliser clang-14 :
+vim /my_sources/NOGIT_justfile
+# CXX=clang++-14 meson setup builddir/ src/
+# CXX=clang++-14 meson compile -C builddir/
+# CXX=clang++-14 meson test -C builddir/
+
+# compilation avec just :
+cd /my_sources
+just -f NOGIT_justfile build
 ```
 
 # Debugging cpp
