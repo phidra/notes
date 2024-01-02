@@ -1,6 +1,5 @@
 **WORK IN PROGRESS** : je suis en train de transférer mes anciennes notes privées vers ce repo public -> ces notes correspondent juste à la portion que j'ai transférée.
 
-
 * [Misc](#misc)
    * [contourner un certificat manquant](#contourner-un-certificat-manquant)
    * [commit parent de deux branches](#commit-parent-de-deux-branches)
@@ -29,6 +28,11 @@
    * [Appliquer et/ou supprimer un stash](#appliquer-etou-supprimer-un-stash)
 * [Remotes](#remotes)
 * [LFS](#lfs)
+   * [Principe de fonctionnement](#principe-de-fonctionnement)
+   * [Setup LFS pour un repo hébergé sur gitlab](#setup-lfs-pour-un-repo-hébergé-sur-gitlab)
+   * [Notes à l'utilisation](#notes-à-lutilisation)
+
+
 
 
 
@@ -469,8 +473,37 @@ git remote rm REMOTENAME
 
 # LFS
 
+## Principe de fonctionnement
 
-Setup d'un repo gitlab LFS :
+Quelques explications : [lien1](https://docs.gitlab.com/ee/topics/git/lfs/index.html), [lien2](https://about.gitlab.com/blog/2017/01/30/getting-started-with-git-lfs-tutorial/), ...
+
+- les gros fichiers ne sont plus stockés dans le repo git, mais par un serveur externe, indépendant de git (qui peut toutefois être hébergé sur le même serveur que le repo git central)
+- le repo git ne stocke plus que des pointeurs légers, vers les fichiers de ce serveur externe
+- quand on clone + checkout une version précise, git-lfs utilise ces pointeurs légers pour télécharger **uniquement** les gros fichiers dont ce checkout précis a besoin (plutôt que de télécharger tout les gros fichiers présents dans l'historique du repo)
+
+Ça nécessite donc des actions particulières, côté client et côté serveur :
+
+- côté server = il faut un server capable de stocker les gros fichiers (github et gitlab le permettent par défaut, à activer)
+- côté client = il faut un client compatible LFS, capable de télécharger de façon transparente les gros fichiers à partir des pointeurs légers (sans quoi un checkout ne téléchargera que les pointeurs)
+
+Avantages :
+
+- les gros fichiers ne sont plus traqués par le repo git lui-même (qui ne traque plus que des pointeurs légers), mais sont stockés sur un serveur externe
+- ça permet d'alléger le repo et d'éviter d'avoir à gérer un énorme repo (e.g. quand on clone, on n'a pas 1 Gio à cloner)
+
+Inconvénients :
+
+- le gros inconvénient est qu'un clone d'un repo git n'est plus auto-porteur : on a maintenant une dépendance vers un serveur externe stockant les gros fichiers
+- https://gregoryszorc.com/blog/2021/05/12/why-you-shouldn%27t-use-git-lfs/ :
+    > une fois que tu as LFS sur un repo, tu ne l'enlèves plus (ou pas facilement)
+    - (donc adapté pour un répo de pérennisation, mais pas à des repos qui mélangent du code et des largefiles)
+- [discussion HackerNews](https://news.ycombinator.com/item?id=27134972) spawnée par le précédent lien :
+    > LFS is not a distributed version control system; once you use it, a clone is no longer “as good” as the original, because it refers to a LFS server that is independent of your clone.
+
+Note : l'administration du serveur LFS est sans doute complexe, pour éviter que la taille ne diverge tout en ne supprimant pas des gros fichiers qui sont nécessaire à l'historique...
+
+
+## Setup LFS pour un repo hébergé sur gitlab
 
 - vérifier dans la config du projet gitlab que LFS est activé
     ```
@@ -489,7 +522,18 @@ Setup d'un repo gitlab LFS :
     git commit -m "tracking pdfs"
     ```
 
-Notes à l'utilisation :
+Sous l'IHM gitlab, les fichiers traqués par LFS apparaissent de façon transparente, et ont un petit badge `LFS` pour les identifier comme "externes".
+
+Dans l'usage quota d'un repo gitlab, on peut voir le volume des gros fichiers traqués par LFS.
+
+Pour voir où sont stockés les gros fichiers (sur le serveur et en local) :
+
+```
+git lfs env
+```
+
+
+## Notes à l'utilisation
 
 - les large-files sont pushés en HTTP (utiliser `GIT_SSL_NO_VERIFY=1` si besoin)
 - tout fonctionne de façon intuitive :
@@ -497,7 +541,8 @@ Notes à l'utilisation :
     - quand on revient à un état antérieur dans l'historique, on retrouve bien son fichier passé
     - on peut supprimer un fichier, tout en le retrouvant dans l'historique (on se contente sans doute de supprimer le pointeur)
     - un clone récupère bien automatiquement les fichiers PDF
-- C'est pas encore clair où les fichiers sont stockés, et comment faire du ménage ([cette page](https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-prune.1.ronn) indique comment pruner les fichiers devenus inutiles)
+- C'est pas encore clair où les fichiers sont stockés côté server, et comment faire du ménage
+- Pour faire du ménage **localement**, [cette page](https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-prune.adoc) indique comment pruner les fichiers locaux devenus inutiles
 - c'est le fichier `.gitattributes` qui stocke la config de quels fichiers on doit gérer avec LFS (il doit donc être traqué avec le reste du repo)
 - Commandes utiles :
     ```
@@ -505,9 +550,3 @@ Notes à l'utilisation :
     git lfs env
     git lfs prune
     ```
-- Quelques références sur les avantages/inconvénients :
-    - https://gregoryszorc.com/blog/2021/05/12/why-you-shouldn%27t-use-git-lfs/ :
-    > une fois que tu as LFS sur un repo, tu ne l'enlèves plus (ou pas facilement)
-    - (donc adapté pour un répo de pérennisation, mais pas à des repos qui mélangent du code et des largefiles)
-    - [discussion HackerNews](https://news.ycombinator.com/item?id=27134972) spawnée par le précédent lien :
-    > LFS is not a distributed version control system; once you use it, a clone is no longer “as good” as the original, because it refers to a LFS server that is independent of your clone.
