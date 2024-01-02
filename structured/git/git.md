@@ -474,7 +474,7 @@ Setup d'un repo gitlab LFS :
 
 - vérifier dans la config du projet gitlab que LFS est activé
     ```
-    Settings > Visibility, project features, permissions > Repository > Git Large File Storage (LFS)
+    Settings > General > Visibility, project features, permissions > Repository > Git Large File Storage (LFS)
     ```
 - sur ma machine locale, installer un client :
     ```sh
