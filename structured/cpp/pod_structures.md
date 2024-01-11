@@ -426,3 +426,43 @@ Pourquoi le caractère `public` ou `private` joue sur le layout mémoire ? Parce
 
 Du coup, si on veut un layout mémoire déterministe (et identique à celui du C), il FAUT que tous les membres aient la même visibilité...
 
+----
+
+**Réflexions persos complémentaires a posteriori**
+
+**Pourquoi une classe triviale n'est-elle pas aussi automatiquement standard-layout ?**
+
+Tout simplement parce que son layout mémoire est certes déterministe et trivial (i.e. il suffit de copier ce layout mémoire pour copier la structure), mais que ce layout mémoire trivial est différent de celui utilisé en C.
+
+Par exemple, si une classe a deux membres, l'un public `pub` et l'autre privé `priv`, alors le compilateur est libre de choisir de placer `pub` avant `priv` en mémoire, ou bien l'inverse.
+
+Dans la structure équivalente en C, le layout sera **toujours** l'un des deux ; donc si une classe C++ a des membres publics et privés, on a une chance sur deux que leur layout ne soit pas dans le même ordre que la structure équivalente en C.
+
+**Pourquoi une classe standard-layout n'est-elle pas aussi automatiquement triviale ?**
+
+Si le constructeur fait quelque chose de particulier. J'ai donné un exemple plus haut = si l'un des membres de la classe stocke la date de création ou register la classe dans une BDD remote, alors copier bit-à-bit la structure n'est pas suffisant pour la construire.
+
+**Dans quels cas je veux trivial, dans quels cas je veux standard-layout ?**
+
+- si je veux pouvoir sérializer/déserializer la structure sur disque, alors je veux trivial (pour pouvoir la construire à partir d'un memcpy de ses bits)
+- si je veux pouvoir envoyer des données à un autre programme, alors je veux standard-layout (et pour recevoir des données depuis un autre programme, je veux probablement les deux = POD)
+
+**Comment diable copier les bits d'une classe pourrait ne pas être suffisant pour la copier ?**
+
+En théorie, le layout mémoire est toujours copiable bit-à-bit : rien nous empêche de remplir un buffer construit à partir d'un `reinterpret_cast` de l'adresse mémoire de la structure !
+
+Mais en pratique, ça ne veut pas dire que l'objet résultant est utilisable ; et ça n'est pas le cas dans le cas général : ça n'est vrai que dans le cas particulier des classes trivialement copiables.
+
+Dit autrement, dans le cas général, le layout mémoire n'est pas suffisant pour considérer qu'un objet est construit, en respectant ses invariants :
+
+- le cas le plus obvious est un smart-pointer de type vector : pour cloner un objet, il ne faut pas uniquement cloner ses bits, mais plutôt allouer un nouveau buffer sur le heap
+- plus généralement, toute classe dont l'un des membres est un pointeur ne peut pas être triviallement copiée (rust appelle une partie de ces classes les SmartPointer)
+- un autre exemple serait une classe qui s'enregistrerait auprès d'un remote-registry à la construction (et se dé-enregistrerait à la destruction) : ici aussi, cloner un objet nécessite d'enregistrer le clone, ce qui n'est pas fait par une simple copie des bits
+- j'ai également pris plus haut l'exemple où la classe stocke sa date de construction comme membre
+
+Pour tous ces exemples, on ne peut pas memcpy le bit-pattern d'un objet pour le construire/assigner.
+
+**Quel lien avec le destructeur ? Pourquoi une classe avec un destructeur non-trivial ne serait pas copiable ?**
+
+Mon avis sur ce point n'est pas 100% construit... Je pense que l'idée derrière est la même idée que la règle des 5 : s'il y a un destructeur non-trivial, c'est probablement que la classe gère une ressource qui nécessite une forme de finalisation. Du coup, si une classe a un destructeur, se contenter de copier les bits de la classe ne clonerait pas proprement la ressource.
+
