@@ -9,7 +9,7 @@ Ici, j'ai l'intention de regrouper des notes qui concerne des sujets **transvers
 - injection de dépendance (et plus généralement, probablement pas mal de sujets liés à l'architecture)
 - etc.
 
-En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets tout dans le présent fichier.
+En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets tout dans le présent fichier. Possiblement, je le splitterai en plusieurs sections.
 
 
 * [Quotes](#quotes)
@@ -28,6 +28,9 @@ En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets t
       * [Points de vue nuancés](#points-de-vue-nuancés)
       * [Points de vue en défaveur du testing de trucs privés](#points-de-vue-en-défaveur-du-testing-de-trucs-privés)
       * [Arguments pour tester des trucs privés](#arguments-pour-tester-des-trucs-privés)
+* [Deployment](#deployment)
+   * [k8s liveness readiness startup probes](#k8s-liveness-readiness-startup-probes)
+
 
 
 
@@ -225,4 +228,30 @@ Autre argument : certaines fonctions "utilitaires" sont beaucoup, beaucoup, beau
 - par exemple, une fonction privée de conversion de format, ou de gestion du datetime (e.g. prise en compte de l'heure d'été), et une fonction publique qui reçoit une requête et fabrique une réponse dont l'un des champs est le datetime ou le format...
 - si on voulait tester tous les edge-cases de conversion par la fonction publique, il faudrait systématiquement wrapper ce qu'on veut tester dans un cycle requête->réponse, alors qu'on ne veut que tester la conversion...
 - (certes, on pourrait argumenter qu'une telle fonction gagnerait à être publique plutôt que privée, mais ça reste une bonne illustration)
+
+
+# Deployment
+
+## k8s liveness readiness startup probes
+
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+
+En gros, :
+
+- la **liveness probe** sert à restart un container : si elle faile, l'application est considérée comme morte, k8s tue le pod et le restarte (on peut souhaiter ce comportement même si le process tourne encore ; p.ex. si notre app est bloquée dans un deadlock)
+- la **readiness probe** sert à autoriser le routage de traffic vers le container :
+    > The kubelet uses readiness probes to know when a container is ready to start accepting traffic. A Pod is considered ready when all of its containers are ready. One use of this signal is to control which Pods are used as backends for Services. When a Pod is not ready, it is removed from Service load balancers.
+
+Ces deux probes peuvent éventuellement être servies par le même endpoint HTTP :
+
+> A common pattern for liveness probes is to use the same low-cost HTTP endpoint as for readiness probes, but with a higher failureThreshold. This ensures that the pod is observed as not-ready for some period of time before it is hard killed.
+
+La **startup probe** est optionnelle, elle sert dans les cas où l'application met du temps à démarrer (e.g. elle a beaucoup de données à charger). Dans ce cas, la liveness probe ou la readiness probe peuvent ne pas être en mesure de répondre suffisamment vite avant que le container ne se fasse killer.
+
+Dit autrement : le fonctionnement par liveness/readiness peut n'être prêt à faire son boulot que de longues minutes après le démarrage de l'application. La startup probe est là pour ça : pour désactiver le fonctionnement de liveness/readiness jusqu'à ce que le startup soit fini :
+
+> The kubelet uses startup probes to know when a container application has started. If such a probe is configured, liveness and readiness probes do not start until it succeeds, making sure those probes don't interfere with the application startup. This can be used to adopt liveness checks on slow starting containers, avoiding them getting killed by the kubelet before they are up and running.
+
+
+
 
