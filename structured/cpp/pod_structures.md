@@ -239,7 +239,7 @@ Ma compréhension, c'est que si on attribue des valeurs valides pour chacun des 
 
 > A relaxed rule here is that standard-layout classes must have all non-static data members with the same access control. Previously these had to be all public, but now you can make them private or protected, as long as they are all private or all protected.
 
-^ pour une raison que je ne connais pas encore (peut-être liée à l'implémentation de la vérification d'access-type par les compilos ?), la visibilité des membres joue sur le layout mémoire !
+^ la visibilité des membres joue sur le layout mémoire ! J'explique pourquoi plus bas : la disposition relative des membres ayant des visibilités différentes est implementation-defined, chaque compilo fait ce qu'il préfère (alors que la disposition des membres ayant la même visibilité est standard).
 
 > A standard-layout class is a class that: \
 > — has no non-static data members of type non-standard-layout class (or array of such types) or reference, \
