@@ -1,6 +1,7 @@
 **Contexte** : janvier 2024, après ma participation au [CodinGame Fall Challenge 2023](https://www.codingame.com/multiplayer/bot-programming/seabed-security) (le challenge avec les drônes et les fishes), j'essaye d'utiliser [cg-brutaltester](https://github.com/dreignier/cg-brutaltester) pour pouvoir faire jouer mes AI en local contre elles-mêmes.
 
 * [TL;DR](#tldr)
+* [Modification du referee](#modification-du-referee)
 * [Installation de java](#installation-de-java)
    * [Installation d'une version récente de java](#installation-dune-version-récente-de-java)
    * [Installation d'une version ancienne java 8](#installation-dune-version-ancienne-java-8)
@@ -34,6 +35,7 @@
     git clone https://github.com/CodinGame/FallChallenge2023-SeabedSecurity.git
     cd FallChallenge2023-SeabedSecurity
     # FAIRE LES MODIFICATIONS POUR RENDRE LE REFEREE COMPATIBLE AVEC BRUTALTESTER
+    # CF. EXPLICATIONS DÉTAILLÉES PLUS BAS
     mvn package
     cp target/fall-2023-fish-1.0-SNAPSHOT.jar /tmp/referee.jar
     ```
@@ -58,6 +60,87 @@ C'est cool car je peux retrouver les IA que j'avais soumises pour le challenge, 
 - [spring 2021 = les arbres sur la grille hexagonale](https://www.codingame.com/multiplayer/bot-programming/spring-challenge-2021)
 
 (et pour une raison que je ne m'explique pas vraiment, mon classement s'est amélioré tout seul, p.ex. pour fall 2023, je suis maintenant 17e de la gold league, soit 87e au total, alors que j'étais 126e au total lors de la cloture)
+
+Note : si jamais c'est utile un jour, le brutaltester a été [porté en C++](https://github.com/Akadine/new-cg-brutaltester) (à ce stade, je préfère utiliser le brutaltester java qui a l'air plus mainstream ; si je veux utiliser le brutaltester C++, j'aurais un peu d'adaptations à faire pour le builder).
+
+# Modification du referee
+
+**Pourquoi ?** Parce que le moteur de jeu codingame (ce qui fait évoluer l'état du jeu en fonction des actions des IAs) doit être exécuté en CLI par brutaltester ; or, il semble plutôt conçu pour être utilisé comme une librairie. L'objectif est donc de hacker le referee pour lui ajouter une exécution par CLI.
+
+Je ne sors pas les modifs qui suivent de mon chapeau : le repo du brutaltester [indique les modifications à apporter à un referee codingame](https://github.com/dreignier/cg-brutaltester?tab=readme-ov-file#how-do-i-make-my-own-referee), et je me suis appuyé sur le diff d'autres projets qui ont déjà fait ceci pour de précédents challenges, listés [ici](https://github.com/dreignier/cg-brutaltester?tab=readme-ov-file#list-of-compatible-referees).
+
+Sur le principe, les étapes à suivre sont :
+
+- ajouter une CLI avec un main qui utilise le referee :
+    ```sh
+    git clone https://github.com/CodinGame/FallChallenge2023-SeabedSecurity.git
+    mkdir -p FallChallenge2023-SeabedSecurity/src/main/java/com/codingame/gameengine/runner/
+
+    # je reprends la CLI d'un précédent challenge :
+    git clone https://github.com/johnpage-agixis/SpringChallenge2022.git
+    cp SpringChallenge2022/src/main/java/com/codingame/gameengine/runner/CommandLineInterface.java FallChallenge2023-SeabedSecurity/src/main/java/com/codingame/gameengine/runner/
+    ```
+- modifier le `pom.xml` pour ajouter la dépendance à la CLI :
+    ```sh
+    nvim SpringChallenge2022/pom.xml FallChallenge2023-SeabedSecurity/pom.xml
+    # <dependency>
+    #     <groupId>commons-cli</groupId>
+    #     <artifactId>commons-cli</artifactId>
+    #     <version>1.3.1</version>
+    # </dependency>
+    ```
+- modifier également le `pom.xml` pour indiquer à maven que le jar qu'on va construire doit être exécutable, et qu'il doit lancer notre CLI :
+    ```
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.3</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>com.codingame.gameengine.runner.CommandLineInterface</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4.2</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.codingame.gameengine.runner.CommandLineInterface</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    ```
+
+Une fois ceci effectué, on peut lancer le referee comme une CLI, ce que va exploiter le brutaltester.
 
 # Installation de java
 
