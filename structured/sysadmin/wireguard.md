@@ -22,3 +22,5 @@ La procédure est décrite sur [leur guide](https://vpn.ccrypto.org/page/install
     ```sh
     sudo wg-quick up ccvpn-fr
     ```
+
+Remarque : mes anciennes notes sur l'utilisation d'openvpn sont dans mes notes OTL archivées que je n'ai pas rendues publiques.
