@@ -25,4 +25,10 @@ La procédure est décrite sur [leur guide](https://vpn.ccrypto.org/page/install
 
 **ATTENTION** : bien vérifier l'IP avant et après activation pour confirmer que je passe par le VPN.
 
+Plus tard, pour désactiver le VPN :
+
+```sh
+sudo wg-quick down ccvpn-fr
+```
+
 Remarque : mes anciennes notes sur l'utilisation d'openvpn sont dans mes notes OTL archivées que je n'ai pas rendues publiques.
