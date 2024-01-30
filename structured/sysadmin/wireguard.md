@@ -23,4 +23,6 @@ La procédure est décrite sur [leur guide](https://vpn.ccrypto.org/page/install
     sudo wg-quick up ccvpn-fr
     ```
 
+**ATTENTION** : bien vérifier l'IP avant et après activation pour confirmer que je passe par le VPN.
+
 Remarque : mes anciennes notes sur l'utilisation d'openvpn sont dans mes notes OTL archivées que je n'ai pas rendues publiques.
