@@ -1,6 +1,6 @@
 **Contexte** : novembre 2023 = je tune un peu ma config neovim, et j'en convertis une partie de vimscript à lua.
 
-[Ce primer](https://www.geeks3d.com/20130516/lua-primer-for-the-impatient/) est une excellente synthèse en quelques minutes.
+[Ce primer](https://www.geeks3d.com/20130516/lua-primer-for-the-impatient/) est une excellente synthèse en quelques minutes ; [cette quick reference](https://dev.to/jd2r/lua-quick-reference-4ij0) est aussi utile.
 
 Il y a [une doc nvim sur lua](https://neovim.io/doc/user/lua.html#lua-concepts) (et même plusieurs).
 
