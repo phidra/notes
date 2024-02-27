@@ -113,6 +113,7 @@ Un commit n'est PAS un diff par rapport au parent : c'est un snapshot complet d'
 Le sha d'un commit hashe à la fois le tree et les métadonnées (donc si on change p.ex. la date du commit , le hash va changer même si le contenu du tree est absolument le même)
 
 > a branch in Git is just a named reference to a commit. (...) Git has another pointer called HEAD, which points (usually) to a branch, which then points to a commit. By the way, under the hood, HEAD is just a file. It includes the name of the branch with some prefix.
+
 ^ explications sur les branches et HEAD
 
 `git commit` fait deux choses en même temps : il crée un commit + il bouge le pointeur de la branche actuelle vers ce nouveau commit.
