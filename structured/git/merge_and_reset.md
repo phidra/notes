@@ -150,6 +150,8 @@ Comme les commandes de diff sont résolues dynamiquement (plutôt que, par exemp
 
 `git reset --mixed` = idem, mais on ne se contente pas de déplacer la branche pointée par HEAD : on positionne aussi le staging-area sur le même commit que le HEAD, sans toucher au working-dir.
 
+**Important** : `--mixed` est le mode par défaut ; lorsqu'on fait un `git reset TARGET` sans préciser le mode, c'est équivalent à `git reset --mixed TARGET`.
+
 ## reset hard
 
 `git reset --hard` = on déplace les trois états, y compris le working-dir.
@@ -164,7 +166,7 @@ Faire `git reset --hard` permet de tout déplacer vers un commit.
 
 Un bon conseil = représenter les trois zones git sur une feuille blanche, en deux versions : l'état actuel, et l'état souhaité. Ça permet de réfléchir à ce qu'on veut faire.
 
-Précision : en fait, `git reset` ne déplace pas directement le HEAD, mais déplace en fait la branche pointée par HEAD = la branche actelle (et HEAD est déplacé par effet de bord, vu qu'il pointe sur cette branche), cf. [la doc](https://git-scm.com/docs/git-reset). C'est logique, sans quoi tous les git reset conduiraient à un état branchless.
+Précision : en fait, `git reset` ne déplace pas directement le HEAD, mais déplace en fait la branche pointée par HEAD = la branche actuelle (et HEAD est déplacé par effet de bord, vu qu'il pointe sur cette branche), cf. [la doc](https://git-scm.com/docs/git-reset). C'est logique, sans quoi tous les git reset conduiraient à un état branchless.
 
 À retenir : si on laisse de côté les états branchless, un `git reset` a donc pour effet de déplacer la branche courante.
 
