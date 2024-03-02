@@ -123,7 +123,7 @@ button(8) est le bouton "9" de la manette (= à l'emplacement habituel de select
 button(9) est le bouton "10" de la manette (= à l'emplacement habituel de start)
 ```
 
-Du coup, fort de tout ça, je peux configurer les commandes souhaitées pour la manette Logitech Dual Action :
+Du coup, fort de tout ça, je peux configurer les commandes souhaitées pour la manette Logitech Dual Action (EDIT : en simplifiant les sticks C pour OcarinaOfTime) :
 
 ```
 [Logitech Dual Action]
@@ -140,8 +140,11 @@ Start = button(9)
 Z Trig = button(6) button(7)
 B Button = button(0)
 A Button = button(1)
-C Button R = axis(2+)
-C Button L = axis(2-)
+# utiliser les axes pour C-gauche et C-droite n'est pas pratique pour OcarinaOfTime :
+#C Button R = axis(2+)
+#C Button L = axis(2-)
+C Button R = button(2)
+C Button L = button(3)
 C Button D = axis(3+)
 C Button U = axis(3-)
 R Trig = button(5)
