@@ -1,11 +1,97 @@
-**ATTENTION : ces notes sont un work-in-progress !!!**
+Quelques exemples valant mieux qu'un long fichier de notes : ne pas hésiter à aller voir mes POCs sur meson.
 
-**ATTENTION : ces notes sont un work-in-progress !!!**
+- [Notes à l'utilisation](#notes-à-lutilisation)
+   * [Utilisation basique](#utilisation-basique)
+   * [Connaître les différentes options de paramétrage du build](#connaître-les-différentes-options-de-paramétrage-du-build)
+   * [compile_commands.json](#compile_commandsjson)
+   * [HOWTO débugger](#howto-débugger)
+- [Gestion des dépendances externes avec meson wrap](#gestion-des-dépendances-externes-avec-meson-wrap)
+   * [exemple concret](#exemple-concret)
+   * [gitignore](#gitignore)
+- [Installation](#installation)
+   * [Sample project](#sample-project)
+- [Pourquoi meson plutôt que cmake ou make](#pourquoi-meson-plutôt-que-cmake-ou-make)
+- [Notes vrac à la lecture de la doc](#notes-vrac-à-la-lecture-de-la-doc)
 
-**ATTENTION : ces notes sont un work-in-progress !!!**
 
-**ATTENTION : ces notes sont un work-in-progress !!!**
+# Notes à l'utilisation
 
+## Utilisation basique
+
+Une fois qu'on a écrit un script `meson.build` :
+
+```
+meson setup builddir/
+meson compile -C builddir/
+meson test -C builddir/
+```
+
+## Connaître les différentes options de paramétrage du build
+
+Pour visualiser les différentes options de configuration pour le projet, leur valeur actuelle, leurs valeurs possibles, et leur description :
+
+```
+meson configure builddir/
+```
+
+## compile_commands.json
+
+À la différence de cmake, la génération d'un `compile_commands.json` est active par défaut (il faut éventuellement en faire un lien symbolique à la racine du projet pour les IDE)
+
+## HOWTO débugger
+
+- pour débugger la commande de compilation d'un fichier, aller regarder `compile_commands.json`
+- pour débugger la commande de build, on peut lancer un `ninja -v` (précédé éventuellement d'un `ninja -t clean`)
+
+# Gestion des dépendances externes avec meson wrap
+
+**TL;DR** : meson intègre un gestionnaire de packages = `meson wrap`.
+
+## exemple concret
+
+```sh
+# lister les packages installables avec wrap :
+meson wrap list
+
+# installer le package sdl2 :
+mkdir subprojects
+meson wrap install sdl2
+```
+
+^ installe `sdl2` dans le répertoire `subprojects` par défaut (i.e. pas eu besoin de préciser la localisation)
+
+Le contenu du fichier `subprojects/sdl2.wrap` décrit simplement où trouver les sources :
+
+```
+[wrap-file]
+directory = SDL2-2.28.1
+source_url = https://github.com/libsdl-org/SDL/releases/download/release-2.28.1/SDL2-2.28.1.tar.gz
+source_filename = SDL2-2.28.1.tar.gz
+source_hash = 4977ceba5c0054dbe6c2f114641aced43ce3bf2b41ea64b6a372d6ba129cb15d
+patch_filename = sdl2_2.28.1-2_patch.zip
+patch_url = https://wrapdb.mesonbuild.com/v2/sdl2_2.28.1-2/get_patch
+patch_hash = 2dd332226ba2a4373c6d4eb29fa915e9d5414cf7bb9fa2e4a5ef3b16a06e2736
+source_fallback_url = https://github.com/mesonbuild/wrapdb/releases/download/sdl2_2.28.1-2/SDL2-2.28.1.tar.gz
+wrapdb_version = 2.28.1-2
+[provide]
+sdl2 = sdl2_dep
+sdl2main = sdl2main_dep
+sdl2_test = sdl2_test_dep
+```
+
+Les sources sont downloadées au build-time, dans un sous-répertoire de `subprojects`.
+
+## gitignore
+
+Typiquement, on voudra ignorer les packages installés dans `subprojects`, mais on voudra commiter leur spec wrap :
+
+```sh
+# on ignore subprojects :
+subprojects/*
+
+# mais on commit les spec wrap :
+!subprojects/*.wrap
+```
 
 # Installation
 
@@ -37,7 +123,6 @@ La commande `meson init --name pouet --build` créé un sample de projet dans le
 - un `compile_commands.json`
 - des tests (lançables avec `meson test`, ils se contentent de lancer l'exécutable)
 - des métadonnées au format json
-
 
 # Pourquoi meson plutôt que cmake ou make
 
@@ -87,118 +172,9 @@ Il a des requirements un poil inhabituels (mais rien de tuant non plus) :
 
 ^ meson est _compréhensible_
 
-
-
-STILL TO DO = mettre en forme les notes suivantes :
-STILL TO DO = mettre en forme les notes suivantes :
-STILL TO DO = mettre en forme les notes suivantes :
-STILL TO DO = mettre en forme les notes suivantes :
-STILL TO DO = mettre en forme les notes suivantes :
-STILL TO DO = mettre en forme les notes suivantes :
-STILL TO DO = mettre en forme les notes suivantes :
-STILL TO DO = mettre en forme les notes suivantes :
-STILL TO DO = mettre en forme les notes suivantes :
-
-# Notes à l'utilisation
-
-À la différence de cmake, la génération d'un `compile_commands.json` est active par défaut (il faut éventuellement en faire un lien symbolique à la racine du projet pour les IDE)
-
-HOWTO débugger :
-
-- pour analyser la commande de compilation d'un fichier, aller regarder `compile_commands.json`
-- pour analyser la commande de build, on peut lancer un "ninja -v" (précédé éventuellement d'un "ninja -t clean")
-
-----
-
-meson setup builddir :
-
-une fois qu'on a un script `meson.build`, cette commande initialise le build
-
-meson compile :
-
-- à lancer depuis le répertoire de build
-- recompiler le projet
-- prend en compte les modifs du script meson.build
-- rapide si rien à faire
-
---buildtype=debugoptimized
-
-- buildtype ajoute des flags de compilation (e.g. -g pour avoir les symboles de debug)
-- il existe --buildtype=plain pour défnir soi-même manuellement ce qu'on veut utiliser comme flags (et faire des builds reproductibles)
-
-----
-
-# Essai de wrap
-
-```
-mkdir subprojects
-meson wrap install sdl2
-```
-
-^ installe `sdl2` dans le répertoire `subprojects` par défaut (i.e. pas eu besoin de préciser la localisation)
-
-Le contenu du fichier `subprojects/sdl2.wrap` décrit simplement où trouver les sources :
-
-```
-[wrap-file]
-directory = SDL2-2.28.1
-source_url = https://github.com/libsdl-org/SDL/releases/download/release-2.28.1/SDL2-2.28.1.tar.gz
-source_filename = SDL2-2.28.1.tar.gz
-source_hash = 4977ceba5c0054dbe6c2f114641aced43ce3bf2b41ea64b6a372d6ba129cb15d
-patch_filename = sdl2_2.28.1-2_patch.zip
-patch_url = https://wrapdb.mesonbuild.com/v2/sdl2_2.28.1-2/get_patch
-patch_hash = 2dd332226ba2a4373c6d4eb29fa915e9d5414cf7bb9fa2e4a5ef3b16a06e2736
-source_fallback_url = https://github.com/mesonbuild/wrapdb/releases/download/sdl2_2.28.1-2/SDL2-2.28.1.tar.gz
-wrapdb_version = 2.28.1-2
-[provide]
-sdl2 = sdl2_dep
-sdl2main = sdl2main_dep
-sdl2_test = sdl2_test_dep
-```
-
-Du coup, les sources sont downloadées au build-time.
-
-# Gestion des dépendances
-
-https://mesonbuild.com/Dependencies.html
-
-	en déclarant une dépendance externe, on peut utiliser une lib (NDM : d'après ma compréhension des choses, un .a ou un .so ; et non des sources)
-	la gestion des flags de compilation et link sont gérés pour nous par meson
-	de base, tout semble passer par pkg-config (et d'ailleurs, meson expose tout ce que pkg-config connaît) :
-		The dependency detector works with all libraries that provide a pkg-config file.
-	mais meson semble capable de gérer les dépendances autrement :
-		Unfortunately several packages don't provide pkg-config files. Meson has autodetection support for some of these, and they are described later in this page.
-	si besoin, on peut accéder à des infos (typiquement, celles fournies par pkg-config, mais pas que) sur la dépendance
-	on peut définir une dépendance custom (sur une de ses libs, p.ex.), en pointant vers ses includes et la lib statique à linker
-	on peut utiliser un subproject comme fallback d'une dépendance absente :
-		Many platforms do not provide a system package manager. On these systems dependencies must be compiled from source.
-			^ au lieu de linker directement avec la lib.a, on commence par compiler les sources pour produire la lib.a, puis on linke contre elle
-		Meson's subprojects make it simple to use system dependencies when they are available and to build dependencies manually when they are not.
-			utilisation de la lib system si elle est dispo, avec build manuel en fallback
-	résolution d'une dépendance :
-		différentes façons de résoudre une dépendance :
-			You can use the keyword method to let Meson know what method to use when searching for the dependency. The default value is auto.
-			Additional methods are pkg-config, config-tool, cmake, builtin, system, sysconfig, qmake, extraframework and dub.
-		https://mesonbuild.com/Dependencies.html#system + https://mesonbuild.com/Dependencies.html#builtin
-			c'est pas très clair mais on dirait que si une lib système n'est pas toujours dispo, meson fait ce qu'il faut pour qu'elle ait l'air dispo sur le système
-		https://mesonbuild.com/Dependencies.html#cmake
-			Meson can use the CMake find_package() function to detect dependencies with the builtin Find<NAME>.cmake modules and exported project configurations (usually in /usr/lib/cmake).
-			ici aussi c'est pas très clair, mais on dirait que si cmake peut trouver une librairie, meson peut utiliser cmake pour la trouver lui aussi
-			(mais comme je maîtrise mal comment cmake trouve une librairie, ça ne m'avance pas beaucoup...)
-		https://mesonbuild.com/Dependencies.html#dub
-			dub semble être le package manager du langage D ; je ne m'y intéresse pas
-		https://mesonbuild.com/Dependencies.html#config-tool
-			certaines librairies / outils ne sont pas gérés avec pkg-config, mais avec leur propre outil (e.g. llvm-config)
-			meson sait gérer ces outils, et on peut donc déclarer la dépendance normalement : llvm_dep = dependency('llvm', version : '>=4.0')
-		MES QUESTIONS :
-			wrap ?
-			dépendances de sources ?
-
 # Notes vrac à la lecture de la doc
 
 NDM : la doc est super bien, et il y a beaucoup de petites choses utiles disséminées à-droite/à-gauche.
-
-----
 
 https://mesonbuild.com/Build-targets.html
 
@@ -296,3 +272,26 @@ https://mesonbuild.com/Run-targets.html
 https://mesonbuild.com/Project-templates.html
 
 ^ template de projet.
+
+https://mesonbuild.com/Dependencies.html
+
+- en déclarant une dépendance externe, on peut utiliser une lib (NDM : d'après ma compréhension des choses, un .a ou un .so ; et non des sources)
+- la gestion des flags de compilation et link sont gérés pour nous par meson
+- de base, tout semble passer par `pkg-config` (et d'ailleurs, meson expose tout ce que pkg-config connaît) :
+    > The dependency detector works with all libraries that provide a pkg-config file.
+- mais meson semble capable de gérer les dépendances autrement :
+    > Unfortunately several packages don't provide pkg-config files. Meson has autodetection support for some of these, and they are described later in this page.
+- si besoin, on peut accéder à des infos (typiquement, celles fournies par `pkg-config`, mais pas que) sur la dépendance
+- on peut définir une dépendance custom (sur une de ses libs, p.ex.), en pointant vers ses includes et la lib statique à linker
+    - EDIT : c'est ce que j'utilise pour splitter mon projet en composants.
+- on peut utiliser un subproject comme fallback d'une dépendance absente :
+    > Many platforms do not provide a system package manager. On these systems dependencies must be compiled from source.
+    - ^ au lieu de linker directement avec la `lib.a`, on commence par compiler les sources pour produire la `lib.a`, puis on linke contre elle
+    > Meson's subprojects make it simple to use system dependencies when they are available and to build dependencies manually when they are not.
+    - ^ utilisation de la lib system si elle est dispo, avec build manuel en fallback
+- il y a plusieurs façons de résoudre une dépendance ; notamment [via cmake](https://mesonbuild.com/Dependencies.html#cmake) :
+    > Meson can use the CMake find_package() function to detect dependencies with the builtin Find<NAME>.cmake modules and exported project configurations (usually in /usr/lib/cmake).
+- tool particulier pour une dépendance :
+    - https://mesonbuild.com/Dependencies.html#config-tool
+    - certaines librairies / outils ne sont pas gérés avec pkg-config, mais avec leur propre outil (e.g. llvm-config)
+    - meson sait gérer ces outils, et on peut donc déclarer la dépendance normalement : llvm_dep = dependency('llvm', version : '>=4.0')
