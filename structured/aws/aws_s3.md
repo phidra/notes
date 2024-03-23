@@ -1,5 +1,6 @@
 Notes vrac sur AWS S3, notamment à la lecture de [la doc](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html).
 
+- [Utilisation](#utilisation)
 - [Introduction du userguide](#introduction-du-userguide)
    * [Features](#features)
       + [Storage classes](#storage-classes)
@@ -23,6 +24,12 @@ Notes vrac sur AWS S3, notamment à la lecture de [la doc](https://docs.aws.amaz
       + [Related services](#related-services)
 - [Liste des fonctions de l'API](#liste-des-fonctions-de-lapi)
 - [Liste des régions S3](#liste-des-régions-s3)
+
+# Utilisation
+
+Via la console web, je peux consulter les buckets et leurs fichiers.
+
+Pour chaque fichier, je peux voir ses propriétés et attributs (et j'ai un bouton pour le télécharger)
 
 # Introduction du userguide
 
