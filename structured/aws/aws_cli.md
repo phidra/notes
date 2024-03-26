@@ -1,5 +1,15 @@
 **TL;DR** : aws-cli est une CLI (duh !) permettant d'utiliser les services AWS. Notamment, elle permet de configurer le login.
 
+- [Installation](#installation)
+  * [Ce que j'ai suivi](#ce-que-j-ai-suivi)
+  * [À ne pas faire](#--ne-pas-faire)
+- [Authentication](#authentication)
+  * [AWS_PROFILE](#aws-profile)
+  * [avec SSO](#avec-sso)
+  * [get-caller-identity](#get-caller-identity)
+  * [Company's startpage](#company-s-startpage)
+- [Utilisation](#utilisation)
+
 # Installation
 
 ## Ce que j'ai suivi

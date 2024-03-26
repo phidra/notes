@@ -1,6 +1,6 @@
 AWS, c'est une collection de plein plein (>200) de services différents.
 
-Quelques uns des serivces pertinents :
+Quelques uns des services pertinents :
 
 - **S3** (= Simple Storage Service) = file storage
 - **EC2** = équivalent de ce que j'avais chez gandi = un serveur privé virtualisé (= IAAS)
