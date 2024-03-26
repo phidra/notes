@@ -14,15 +14,17 @@
 
 ## Ce que j'ai suivi
 
-Il y a deux versions, la V1 est deprecated, il faut utiliser la V2.
+**Attention** : il y a deux versions, la V1 est deprecated, il faut utiliser la V2.
+
+La doc d'installsation est très bien faite : https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 
 ```sh
 cd /tmp
 
-# téléchargement + checksum :
+# téléchargement + checksum, pour x86_64 (il y a l'équivalent pour ARM) :
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
-nvim /tmp/key.txt  # ici, insérer la clé publique PGP
+nvim /tmp/key.txt  # ici, insérer la clé publique PGP copiée depuis la doc d'installation
 gpg --import /tmp/key.txt
 curl -o awscliv2.sig https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip.sig
 gpg --verify awscliv2.sig awscliv2.zip
