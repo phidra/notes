@@ -1,6 +1,8 @@
 Notes vrac sur AWS S3, notamment à la lecture de [la doc](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html).
 
 - [Utilisation](#utilisation)
+  * [Console web](#console-web)
+  * [CLI](#cli)
 - [Introduction du userguide](#introduction-du-userguide)
    * [Features](#features)
       + [Storage classes](#storage-classes)
@@ -27,9 +29,28 @@ Notes vrac sur AWS S3, notamment à la lecture de [la doc](https://docs.aws.amaz
 
 # Utilisation
 
+## Console web
+
 Via la console web, je peux consulter les buckets et leurs fichiers.
 
 Pour chaque fichier, je peux voir ses propriétés et attributs (et j'ai un bouton pour le télécharger)
+
+## CLI
+
+```sh
+# préalable :
+aws sso ...
+export AWS_PROFILE=...
+
+# lister les buckets :
+aws s3 ls
+
+# lister les fichier d'un bucket :
+aws s3 ls my-staging-bucket
+
+# télécharger un fichier d'un bucket :
+aws s3 cp s3://my-staging-bucket/myfile.txt /tmp/youpi
+```
 
 # Introduction du userguide
 
