@@ -1,4 +1,6 @@
 * [imagemagick pour calculer la différence entre deux images](#imagemagick-pour-calculer-la-différence-entre-deux-images)
+* [imagemagick pour splitter un PDF](#imagemagick-pour-splitter-un-pdf)
+* [imagemagick pour concaténer plusieurs images en un PDF](#imagemagick-pour-concaténer-plusieurs-images-en-un-pdf)
 * [plotter avec sqliteviz des valeurs loggées avec timestamp](#plotter-avec-sqliteviz-des-valeurs-loggées-avec-timestamp)
 * [grepper un process](#grepper-un-process)
 * [retrouver un process à partir de son pid](#retrouver-un-process-à-partir-de-son-pid)
@@ -21,6 +23,54 @@
 ```sh
 compare modified.png reference.png -compose src /tmp/diff.png
 ```
+
+# imagemagick pour splitter un PDF
+
+**tags** : image-processing, pdf
+
+Splitter un PDF en N images :
+
+```sh
+convert -density 300 my_input_file.pdf pouet.png
+# génère N fichiers pouet-x.png
+```
+
+Attention : par défaut cet appel échoue avec ce message d'erreur :
+
+```
+convert my_input_file.pdf pouet.png
+convert-im6.q16: attempt to perform an operation not allowed by the security policy `PDF' @ error/constitute.c/IsCoderAuthorized/408.
+convert-im6.q16: no images defined `pouet.png' @ error/convert.c/ConvertImageCommand/3258.
+```
+
+Pour contourner, il faut assouplir (temporairement) la configuration de ImageMagick :
+
+```sh
+sudo vim /etc/ImageMagick-6/policy.xml
+```
+
+Commenter la ligne suivante :
+
+```xml
+<policy domain="coder" rights="none" pattern="PDF" />
+```
+
+Pour qu'elle devienne :
+
+```xml
+<!-- <policy domain="coder" rights="none" pattern="PDF" /> -->
+```
+
+# imagemagick pour concaténer plusieurs images en un PDF
+
+**tags** : image-processing, pdf
+
+(la commande suivante en profite pour resizer)
+
+```sh
+convert -resize 50% my_image_{1,2,3,4,5,6,7,8,9}.png out.pdf
+```
+
 
 # plotter avec sqliteviz des valeurs loggées avec timestamp
 
