@@ -1,13 +1,17 @@
 AWS EKS = Elastic Kubernetes Service : c'est un cluster kubernetes managé.
 
+(je mets aussi ici mes notes k8s, même si en réalité ça n'est pas spécifique à AWS : ça 'applique à n'importe quel cluster k8s)
+
 - [Utilisation](#utilisation)
+  * [Lister les pods et leurs infos](#lister-les-pods-et-leurs-infos)
+  * [Avoir des infos sur un pod en particulier](#avoir-des-infos-sur-un-pod-en-particulier)
 - [Installation de kubectl](#installation-de-kubectl)
 - [Configuration de kubectl vers un cluster AWS EKS](#configuration-de-kubectl-vers-un-cluster-aws-eks)
 
 
 # Utilisation
 
-Lister les pods et leurs infos :
+## Lister les pods et leurs infos
 
 ```sh
 kubectl get namespaces
@@ -37,7 +41,9 @@ kubectl get services --namespace myapp-staging
 # NDM : c'est comme ceci qu'on peut connaître l'IP des pods.
 ```
 
-Pour toutes les commandes suivantes, on a besoin de l'id du pod. Le plus simple est de faire une envvar :
+## Avoir des infos sur un pod en particulier
+
+Pour toutes les commandes suivantes, on a besoin de passer l'id d'un pod. Le plus simple est d'en faire une envvar :
 
 ```sh
 export POD=myapp-app-7d776d5c6d-ks8dl
@@ -60,6 +66,18 @@ Connaître l'image docker qui tourne sur un pod :
 
 ```sh
 kubectl get pod -n myapp-staging "$POD" -o=json | jq '.status.containerStatuses'
+```
+
+Récupérer... **BEAUCOUP** d'infos sur un pod :
+
+```sh
+kubectl describe pod "$POD" --namespace myapp-staging
+# image docker exécutée + ports
+# variables d'environnement auxquelles le pod a accès
+# requests et limits pour CPU + RAM
+# IP
+# config des sondes de liveness/readiness/startup
+# date de démarrage / restart
 ```
 
 
