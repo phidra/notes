@@ -1,11 +1,16 @@
 **TL;DR** : aws-cli est une CLI (duh !) permettant d'utiliser les services AWS. Notamment, elle permet de configurer le login.
 
 - [Utilisation](#utilisation)
+  * [Découpage par service](#d-coupage-par-service)
+  * [Exemple avec S3](#exemple-avec-s3)
+  * [Aide à la construction de la commande](#aide---la-construction-de-la-commande)
 - [Installation](#installation)
   * [Ce que j'ai suivi](#ce-que-j-ai-suivi)
   * [À ne pas faire](#--ne-pas-faire)
 
 # Utilisation
+
+## Découpage par service
 
 La tronche générale des commandes a l'air d'être :
 
@@ -16,8 +21,9 @@ aws SERVICE COMMANDE
 aws sts get-caller-identity
 ```
 
-Exemple S3 avec utilisation du SSO et de `AWS_PROFILE` :
+## Exemple avec S3
 
+Exemple S3 avec utilisation du SSO et de `AWS_PROFILE` :
 
 ```sh
 # préalable :
@@ -28,6 +34,14 @@ export AWS_PROFILE=...
 aws s3 cp s3://my-super-bucket/myfile.txt /tmp/youpi
 ```
 
+## Aide à la construction de la commande
+
+Les commandes disposent toutes d'une option `--cli-auto-prompt` qui permet de construire interactivement la commande :
+
+- en listant les paramètres existants
+- en indiquant ceux obligatoires et facultatifs
+- en donnant une petite explication de chaque paramètre
+- en autocomplétant quand c'est possible (e.g. pour les profils)
 
 # Installation
 

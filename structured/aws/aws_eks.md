@@ -1,3 +1,5 @@
+AWS EKS = Elastic Kubernetes Service : c'est un cluster kubernetes managé.
+
 - [Utilisation](#utilisation)
 - [Installation de kubectl](#installation-de-kubectl)
 - [Configuration de kubectl vers un cluster AWS EKS](#configuration-de-kubectl-vers-un-cluster-aws-eks)

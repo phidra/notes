@@ -1,8 +1,17 @@
 Notes vrac sur AWS S3, notamment à la lecture de [la doc](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html).
 
-- [Utilisation](#utilisation)
-  * [Console web](#console-web)
-  * [CLI](#cli)
+- [Utilisation avec la console web](#utilisation-avec-la-console-web)
+- [Utilisation avec la CLI simplifiée aws s3](#utilisation-avec-la-cli-simplifi-e-aws-s3)
+  * [Lister les buckets](#lister-les-buckets)
+  * [Lister les fichier d'un bucket](#lister-les-fichier-d-un-bucket)
+  * [Télécharger un fichier d'un bucket](#t-l-charger-un-fichier-d-un-bucket)
+- [Utilisation avec la CLI complète aws s3api](#utilisation-avec-la-cli-compl-te-aws-s3api)
+  * [Lister les tags d'un fichier](#lister-les-tags-d-un-fichier)
+- [Liste des fonctions de l'API](#liste-des-fonctions-de-lapi)
+- [Liste des régions S3](#liste-des-régions-s3)
+
+----
+
 - [Introduction du userguide](#introduction-du-userguide)
    * [Features](#features)
       + [Storage classes](#storage-classes)
@@ -24,33 +33,70 @@ Notes vrac sur AWS S3, notamment à la lecture de [la doc](https://docs.aws.amaz
       + [Regions](#regions)
       + [Amazon S3 data consistency model](#amazon-s3-data-consistency-model)
       + [Related services](#related-services)
-- [Liste des fonctions de l'API](#liste-des-fonctions-de-lapi)
-- [Liste des régions S3](#liste-des-régions-s3)
 
-# Utilisation
 
-## Console web
+# Utilisation avec la console web
 
 Via la console web, je peux consulter les buckets et leurs fichiers.
 
 Pour chaque fichier, je peux voir ses propriétés et attributs (et j'ai un bouton pour le télécharger)
 
-## CLI
+# Utilisation avec la CLI simplifiée aws s3
+
+La commande `aws s3` est une façade qui expose des fonctions de haut-niveau, plus simples mais moins puissantes.
+
+Préalable :
 
 ```sh
-# préalable :
-aws sso ...
-export AWS_PROFILE=...
+aws sso login --profile my-dev-profile
+export AWS_PROFILE=my-dev-profile
+```
 
-# lister les buckets :
+## Lister les buckets
+
+```sh
 aws s3 ls
+```
 
-# lister les fichier d'un bucket :
+## Lister les fichier d'un bucket
+```sh
 aws s3 ls my-staging-bucket
+```
 
-# télécharger un fichier d'un bucket :
+## Télécharger un fichier d'un bucket
+
+```sh
 aws s3 cp s3://my-staging-bucket/myfile.txt /tmp/youpi
 ```
+
+# Utilisation avec la CLI complète aws s3api
+
+La commande `aws s3api` expose toute la richesse de l'API.
+
+## Lister les tags d'un fichier
+
+```sh
+aws s3api get-object-tagging --bucket my-staging-bucket --key test.txt
+# {
+#     "TagSet": [
+#         {
+#             "Key": "test-key",
+#             "Value": "test-value"
+#         }
+#     ]
+# }
+```
+
+# Liste des fonctions de l'API
+
+https://docs.aws.amazon.com/AmazonS3/latest/API/API_Operations_Amazon_Simple_Storage_Service.html
+
+Par exemple [la doc de GetObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html)
+
+# Liste des régions S3
+
+https://docs.aws.amazon.com/general/latest/gr/s3.html
+
 
 # Introduction du userguide
 
@@ -186,14 +232,3 @@ Il y a pas mal d'explications sur la concurrence, à laquelle je ne m'intéresse
 > After you load your data into Amazon S3, you can use it with other AWS services.
 
 ^ sans surprise, S3 est intégré avec les autres services AWS.
-
-# Liste des fonctions de l'API
-
-https://docs.aws.amazon.com/AmazonS3/latest/API/API_Operations_Amazon_Simple_Storage_Service.html
-
-Par exemple [la doc de GetObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html)
-
-# Liste des régions S3
-
-https://docs.aws.amazon.com/general/latest/gr/s3.html
-

@@ -23,7 +23,7 @@ Quelques uns des services pertinents :
 - **CloudFront** = CDN
 - **IAM** = Identity and Access Management = gestion des identités et accès
 
-Il y a une notion de "service managé", où le client (moi) ne gère ni le déploiement ni la maintenance et les mises à jour de sécurité, c'est AWS qui fait le taf.
+Il y a une notion de "service managé", où l'utilisateur du servic;e (moi) ne gère ni le déploiement ni la maintenance et les mises à jour de sécurité, c'est AWS qui fait le taf.
 
 Les différents services AWS sont très bien intégrés entre eux.
 
