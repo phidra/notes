@@ -946,7 +946,19 @@ source $ZSH/oh-my-zsh.sh
     ```
 - `just` fournit quelques fonctions pour faire de l'introspection ou de la manipulation de paths ou de strings, cf. https://just.systems/man/en/chapter_30.html
 - modularité : on peut splitter ses justfiles et inclure des fichiers externes
-
+- pour qu'une recipe fonctionne en deux étapes, ceci ne fonctionne pas, car [chaque ligne d'une recipe est exécutée dans un shell indépendant](https://just.systems/man/en/chapter_43.html#setting-variables-in-a-recipe) :
+    ```
+    myrecipe MYARG='pouet':
+      INTERMEDIARY="$(some-command {{MYARG}} )"
+      do-something-with "$INTERMEDIARY"
+    ```
+- la solution suggérée est que la première ligne soit un shebang : toutes les lignes seront alors exécutées par le même shell :
+    ```
+    myrecipe MYARG='pouet':
+      #!/usr/bin/env bash
+      INTERMEDIARY="$(some-command {{MYARG}} )"
+      do-something-with "$INTERMEDIARY"
+    ```
 
 # NerdFonts
 
