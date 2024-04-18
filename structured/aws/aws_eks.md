@@ -2,11 +2,15 @@ AWS EKS = Elastic Kubernetes Service : c'est un cluster kubernetes managé.
 
 (je mets aussi ici mes notes k8s, même si en réalité ça n'est pas spécifique à AWS : ça 'applique à n'importe quel cluster k8s)
 
-- [Utilisation](#utilisation)
-  * [Lister les pods et leurs infos](#lister-les-pods-et-leurs-infos)
-  * [Avoir des infos sur un pod en particulier](#avoir-des-infos-sur-un-pod-en-particulier)
-- [Installation de kubectl](#installation-de-kubectl)
-- [Configuration de kubectl vers un cluster AWS EKS](#configuration-de-kubectl-vers-un-cluster-aws-eks)
+* [Utilisation](#utilisation)
+   * [Lister les pods et leurs infos](#lister-les-pods-et-leurs-infos)
+   * [Avoir des infos sur un pod en particulier](#avoir-des-infos-sur-un-pod-en-particulier)
+* [Installation de kubectl](#installation-de-kubectl)
+* [Configuration de kubectl vers un cluster AWS EKS](#configuration-de-kubectl-vers-un-cluster-aws-eks)
+* [OpenLens](#openlens)
+   * [Lens vs OpenLens](#lens-vs-openlens)
+   * [Installation :](#installation-)
+   * [Utilisation](#utilisation-1)
 
 
 # Utilisation
@@ -125,3 +129,35 @@ kubectl get namespaces
 # on peut aussi vérifier que le retour de cette commande a bien des infos pertinentes :
 kubectl config view
 ```
+
+# OpenLens
+
+**C'est quoi ?** Une IHM pour administrer un cluster k8s.
+
+## Lens vs OpenLens
+
+OpenLens est passé en sources fermées pour donner naissance Lens = la version commerciale :
+
+- OpenLens = OPEN-SOURCE : https://github.com/MuhammedKalkan/OpenLens
+- Lens = CLOSED-SOURCES : https://k8slens.dev/
+
+D'après mon collègue, on peut sans souci utiliser la dernière version à sources ouvertes.
+
+## Installation :
+
+Télécharger le deb depuis [la page des releases](https://github.com/MuhammedKalkan/OpenLens/releases) :
+
+- `OpenLens-6.5.2-366.amd64.deb`
+- `OpenLens-6.5.2-366.amd64.deb.sha256`
+
+Installer le deb :
+
+```sh
+sudo apt install ./OpenLens-6.5.2-366.amd64.deb
+```
+
+## Utilisation
+
+Il trouve tout seul les clusters à partir des fichiers de config sous `~/.kube`.
+
+On peut "éditer" une ressource (e.g. un job) pour visualiser le yaml de sa configuration.
