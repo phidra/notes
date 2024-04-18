@@ -12,6 +12,7 @@
 * [créer ou extraire une archive .tar.7z de tout un répertoire](#créer-ou-extraire-une-archive-tar7z-de-tout-un-répertoire)
 * [chiffrer un fichier](#chiffrer-un-fichier)
 * [éditer un fichier dans un container docker qui n'a pas d'éditeur](#éditer-un-fichier-dans-un-container-docker-qui-na-pas-déditeur)
+* [connaître l'entrypoint ou la commande d'une image](#connaître-lentrypoint-ou-la-commande-dune-image)
 * [matcher toute l'arborescence ou juste les fichiers avec zsh](#matcher-toute-larborescence-ou-juste-les-fichiers-avec-zsh)
 * [vider le cache bash](#vider-le-cache-bash)
 
@@ -229,6 +230,41 @@ docker cp <container>:/path/to/myfile /tmp
 vim /tmp/myfile
 docker cp /tmp/myfile <container>:/path/to/myfile
 ```
+
+# connaître l'entrypoint ou la commande d'une image
+
+**tags** : docker
+
+Et plein d'autres choses utiles :
+
+```sh
+docker inspect my_super_image | jq '.[0].Config'
+ # {
+ #     # (...)
+ #     "ExposedPorts": {
+ #         "8888/tcp": {}
+ #     },
+ #     "Env": [
+ #         "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+ #         "MY_VERSION="pouet,
+ #         "LD_LIBRARY_PATH=."
+ #     ],
+ #     "Cmd": null,
+ #     "Image": "sha256:a58e2d239e794d246a83072a7a2f6bb369bdab92a74f81dc7310b4736c5f6b21",
+ #     "Volumes": null,
+ #     "WorkingDir": "",
+ #     "Entrypoint": [
+ #         "/mycommand",
+ #         "--arg1",
+ #         "pouet",
+ #         "--arg2",
+ #         "8888"
+ #     ],
+ #     # (...)
+ # }
+```
+
+
 
 # matcher toute l'arborescence ou juste les fichiers avec zsh
 
