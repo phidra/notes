@@ -2,7 +2,7 @@
 * [Conversions](#conversions)
 * [Tricks](#tricks)
    * [cargo clean](#cargo-clean)
-   * [faire en sorte que le compio affiche le type exact d'une expression](#faire-en-sorte-que-le-compio-affiche-le-type-exact-dune-expression)
+   * [faire en sorte que le compilo affiche le type exact d'une expression](#faire-en-sorte-que-le-compilo-affiche-le-type-exact-dune-expression)
    * [n'itérer que sur un variant d'enum](#nitérer-que-sur-un-variant-denum)
    * [laisser rust inférer le type avec collect()](#laisser-rust-inférer-le-type-avec-collect)
    * [tester si un enum est un variant particulier](#tester-si-un-enum-est-un-variant-particulier)
@@ -17,12 +17,17 @@
    * [ownership le retour](#ownership-le-retour)
    * [fields d'une struct publics vs utiliser new](#fields-dune-struct-publics-vs-utiliser-new)
    * [mutabilité et move des références](#mutabilité-et-move-des-références)
+   * [commentaires avec point d'exclamation](#commentaires-avec-point-dexclamation)
+   * [Un crate ou une create](#un-crate-ou-une-create)
+   * [Destructuring](#destructuring)
+   * [Minimum Supported Rust Version](#minimum-supported-rust-version)
+   * [Intégrer des exemples à sa librairie](#intégrer-des-exemples-à-sa-librairie)
 * [Rust for C++ Programmers](#rust-for-c-programmers)
    * [Unique pointers](#unique-pointers)
    * [Borrowed pointers](#borrowed-pointers)
    * [Reference counted and raw pointers](#reference-counted-and-raw-pointers)
    * [Data types](#data-types)
-   * [Destructuring](#destructuring)
+   * [Destructuring](#destructuring-1)
    * [Destructuring pt2 - match and borrowing](#destructuring-pt2---match-and-borrowing)
    * [Arrays and Vectors](#arrays-and-vectors)
    * [Graphs and arena allocation](#graphs-and-arena-allocation)
@@ -30,6 +35,7 @@
 
 # Ressources
 
+- [Rust book](https://doc.rust-lang.org/book/)
 - [Rust by Example](https://doc.rust-lang.org/rust-by-example/)
 - [Rust By Practice](https://practice.rs/why-exercise.html)
 - [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/)
@@ -37,6 +43,8 @@
 - [Rust Language Cheat Sheet](https://cheats.rs/)
 - [Easy Rust](https://dhghomon.github.io/easy_rust/Chapter_1.html)
 - [A Gentle Introduction to Rust](https://stevedonovan.github.io/rust-gentle-intro/readme.html#a-gentle-introduction-to-rust)
+- [Doc de référence de la lib standard](https://doc.rust-lang.org/std/all.html)
+- [Doc des crates publiques](https://docs.rs/)
 - beaucoup, beaucoup de liens qui ont l'air intéressants dans [la cheatsheet rust](https://cheats.rs/#links-services)
 
 
@@ -87,7 +95,7 @@ Si `cargo check --all` échoue alors que `cargo build` réussit (et que le build
 cargo clean
 ```
 
-## faire en sorte que le compio affiche le type exact d'une expression
+## faire en sorte que le compilo affiche le type exact d'une expression
 
 ```rs
 let () = expr;
@@ -275,6 +283,65 @@ let vec_number = vec![1, 2, 3];
 let another_vec = vec![2, 3, 4];
 let mut ref_vec = &vec_number;
 ref_vec = &another_vec;
+```
+
+## commentaires avec point d'exclamation
+
+Exemple de commentaire en question :
+
+```rs
+//! This is the top level library for the preprocess.
+```
+
+Explication [dans la doc rust](https://doc.rust-lang.org/reference/comments.html#doc-comments), ce sont des **doc-comments** :
+
+> Line comments beginning with //! and block comments /\*! ... \*/ are doc comments that apply to the parent of the comment, rather than the item that follows. That is, they are equivalent to writing #![doc="..."] around the body of the comment. //! comments are usually used to document modules that occupy a source file.
+
+^ ce sont des comments destinés à la doc auto-générée.
+
+## Un crate ou une create
+
+En français, dit-on UN crate ou UNE crate ?
+
+D'après internet, c'est UNE crate :
+
+- https://rust.developpez.com/tutoriels/rust-par-l-exemple/?page=les-crates#:~:text=Une%20crate%20est%20une%20unit%C3%A9,un%20fichier%20f%C3%A9d%C3%A9rant%20les%20autres).
+- https://jimskapt.github.io/rust-book-fr/ch07-01-packages-and-crates.html
+
+
+## Destructuring
+
+(notes de quand je débutais) C'est quoi cette syntaxe pour définir les arguments d'une fonction en "appelant" `State(...)` et `Json(...)` :
+
+```rs
+async fn handler(
+    State(state): State<Arc<MyState>>,
+    Json(payload): Json<api::Input>,
+)
+```
+
+Réponse = c'est le destructuring à la rust :
+
+- à la différence du C++, ça ne fonctionne pas que sur les tuple comme : `auto [a, b] = something;`
+- ça fonctionne aussi sur les structs : `let Point{x, y} = something;`
+- je l'ai même déjà utilisé sans faire attention avec `Some(x)`
+- https://doc.rust-lang.org/stable/book/ch18-01-all-the-places-for-patterns.html#function-parameters
+- https://doc.rust-lang.org/stable/book/ch18-03-pattern-syntax.html#destructuring-structs
+
+## Minimum Supported Rust Version
+
+MSRV = minimum supported rust version, [exemple avec axum](https://github.com/tokio-rs/axum#minimum-supported-rust-version)
+
+## Intégrer des exemples à sa librairie
+
+Sous-répertoire `examples`, avec des fichiers qui ont la fonction `fn main()`
+
+Ça permet d'illustrer comment utiliser une crate, et avoir un petit programme de test ; j'aime bien, c'est pratique !
+
+Pour lesq lancer (cf. [la doc](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#examples)) :
+
+```rs
+cargo run --examples pour lancer les examples
 ```
 
 # Rust for C++ Programmers
