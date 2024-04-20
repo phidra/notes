@@ -4,6 +4,7 @@ D'une façon générale, sur cmake, cf. mes nombreuses POCs sur le sujet, assort
 
 * [Connaître les options de config du build](#connaître-les-options-de-config-du-build)
 * [PUBLIC vs PRIVATE vs INTERFACE](#public-vs-private-vs-interface)
+* [Effective Modern CMake](#effective-modern-cmake)
 
 # Connaître les options de config du build
 
@@ -172,4 +173,41 @@ NDM : et ces includes peuvent ou non être nécessaires pour compiler la librair
 > When target dependencies are specified using target_link_libraries(), CMake will read this property from all target dependencies to determine the build properties of the consumer.
 
 Important à comprendre : lorsqu'on associe quelque chose (un include_directory, une compile_definition, etc.) à une librairie, le mot-clé `PUBLIC/PRIVATE/INTERFACE` n'a pas d'influence sur la façon dont cmake compile la lib en elle-même, mais ne joue que sur la façon dont cmake compile un **UTILISATEUR** de la lib.
+
+# Effective Modern CMake
+
+[Effective Modern CMake](https://gist.github.com/mbinna/c61dbb39bca0e4fb7d1f73b0d66a4fd1) = équivalent spirituel de Effective C++ pour cmake.
+
+[Think in terms of targets and properties](https://gist.github.com/mbinna/c61dbb39bca0e4fb7d1f73b0d66a4fd1#think-in-terms-of-targets-and-properties) :
+
+> By defining properties (i.e., compile definitions, compile options, compile features, include directories, and library dependencies) in terms of targets, it helps the developer to reason about the system at the target level. The developer does not need to understand the whole system in order to reason about a single target. The build system handles transitivity.
+
+----
+
+[Imagine targets as objects](https://gist.github.com/mbinna/c61dbb39bca0e4fb7d1f73b0d66a4fd1#imagine-targets-as-objects) :
+
+> Calling the member functions modifies the member variables of the object.
+>
+> Analogy to constructors:
+> - add_executable
+> - add_library
+>
+> Analogy to member variables:
+> - target properties (too many to list here)
+>
+> Analogy to member functions:
+> - target_compile_definitions
+> - target_compile_features
+> - target_compile_options
+> - target_include_directories
+> - target_link_libraries
+> - target_sources
+> - get_target_property
+> - set_target_property
+
+----
+
+[Declare direct dependencies with target_link_libraries](https://gist.github.com/mbinna/c61dbb39bca0e4fb7d1f73b0d66a4fd1#declare-direct-dependencies-with-target_link_libraries) :
+
+> This propagates usage requirements from the dependent target to the depending target. The command also resolves transitive dependencies.
 
