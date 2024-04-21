@@ -4,7 +4,12 @@ D'une façon générale, sur cmake, cf. mes nombreuses POCs sur le sujet, assort
 
 * [Connaître les options de config du build](#connaître-les-options-de-config-du-build)
 * [PUBLIC vs PRIVATE vs INTERFACE](#public-vs-private-vs-interface)
+   * [Résumé de ma compréhension pour PUBLIC ET PRIVATE](#résumé-de-ma-compréhension-pour-public-et-private)
+   * [Et INTERFACE ?](#et-interface-)
+   * [Guidelines d'utilisation](#guidelines-dutilisation)
+   * [Les liens et extraits utiles](#les-liens-et-extraits-utiles)
 * [Effective Modern CMake](#effective-modern-cmake)
+
 
 # Connaître les options de config du build
 
@@ -32,6 +37,70 @@ Mais comment pouvais-je avoir connaissance de cette option `BUILD_TESTING` ?
     > Usage: After you have generated configure files using `cmake ..` in build folder. Then do `ccmake ..` , to see all the options and paths which can be be modified by pressing Enter for editing. After editing press c again to configure. This will save the files in build folder with your edited settings. Then do make -j4 , for building the MakeFile.
 
 # PUBLIC vs PRIVATE vs INTERFACE
+
+## Résumé de ma compréhension pour PUBLIC ET PRIVATE
+
+Lorsqu'on associe une propriété à une librairie `L`, les keywords `PUBLIC` et `PRIVATE` influent non pas sur la façon dont cmake va compiler `L` (qui aura de toutes façons toujours la propriété peu importe le keyword), mais plutôt sur la façon dont cmake compile un **utilisateur** de `L`, p.ex. un exécutable `E` utilisant la librairie.
+
+Exemples de propriétés concernées :
+
+- les répertoires à inclure pour compiler la lib, via [target_include_directories](https://cmake.org/cmake/help/latest/command/target_include_directories.html)
+- les flags de compilation pour compiler la lib, via [target_compile_definitions](https://cmake.org/cmake/help/latest/command/target_compile_definitions.html)
+- les librairies dont `L` a besoin pour compiler, via [target_link_librairies](https://cmake.org/cmake/help/latest/command/target_link_libraries.html)
+
+Prenons l'exemple d'un exécutable `E` qui utilise une librairie `L`, elle-même utilisant une dépendance `D` (e.g. une autre librairie). On aura donc quelque part dans le `CMakeLists.txt` de `L` quelque chose comme :
+
+```cmake
+target_include_directories(L "/path/to/headers/of/D")
+target_link_libraries(L D)
+```
+
+Si on utilise plutôt la forme complète, la question est de savoir quelle est la différence entre les deux formes suivantes :
+
+```cmake
+# forme 1 = avec PUBLIC :
+target_include_directories(L PUBLIC "/path/to/headers/of/D")
+target_link_libraries(L PUBLIC D)
+
+# forme 2 = avec PRIVATE :
+target_include_directories(L PRIVATE "/path/to/headers/of/D")
+target_link_libraries(L PRIVATE D)
+```
+
+Réponse : du point de vue de `L`, les deux formes suivantes seront **identiques** : `L` sera compilé de la même façon (en incluant les headers de `D`, et en liant `D`). Ce qui change, c'est la façon dont `E` sera compilé :
+
+- avec `PRIVATE`, `E` sera compilé sans utiliser `D` (ni pour les headers, ni au link)
+- avec `PUBLIC`, `E` sera compilé en utilisant `D` (pour les headers et pour le link)
+
+## Et INTERFACE ?
+
+Le cas `INTERFACE` est un peu particulier ; pour reprendre la mise en situation ci-dessus, si on définit :
+
+```cmake
+target_include_directories(L INTERFACE "/path/to/headers/of/D")
+```
+
+C'est que `L` n'a pas besoin des headers de `D` pour être compilée, mais que `E` en aura besoin (par exemple, si `L` est une librairie header-only).
+
+Dans ce cas, `L` sera compilé **SANS** les includes, et `E` sera compilé **AVEC**.
+
+En résumé, pour chacun des 3 keywords `PUBLIC+PRIVATE+INTERFACE`, on a un tableau à deux colonnes :
+
+|             | `L` sera compilé avec la propriété  | `E` sera compilé avec la propriété  |
+|-------------|-------------------------------------|-------------------------------------|
+| `PUBLIC`    |                 OUI                 |                 OUI                 |
+| `PRIVATE`   |                 OUI                 |                 NON                 |
+| `INTERFACE` |                 NON                 |                 OUI                 |
+
+## Guidelines d'utilisation
+
+Du coup, on peut en déduire les guidelines suivantes (que je reprends d'une référence ci-dessous) :
+
+- dans le cas général, on considère qu'une dépendance n'est utilisée que dans l'implémentation d'une librairie : elle doit être privée, et déclarée avec `target_link_libraries()` + le keyword `PRIVATE`
+- mais si la dépendance est utilisée dans un header public de la librairie, elle doit être déclarée avec le keywoard `PUBLIC`
+- et si la dépendance n'est pas utilisée par l'implémentation de la librairie, mais uniquement dans ses headers publics, elle doit être déclarée avec le keyword `INTERFACE`
+
+## Les liens et extraits utiles
 
 Je reporte ici plusieurs extraits de différents liens qui m'ont aidé à construire ma compréhension. Par ailleurs, voici quelques autres références utiles, que je n'ai pas annotées :
 
