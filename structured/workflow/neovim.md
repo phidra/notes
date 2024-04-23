@@ -7,6 +7,7 @@
    * [Plugins (neo)vim possiblement intéressants, à regarder](#plugins-neovim-possiblement-intéressants-à-regarder)
 * [Telescope](#telescope)
    * [Notes à l'usage](#notes-à-lusage)
+* [ChatGPT](#chatgpt)
 
 
 # Neovim
@@ -139,3 +140,44 @@ Les principes de fonctionnement :
     - sorter = ce qui permet d'ordonner les items de la liste en fonction de la chaîne fuzzy que l'utilisateur a tapée
 
 On peut rouvrir telescope dans l'état dans lequel on l'avait laissé : `:lua require('telescope.builtin').resume()`
+
+# ChatGPT
+
+Notes un peu vrac ; à date, je n'ai essayé que ce plugin, qui ne m'a pas convaincu : https://github.com/jackMort/ChatGPT.nvim
+
+Pour utiliser le plugin :
+
+```sh
+export OPENAI_API_KEY=<la-clé-openai>
+export OPENAI_API_TYPE=azure
+export OPENAI_API_BASE=https://MYSUPERCOMPANY.openai.azure.com
+export OPENAI_API_AZURE_ENGINE=GPT-35-TURBO-16K
+export OPENAI_API_AZURE_VERSION=2023-07-01-preview
+
+nvim tel fichier
+```
+
+Mes impressions à chaud :
+
+- pas fou, mais possiblement utile
+- `Ctrl+C` pour quitter le prompt
+- pas archi pratique pour le moment : je dois escape avant de `Ctrl+Entrée` pour valider le prompt
+- `:ChatGPTEditWithInstructions` :
+    - peut modifier un fichier pour répondre à un besoin
+    - peut répondre à des questions locales précises (e.g. passer la config clang à 120 caractères)
+- Pas de retour à la ligne dans la réponse du prompt -> dur à lire
+- `:ChatGPTRun summarize` :
+    - décevant sur un unique fichier
+    - il faudrait que je trouve le moyen de lui passer toute la base de code ?
+- `:ChatGPTRun explain_code` :
+    - décevant aussi (se contente de paraphraser le contenu)
+- Un truc intéressant : il peut créer une implémentation vide d'une interface, ainsi que les tests unitaires qui vont avec.
+- Par contre, `ChatGPTCompleteCode` n'a pas l'air de marcher avec notre modèle :
+    > API ERROR: The completion operation does not work with the specified model, gpt-35-turbo-16k. Please choose different model and try again.
+- Je demande une application python, puis rust, pour lire un osm.pbf et le convertir en geojson, il semble faire le taf ; wow !
+
+STILL TO DO :
+
+- essayer de lui faire comprendre plusieurs fichiers ?
+- essayer de lui faire expliquer tout un module ?
+
