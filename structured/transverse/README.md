@@ -22,6 +22,7 @@ En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets t
 * [Deployment](#deployment)
    * [k8s liveness readiness startup probes](#k8s-liveness-readiness-startup-probes)
 * [Télémétrie avec OpenTelemetry](#télémétrie-avec-opentelemetry)
+* [stdout vs stderr](#stdout-vs-stderr)
 
 
 # Quotes
@@ -246,3 +247,17 @@ Dit autrement : le fonctionnement par liveness/readiness peut n'être prêt à f
 # Télémétrie avec OpenTelemetry
 
 cf. mes notes spécifiques sur OpenTelemetry, et mes POCs.
+
+# stdout vs stderr
+
+- **stdout** = sortie "normale" → peut-être redirigée vers un fichier ou un autre programme → contient du contenu potentiellement parsable par un ordinateur
+- **stderr** = sortie "en erreur" (mais pas forcément une erreur !) → a vocation à être lu par un humain → contient du contenu human-readable
+
+C'est un peu contre-intuitif, parce que la sortie sur stderr ne correspond pas forcément à une erreur !
+
+C'est plus simple avec un exemple concret : un programme qui convertit un fichier CSV en JSON :
+
+- le json fabriqué en sortie ira sur **stdout** (ça c'est intuitif)
+- un log d'erreur du genre `Input file 'toto.csv' is not a CSV file !` ira sur **stderr** (ça aussi c'est intuitif)
+- un log pas d'erreur du genre `Reading input file 'toto.csv'` ira aussi sur **stderr** (ça c'est moint intuitif !)
+- résultat : on peut rediriger stdout vers un fichier pour enregistrer le json produit, tout en ayant les "logs" (normaux, ou en erreur) disponibles sur stderr
