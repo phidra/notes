@@ -7,6 +7,7 @@ AWS EKS = Elastic Kubernetes Service : c'est un cluster kubernetes managé.
    * [Avoir des infos sur un pod en particulier](#avoir-des-infos-sur-un-pod-en-particulier)
 * [Installation de kubectl](#installation-de-kubectl)
 * [Configuration de kubectl vers un cluster AWS EKS](#configuration-de-kubectl-vers-un-cluster-aws-eks)
+* [Limits vs requests](#limits-vs-requests)
 * [OpenLens](#openlens)
    * [Lens vs OpenLens](#lens-vs-openlens)
    * [Installation :](#installation-)
@@ -129,6 +130,26 @@ kubectl get namespaces
 # on peut aussi vérifier que le retour de cette commande a bien des infos pertinentes :
 kubectl config view
 ```
+
+# Limits vs requests
+
+Le CPU et la RAM sur un pod sont dimensionnés avec deux valeurs `limit` et `request`.
+
+Par exemple, voici ce qu'on peut obtenir avec un `kubectl describe pod` :
+
+```
+Limits:
+  cpu:     2
+  memory:  512Mi
+Requests:
+  cpu:      50m
+  memory:   128Mi
+```
+
+D'après [cette page](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits), je comprends grosso-modo que `request` est une borne inférieure de la ressource dispo, et `limit` est une borne supérieure :
+
+- quoiqu'il arrive, le container aura au moins `request` RAM dispo (ici, au moins 128 Mio)
+- s'il y a assez de ressource sur le node qui fait tourner le pod, on pourra monter jusqu'à `limit` RAM (ici, au plus 512 Mio) sans jamais pouvoir dépasser cette limite
 
 # OpenLens
 
