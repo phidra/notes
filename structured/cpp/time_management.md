@@ -44,6 +44,13 @@ Attention : pour qu'un datetime représente un timeopint de façon non-ambigüe,
 - le datetime _"le 1er janvier 2024 à 22h18"_ correspondra à timepoints différents selon que c'est un Français ou un Canadien qui parle.
 - dans l'autre sens, le timepoint _"2 heures après l'explosion du Krakatoa"_ s'exprimra par des datetimes différents en France ou au Canada.
 
+Le monde Python a des dénominations que j'aime bien ([la doc datetime](https://docs.python.org/3/library/datetime.html#aware-and-naive-objects)):
+
+- **timezone AWARE datetime** = un sextuplet couplé à une timezone :
+    > An aware object represents a specific moment in time that is not open to interpretation. 
+- **timezone NAIVE datetime** = un sextuplet sans timezone :
+    > A naive object does not contain enough information to unambiguously locate itself relative to other date/time objects.
+
 ## Dépendance du datetime à la timezone
 
 Stricto-sensu, un datetime est l'association d'une date et d'un time ; en pratique, un objet de type datetime peut ou non comporter une timezone.
@@ -101,7 +108,7 @@ Les clocks sont des "machins qui tickent à intervalle régulier" (la date à la
 ## Création d'un std::tm
 
 - C'est une structure C → on peut remplir manuellement les champs de la structure à "ce qui nous intéresse"
-- `std::localtime` ([doc]()) = transformer un `std::time_t` en un équivalent `std::tm` **EXPRIMÉ DANS LA TIMEZONE LOCALE**
+- `std::localtime` ([doc](https://en.cppreference.com/w/cpp/chrono/c/localtime)) = transformer un `std::time_t` en un équivalent `std::tm` **EXPRIMÉ DANS LA TIMEZONE LOCALE**
     - i.e. le `std::tm` obtenu n'est plus un timepoint : il faut savoir qu'il est exprimé dans la timezone locale
 - `std::gmtime` ([doc](https://en.cppreference.com/w/cpp/chrono/c/gmtime)) = transformer un timepoint de type `std::time_t` en un datetime équivalent `std::tm` **EXPRIMÉ DANS LA TIMEZONE UTC**
     - c'est l'équivalent de `std::localtime`, mais pour une timezone différente
