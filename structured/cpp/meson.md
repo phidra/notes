@@ -1,17 +1,18 @@
 Quelques exemples valant mieux qu'un long fichier de notes : ne pas hésiter à aller voir mes POCs sur meson.
 
-- [Notes à l'utilisation](#notes-à-lutilisation)
+* [Notes à l'utilisation](#notes-à-lutilisation)
    * [Utilisation basique](#utilisation-basique)
    * [Connaître les différentes options de paramétrage du build](#connaître-les-différentes-options-de-paramétrage-du-build)
    * [compile_commands.json](#compile_commandsjson)
-   * [HOWTO débugger](#howto-débugger)
-- [Gestion des dépendances externes avec meson wrap](#gestion-des-dépendances-externes-avec-meson-wrap)
+   * [HOWTO débugger meson](#howto-débugger-meson)
+   * [Passer une option générale au compilateur](#passer-une-option-générale-au-compilateur)
+* [Gestion des dépendances externes avec meson wrap](#gestion-des-dépendances-externes-avec-meson-wrap)
    * [exemple concret](#exemple-concret)
    * [gitignore](#gitignore)
-- [Installation](#installation)
+* [Installation](#installation)
    * [Sample project](#sample-project)
-- [Pourquoi meson plutôt que cmake ou make](#pourquoi-meson-plutôt-que-cmake-ou-make)
-- [Notes vrac à la lecture de la doc](#notes-vrac-à-la-lecture-de-la-doc)
+* [Pourquoi meson plutôt que cmake ou make](#pourquoi-meson-plutôt-que-cmake-ou-make)
+* [Notes vrac à la lecture de la doc](#notes-vrac-à-la-lecture-de-la-doc)
 
 
 # Notes à l'utilisation
@@ -38,10 +39,31 @@ meson configure builddir/
 
 À la différence de cmake, la génération d'un `compile_commands.json` est active par défaut (il faut éventuellement en faire un lien symbolique à la racine du projet pour les IDE)
 
-## HOWTO débugger
+## HOWTO débugger meson
 
 - pour débugger la commande de compilation d'un fichier, aller regarder `compile_commands.json`
 - pour débugger la commande de build, on peut lancer un `ninja -v` (précédé éventuellement d'un `ninja -t clean`)
+
+## Passer une option générale au compilateur
+
+Exemple avec `-gdwarf-4` pour corriger un problème d'utilisation d'un gdb ancien sur du code compilé avec un LLVM récent.
+
+Piste 1 = via une config dans `meson.build` :
+
+```
+add_global_arguments('-gdwarf-4', language : 'cpp')
+```
+
+Piste 2 = depuis la ligne de commande
+
+```
+CXX=clang++-14 meson setup \
+    -Dcpp_args=-gdwarf-4 \
+    builddir/ \
+    src/ \
+    --buildtype=debug
+```
+
 
 # Gestion des dépendances externes avec meson wrap
 

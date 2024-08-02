@@ -5,6 +5,7 @@
       * [TUI](#tui)
       * [gdbinit](#gdbinit)
       * [gdb-dashboard](#gdb-dashboard)
+   * [Infos de debug manquants](#infos-de-debug-manquants)
 * [Breakpoints](#breakpoints)
    * [Types de breakpoings](#types-de-breakpoings)
    * [Savoir où poser un breakpoint](#savoir-où-poser-un-breakpoint)
@@ -24,6 +25,7 @@
    * [Modifier l'état du programme](#modifier-létat-du-programme)
    * [charger les symboles de debug d'une lib](#charger-les-symboles-de-debug-dune-lib)
    * [Divers](#divers)
+
 
 # Généralités
 
@@ -164,6 +166,25 @@ https://github.com/cyrus-and/gdb-dashboard
 A l'air trop chouette, à essayer !
 
 Ici aussi, ça n'est qu'un gdbinit = une config gdb.
+
+## Infos de debug manquants
+
+J'ai rencontré le problème suivant : lorsque je débuggais mon programme avec gdb, j'avais une erreur de non-chargement des infos de debug :
+
+```
+Reading symbols from /path/to/my/program...
+Dwarf Error: DW_FORM_strx1 found in non-DWO CU [in module /path/to/my/program]
+(No debugging symbols found in /path/to/my/program)
+```
+
+Par ailleurs, dans les backtraces gdb, j'avais uniquement la signature des fonctions, et pas le nom des fichiers, la ligne incriminée, ou la possibilité de visualiser le code-source.
+
+Pourtant, je compilais bien avec l'option `-g`.
+
+L'explication : ma version de LLVM produisait du `dwarf-5` par défaut, qui était trop récent pour ma version de gdb.
+
+Solution = forcer LLVM à produire du `dwarf-4` avec l'option `-gdwarf-4` (cf. [la doc](https://clang.llvm.org/docs/ClangCommandLineReference.html#kind-and-level-of-debug-information))
+
 
 # Breakpoints
 
