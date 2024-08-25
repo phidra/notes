@@ -37,6 +37,7 @@ On the topic of comments, I like to say never send a comment to do a name's job,
 
 Some people, when confronted with a problem, think, “I know, I’ll use threads,” and then two they hav erpoblesms. (Net BATCHELDER ; [source](https://bitbashing.io/async-rust.html#fnref:2))
 
+Simple things should be simple, complex things should be possible ([Alan KAY](https://www.goodreads.com/quotes/8636264-simple-things-should-be-simple-complex-things-should-be-possible))
 
 # Gestion des erreurs
 
