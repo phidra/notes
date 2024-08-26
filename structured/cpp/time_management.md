@@ -14,7 +14,7 @@ Préambule : dans ces notes, je ne m'intéresse qu'à la question de comment rep
     - `chrono::time_point` est un timepoint (une généralisation de `std::time_t`)
     - tout plein de fonctions de création/conversion : `system_clock::now`, `system_clock::from_time_t`, `system_clock::to_time_t`, etc.
 - les différentes horloges de `chrono` ont chacune leur usage :
-    - `chrono::steady_clock` : à utiliser pour chronométrier des durées
+    - `chrono::steady_clock` : à utiliser pour chronométrer des durées
     - `chrono::system_clock` : à utiliser pour connaître l'heure ou la date actuelle
 
 * [TimePoint et DateTime](#timepoint-et-datetime)
@@ -39,10 +39,10 @@ Un "point fixe dans le temps" = un `timepoint` peut-être représenté classique
 - un nombre de secondes écoulées depuis un timepoint précis connu
 - un datetime = un sextuplet (année+mois+jour+heure+minute+seconde), à condition de **FAIRE ATTENTION** !
 
-Attention : pour qu'un datetime représente un timeopint de façon non-ambigüe, il doit **OBLIGATOIREMENT** être couplé à une timezone dans laquelle l'interprèter :
+Attention : pour qu'un datetime représente un timepoint de façon non-ambigüe, il doit **OBLIGATOIREMENT** être couplé à une timezone dans laquelle l'interprèter :
 
-- le datetime _"le 1er janvier 2024 à 22h18"_ correspondra à timepoints différents selon que c'est un Français ou un Canadien qui parle.
-- dans l'autre sens, le timepoint _"2 heures après l'explosion du Krakatoa"_ s'exprimra par des datetimes différents en France ou au Canada.
+- le datetime _"le 1er janvier 2024 à 22h18"_ correspondra à des timepoints différents selon que c'est un Français ou un Canadien qui parle.
+- dans l'autre sens, le timepoint _"2 heures après l'explosion du Krakatoa"_ sera représenté par des sextuplets différents en France ou au Canada.
 
 Le monde Python a des dénominations que j'aime bien ([la doc datetime](https://docs.python.org/3/library/datetime.html#aware-and-naive-objects)):
 
@@ -57,7 +57,7 @@ Stricto-sensu, un datetime est l'association d'une date et d'un time ; en pratiq
 
 Un datetime ne représente un point fixe dans le temps **QUE** s'il est associé à une timezone ! Du coup, _un datetime n'est pas forcément un timepoint_ !
 
-Plus généralement, la notion de date ou d'heure est très lié à la planète Terre :
+Plus généralement, la notion de date ou d'heure est très liée à la planète Terre :
 
 - la notion de date est liée à la rotation autour du soleil
 - la notion d'heure à liée la rotation de la Terre sur elle-même
@@ -94,12 +94,12 @@ La lib standard C dispose de structures pour manipuler le temps, parmi lesquelle
 
 Les clocks sont des "machins qui tickent à intervalle régulier" (la date à laquelle une clock a commencé a ticker est son **epoch**). Il existe plusieurs clocks standard, adaptées à différents usages :
 
-- `chrono::steady_clock` ([doc](https://en.cppreference.com/w/cpp/chrono/steady_clock)) : à utiliser pour chronométrier des durées i.e. c'est pas tant la valeur stockée dans la clock qui nous intéresse ici, c'est plutôt le diff entre deux mesures.
+- `chrono::steady_clock` ([doc](https://en.cppreference.com/w/cpp/chrono/steady_clock)) : à utiliser pour chronométrer des durées i.e. c'est pas tant la valeur stockée dans la clock qui nous intéresse ici, c'est plutôt le diff entre deux mesures.
 - `chrono::system_clock` ([doc](https://en.cppreference.com/w/cpp/chrono/system_clock)) : à utiliser pour connaître l'heure ou la date actuelle ; elle représente l'horloge de l'ordinateur.
     - à partir de C++20, son epoch est défini :
     > system_clock measures Unix Time (i.e., time since 00:00:00 Coordinated Universal Time (UTC), Thursday, 1 January 1970, not counting leap seconds).
     - NDM = je suppose que ça permet de transférer des `chrono::time_point` d'une machine à l'autre, car ils peuvent alors être interprétés de la même façon ?
-    - à l'inverse de `chrono::steady_clock`, elle n'est **PAS ADAPTÉE** pour chronométrier des durées (i.e. faire des diffs) car elle peut être ajustée par un utilisateur externe → la différence entre deux mesures de temps consécutives peut être négative (i.e. le temps peut rebrousser chemin avec cette clock, p.ex. si un utilisateur externe l'a remise à l'heure entre nos deux mesures)
+    - à l'inverse de `chrono::steady_clock`, elle n'est **PAS ADAPTÉE** pour chronométrer des durées (i.e. faire des diffs) car elle peut être modifiée par un utilisateur externe à tout moment → la différence entre deux mesures de temps consécutives peut être négative (i.e. le temps peut rebrousser chemin avec cette clock, p.ex. si un utilisateur externe l'a remise à l'heure entre nos deux mesures)
     - c'est la seule clock qui peut convertir ses `chrono::time_point` en `std::time_t`
 - `chrono::high_resolution_clock` ([doc](https://en.cppreference.com/w/cpp/chrono/high_resolution_clock)) : en théorie, l'horloge ayant le plus petit tick possible sur la machine ; en pratique, cette définition tend à vouloir l'utiliser pour chronométrer des durées, alors que cette horloge peut (ou pas, selon les implémentations) être un alias vers `chrono::system_clock`, qui peut remonter le temps...
 
