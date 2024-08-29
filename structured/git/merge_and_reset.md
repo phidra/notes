@@ -5,6 +5,7 @@ Notes prises en août 2023, issues de la lecture de [cette série d'articles](ht
    * [reset soft](#reset-soft)
    * [reset mixed](#reset-mixed)
    * [reset hard](#reset-hard)
+   * [autres notes](#autres-notes)
 * [Concepts de base](#concepts-de-base)
 
 Les articles sont tous assez verbeux et longs, mais en dehors de ça pas mal fichus, et j'en profite pour affûter des trucs que j'avais mal compris jusqu'ici :
@@ -87,6 +88,10 @@ git config --global alias.lol "log --graph --pretty=format:'%Cred%h%Creset -%C(y
 
 # Reset
 
+**À RETENIR** : si on laisse de côté les états branchless, un `git reset OLDER-COMMIT` a donc pour effet de faire pointer la branche courante sur un commit plus ancien (et `--mixed` / `--soft` permettent de conserver les modifs abandonnées dans le working-tree et/ou la staging-area).
+
+----
+
 Comme l'article sur les merge était bien, je digge [un autre article sur reset](https://medium.com/@Omer_Rosenbaum/git-undo-how-to-rewrite-git-history-with-confidence-d4452e2969c2).
 
 > Usually, when we work on our source code we work from a working dir. A working dir(ectrory) (or working tree) is any directory on our file system which has a repository associated with it. It contains the folders and files of our project, and also a directory called .git. I described the contents of the .git folder in more detail in a previous post.
@@ -121,7 +126,7 @@ Le sha d'un commit hashe à la fois le tree et les métadonnées (donc si on cha
 ## reset soft
 
 ```
-git reset --soft HEAD~
+git reset --soft HEAD~1
 ```
 
 ^ se contente de déplacer la branche pointée par `HEAD` (ici, en le reculant d'un commit) sans toucher au staging area ni au working dir. Du coup, les modifs du commit qu'on quitte apparaissent dans le staging area comme "prêtes à être commitées" (avec le working-dir dans le même état → tout se passe comme si on venait de faire un `git add` général).
@@ -152,15 +157,23 @@ Comme les commandes de diff sont résolues dynamiquement (plutôt que, par exemp
 
 **Important** : `--mixed` est le mode par défaut ; lorsqu'on fait un `git reset TARGET` sans préciser le mode, c'est équivalent à `git reset --mixed TARGET`.
 
+Du coup :
+
+```
+git reset --mixed HEAD~1
+```
+
+^ cette commande dit "remets le repo et le staging-area dans l'état du commit parent, mais ne touche pas au working-tree".
+
+Dit autrement, le commit actuel (= celui avant exécution de la commande) disparaîtra de la branche (qui pointera alors vers son parent), mais ses modifs resteront visibles sous la forme de modifications locales dans le working-tree, prêtes à être add+commitées.
+
 ## reset hard
 
-`git reset --hard` = on déplace les trois états, y compris le working-dir.
+`git reset --hard` = on déplace les trois états, y compris le working-dir : la commande est **DANGEREUSE** car concrètement, l'état actuel de la branche est définitivement perdu (sauf à jouer avec le `reflog`), alors qu'avec `--soft` et `--mixed`, il reste récupérable depuis le working-tree et/ou le staging-area.
 
-Concrètement, faire `git reset --mixed` fait comme si on n'avait pas encore staged+commit nos modifications.
+Concrètement, faire `git reset --mixed` fait comme si on n'avait pas encore staged+commit nos modifications → faire `git reset --hard` permet de tout déplacer vers un commit.
 
-Faire `git reset --hard` permet de tout déplacer vers un commit.
-
-~~NDM : je peux essayer de forger un scénario un peu plus complexe : si je veux cherrypicker un fichier d'une branche (sans pouvoir cherrypicker le commit, p.zx. parce qu'il contient d'autres trucs)~~ EDIT : mon exemple ne marche pas comme je voudrais , car j'ai besoin de ne positionner QUE le working dir.
+## autres notes
 
 > There are two most important tools I want you to take from this post. The second is git reset. The first and by far more important one is to whiteboard the current state versus the state you want to be in.
 
@@ -168,15 +181,13 @@ Un bon conseil = représenter les trois zones git sur une feuille blanche, en de
 
 Précision : en fait, `git reset` ne déplace pas directement le HEAD, mais déplace en fait la branche pointée par HEAD = la branche actuelle (et HEAD est déplacé par effet de bord, vu qu'il pointe sur cette branche), cf. [la doc](https://git-scm.com/docs/git-reset). C'est logique, sans quoi tous les git reset conduiraient à un état branchless.
 
-À retenir : si on laisse de côté les états branchless, un `git reset` a donc pour effet de déplacer la branche courante.
-
 Fort de cette connaissance, et si je suppose que marquer un commit comme `edit` lors d'un `git rebase -i` permet d'appliquer tous les commits suivants dans le rebase par dessus le commit édité, alors je comprends mieux les commandes permettant de splitter un commit :
 
 ```
 git rebase -i <oldsha1>
 # mark the desired commit as `edit`
 
-git reset HEAD^
+git reset HEAD^  # est un --mixed implicite
 
 git add <myfiles-to-put-in-commit1>
 git commit -m "First part"
@@ -187,7 +198,11 @@ git commit -m "Second part"
 git rebase --continue
 ```
 
-La clé est dans `git reset HEAD^` (qui est un `--mixed` implicite) : il positionne la "branche" (en vrai, le rebase en cours) sur le commit parent, ce qui "supprime" le dernier commit, et il fait de même pour le staging area. Mais il conserve les modifs dans le working tree : ça nous permet de les `git add` puis `git commit` en deux fois. In fine, ça remplace le commit annulé par deux commits splittés. Derrière, `git rebase --continue` applique les autres commits par dessus ce nouvel état.
+La clé est dans `git reset HEAD^` (qui est un `--mixed` implicite) : il positionne la "branche" (en vrai, le rebase en cours) sur le commit parent, ce qui "supprime" le dernier commit de la "branche" et du staging area, mais conserve les modifs dans le working tree.
+
+Un `git status` voit donc les modifs du commit comme "prêtes à être commitées" (vu qu'elles sont dans le working-tree mais pas dans l'index), ça nous permet de les `git add` puis `git commit` en deux fois.
+
+In fine, ça remplace le commit annulé par deux commits splittés (et derrière, `git rebase --continue` applique les autres commits par dessus ce nouvel état).
 
 (Et on peut splitter le dernier commit d'une branche tout pareil, sans avoir à faire de rebase, juste avec un reset : le rebase permet juste de faire la modif au milieu de l'historique, plutôt qu'à la toute fin).
 
