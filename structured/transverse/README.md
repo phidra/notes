@@ -41,6 +41,17 @@ Simple things should be simple, complex things should be possible ([Alan KAY](ht
 
 # Gestion des erreurs
 
+En résumé (à l'occasion de l'annotation de [cet article](../../2024-10-15-ultimate-guide-error-handling-in-python.md)) :
+
+- si mon code est face à une erreur "récupérable", normale :
+    - s'il sait comment y réagir, il adresse l'erreur lui-même (typiquement : il catche une exception et ne la propage pas)
+    - s'il ne sait pas comment y réagir, il peut propager l'exception (i.e. il ne catche rien) dans l'espoir qu'un appelant saura le faire
+        - mais attention : c'est peut-être aussi le signe que mon code devrait gérer ce type d'erreur lui-même plutôt que propager ?
+- si mon code est face à une erreur non-récupérable (bug) :
+    - en dev = je plante salement le plus tôt possible, avec une stacktrace pour investiguer (objectif = détecter les soucis et les corriger)
+    - en prod = propager l'erreur vers l'appelant pour 1. logger proprement le souci 2. permettre à un appelant de haut-niveau d'essayer de contourner le souci, et ainsi continuer à traiter (si possible) en évitant le crash/downtime
+        - e.g. pour un serveur web, un appelant de haut-niveau réagira à une exception non-traitée en répondant `HTTP 500`, mais juste pour cette requête : sans pour autant faire planter tout le serveur
+
 ## Recoverable vs. irrecoverable
 
 Au sujet des exceptions ([source](https://quuxplusone.github.io/blog/2022/12/14/my-lock-guard/#a-use-after-free-is-definitely-a)) :
