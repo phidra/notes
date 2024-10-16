@@ -5,6 +5,8 @@ AWS EKS = Elastic Kubernetes Service : c'est un cluster kubernetes managé.
 * [Utilisation](#utilisation)
    * [Lister les pods et leurs infos](#lister-les-pods-et-leurs-infos)
    * [Avoir des infos sur un pod en particulier](#avoir-des-infos-sur-un-pod-en-particulier)
+   * [Service = accéder à son pod depuis l'intérieur du cluster](#service--accéder-à-son-pod-depuis-lintérieur-du-cluster)
+   * [Ingress = accéder à son pod depuis l'extérieur du cluster](#ingress--accéder-à-son-pod-depuis-lextérieur-du-cluster)
 * [Installation de kubectl](#installation-de-kubectl)
 * [Configuration de kubectl vers un cluster AWS EKS](#configuration-de-kubectl-vers-un-cluster-aws-eks)
 * [Limits vs requests](#limits-vs-requests)
@@ -12,6 +14,7 @@ AWS EKS = Elastic Kubernetes Service : c'est un cluster kubernetes managé.
    * [Lens vs OpenLens](#lens-vs-openlens)
    * [Installation :](#installation-)
    * [Utilisation](#utilisation-1)
+
 
 
 # Utilisation
@@ -52,6 +55,9 @@ Pour toutes les commandes suivantes, on a besoin de passer l'id d'un pod. Le plu
 
 ```sh
 export POD=myapp-app-7d776d5c6d-ks8dl
+
+# alternative = plutôt que de copier-coller, récupérer le premier pod dans la réponse json :
+export POD="$(kubectl get pods -o json --namespace myapp-staging | jq -r ".items[0].metadata.name")"
 ```
 
 Faire un tail -f des logs d'un pod :
@@ -83,6 +89,57 @@ kubectl describe pod "$POD" --namespace myapp-staging
 # IP
 # config des sondes de liveness/readiness/startup
 # date de démarrage / restart
+```
+
+## Service = accéder à son pod depuis l'intérieur du cluster
+
+Un service est une abstraction représentant un point d'accès aux pods de mon application.
+
+Il permet aux différents composants du cluster de communiquer entre eux : derrière l'IP (+NDD) du service, on a les pods du composants du service ; ainsi, au lieu qu'un composant A dépende de l'IP exacte du pod du composant B, il dépend plutôt du service B sans connaître les pods qu'il y a derrière.
+
+Les différents services :
+
+- `ClusterIP` : (par défaut) = expose le service à l'intérieur du cluster k8s avec une IP interne ; pas accessible depuis l'extérieur du cluster.
+- `NodePort` : expose le service sur un port statique sur chaque nœud du cluster ; accessible depuis l'extérieur en utilisant l'adresse IP du nœud et le port spécifié.
+- `LoadBalancer`
+- `ExternalName` : permet de faire référence à un service externe en utilisant un NDD
+
+
+```sh
+# lister tous les services peu importe le namespace :
+kubectl get services -A
+
+# lister les services de mon namespace :
+kubectl get services --namespace myapp-staging
+# NAME               TYPE           CLUSTER-IP       EXTERNAL-IP        PORT(S)   AGE
+# myapp              ExternalName   <none>           my.ndd.toto.titi   80/TCP    285d
+# myapp-app          ClusterIP      172.20.XXX.XXX   <none>             80/TCP    285d
+# myapp-canary-app   ClusterIP      172.20.YYY.YYY   <none>             80/TCP    285d
+
+
+# un service en particulier :
+kubectl get service myapp-app --namespace myapp-staging
+# NAME        TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+# myapp-app   ClusterIP   172.20.XXX.XXX   <none>        80/TCP    285d
+```
+
+
+
+## Ingress = accéder à son pod depuis l'extérieur du cluster
+
+Un ingress permet d'exposer des services HTTP à l'extérieur du cluster k8s ; c'est une passerelle d'entrée pour le trafic entrant vers les services déployés dans le cluster.
+
+```sh
+kubectl get ingresses --namespace myapp-staging
+# NAME    CLASS   HOSTS                                                        ADDRESS          PORTS   AGE
+# myapp   kong    myapp.staging.myndd.fr,myapp.eu-west-3.staging.myndd.local   172.20.XXX.XXX   80      285d
+```
+
+Pour les services qui n'ont pas vocation à être accédés depuis l'extérieur du cluster, ça n'est pas aberrant qu'ils n'aient pas d'ingress :
+
+```sh
+kubectl get ingresses --namespace myotherapp-staging
+# No resources found in myotherapp-staging namespace.
 ```
 
 
