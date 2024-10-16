@@ -1,26 +1,78 @@
 Notes vrac sur les concepts AWS S3, à la lecture de [la doc](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html).
 
-- [Introduction du userguide](#introduction-du-userguide)
+* [Différence entre tags et metadata](#différence-entre-tags-et-metadata)
+   * [Tags](#tags)
+   * [Metadata](#metadata)
+   * [Éléments supplémentaires](#éléments-supplémentaires)
+* [Introduction du userguide](#introduction-du-userguide)
    * [Features](#features)
-      + [Storage classes](#storage-classes)
-      + [Storage Management features](#storage-management-features)
-      + [Access management and security features](#access-management-and-security-features)
-      + [Data Processing features](#data-processing-features)
-      + [Storage logging and monitoring features](#storage-logging-and-monitoring-features)
-      + [Analytics and insights features](#analytics-and-insights-features)
+      * [Storage classes](#storage-classes)
+      * [Storage Management features](#storage-management-features)
+      * [Access management and security features](#access-management-and-security-features)
+      * [Data Processing features](#data-processing-features)
+      * [Storage logging and monitoring features](#storage-logging-and-monitoring-features)
+      * [Analytics and insights features](#analytics-and-insights-features)
    * [How Amazon S3 works](#how-amazon-s3-works)
-      + [Bon résumé des concepts](#bon-résumé-des-concepts)
-      + [Buckets](#buckets)
-      + [Objects](#objects)
-      + [Keys](#keys)
-      + [S3 Versioning](#s3-versioning)
-      + [Version ID](#version-id)
-      + [Bucket policy](#bucket-policy)
-      + [S3 Access Points](#s3-access-points)
-      + [Access control lists (ACLs)](#access-control-lists-acls)
-      + [Regions](#regions)
-      + [Amazon S3 data consistency model](#amazon-s3-data-consistency-model)
-      + [Related services](#related-services)
+      * [Bon résumé des concepts](#bon-résumé-des-concepts)
+      * [Buckets](#buckets)
+      * [Objects](#objects)
+      * [Keys](#keys)
+      * [S3 Versioning](#s3-versioning)
+      * [Version ID](#version-id)
+      * [Bucket policy](#bucket-policy)
+      * [S3 Access Points](#s3-access-points)
+      * [Access control lists (ACLs)](#access-control-lists-acls)
+      * [Regions](#regions)
+      * [Amazon S3 data consistency model](#amazon-s3-data-consistency-model)
+      * [Related services](#related-services)
+
+
+# Différence entre tags et metadata
+
+Les **tags** et les **metadata** permettent tous deux d'associer une paire `key=value` à un objet S3. Quelle différence entre les deux ?
+
+**TL;DR** : les tags permettent de catégoriser les objets les uns par rapport aux autres ; les metadata ont plus vocation à ajouter une info à un objet individuel, sans notion de relation aux autres objets.
+
+
+## Tags
+
+Limités à 10 par objet S3.
+
+On peut les utiliser pour rechercher et filtrer par API S3, ils sont donc utilisés pour catégoriser et filtrer les données (e.g. il semble possible de récupérer "tous les fichiers ayant ce tag")
+
+## Metadata
+
+Ce sont des infos supplémentaires ajoutés avec le fichier.
+
+Ils ne sont pas utilisables pour filtrer/catégoriser dans les API S3 (e.g. impossible de récupérer "tous les fichiers ayant cette metadata")
+
+Par contre, il est possible, étant donné un fichier en particulier, de récupérer ses metadata
+
+On peut donc les utiliser pour le terme littéral "metadata" = des données sur l'objet S3.
+
+## Éléments supplémentaires
+
+[Cette page stackoverflow](https://stackoverflow.com/questions/42126348/difference-between-object-tags-and-object-metadata) est ancienne (2017) mais donne des éléments supplémentaires :
+
+Les metadata "vont avec" l'objet → quand on modifie les metadata, on créée en quelque sorte un nouvel objet avec ses nouvelles metadata (l'objet est versionné différemment car l'objet S3 a muté) ; les metadata sont d'ailleurs incluses dans les headers de la réponse HTTP quand on GET un object S3.
+
+À l'inverse, les tags sont des objets à part → quand on modifie les tags, on modifie un objet différent (ce qu'on mute n'est pas l'objet S3, c'est un objet "tag" associé à l'objet S3).
+
+
+Ils n'ont pas les mêmes limites :
+
+- The total of all metadata keys and values for each object is limited to 2KB.
+- The limits on tags are different. Each object can have up to 10 tags, each tag key is limited to 128 characters (not bytes), and each tag value is limited to 256 characters (not bytes)
+
+> Neither tags nor metadata can be used for "scanning" objects. It is not possible to ask the S3 service for a list of objects with specific tags or with specific metadata.
+
+^ ce n'est pas ce qu'a dit ChatGPT, donc soit il s'est planté (ce serait pas la première fois...) soit les choses ont changé depuis la date de la réponse.
+
+Les tags autorisent deux usages que ne permettent pas les metadata :
+
+- définir des autorisations qui dépendent des tags (e.g. tel user ne peut pas accéder à tel objet, SAUF s'il a tel tag défini à telle valeur)
+- permettr de customiser des politiques de suppression automatique de données (c'est justement ce qu'on va faire)
+
 
 # Introduction du userguide
 
