@@ -39,6 +39,9 @@ Some people, when confronted with a problem, think, “I know, I’ll use thread
 
 Simple things should be simple, complex things should be possible ([Alan KAY](https://www.goodreads.com/quotes/8636264-simple-things-should-be-simple-complex-things-should-be-possible))
 
+(Modeling) is the essence of our work; coding is just a formality. ([source](https://dev.to/mateusznowak/heroes-of-domain-driven-design-prologue-f37))
+
+
 # Gestion des erreurs
 
 En résumé (à l'occasion de l'annotation de [cet article](../../2024-10-15-ultimate-guide-error-handling-in-python.md)) :
