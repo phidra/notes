@@ -75,7 +75,7 @@ cat /proc/sys/kernel/perf_event_paranoid
 # e.g. 3
 
 # réduire la parano :
-sudo sysctl -w kernel.perf_event_p aranoid=1
+sudo sysctl -w kernel.perf_event_paranoid=1
 
 # si besoin, vérifier :
 cat /proc/sys/kernel/perf_event_paranoid
