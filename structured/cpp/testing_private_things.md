@@ -7,6 +7,7 @@ Préambule : la question de savoir si c'est une bonne idée ou pas de tester des
    * [friend](#friend)
    * [faire une sous-classe](#faire-une-sous-classe)
    * [polluer l'API publique](#polluer-lapi-publique)
+   * [polluer partiellement l'API publique](#polluer-partiellement-lapi-publique)
    * [n'utiliser QUE la visibilité public](#nutiliser-que-la-visibilité-public)
    * [abandonner le testing de trucs privés](#abandonner-le-testing-de-trucs-privés)
 
@@ -14,6 +15,11 @@ Préambule : la question de savoir si c'est une bonne idée ou pas de tester des
 # Takeaway
 
 En C++, comment tester des fonctions privées ?
+
+EDIT : ça s'applique à deux choses :
+
+- les méthodes privées d'une classe
+- les fonctions privées d'un "composant"
 
 Différentes astuces ci-dessous ([source1](https://wiki.c2.com/?UnitTestingNonPublicMemberFunctions), [source2](https://www.codeproject.com/Tips/5249547/How-to-Unit-Test-a-Private-Function-in-Cplusplus)), avec différents degrés d'ugliness, d'impact sur le code de production, de contournement du fonctionnement "normal", etc.
 
@@ -76,9 +82,15 @@ private:
 };
 ```
 
+La sous-classe (et son header) restent privés, i.e. ils ne font pas partie de l'API publique de la librairie ; mais l'accès à ce header privé est donné au test.
+
 ## polluer l'API publique
 
 Intégrer la fonction à tester à l'API publique de la classe (NDM : et polluer cette dernière...).
+
+## polluer partiellement l'API publique
+
+Si on modifie le header public d'un composant pour y intégrer la fonction à tester, on peut le faire dans un namespace dont le nom indique explicitement que c'est du détail d'implémentation : `details` ou `private`.
 
 ## n'utiliser QUE la visibilité public
 
