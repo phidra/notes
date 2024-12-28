@@ -1,7 +1,46 @@
+* [Utilisation](#utilisation)
+* [utiliser le plugin vidéo glide64 au lieu de rice](#utiliser-le-plugin-vidéo-glide64-au-lieu-de-rice)
 * [configuration des manettes pour Mupen64plus](#configuration-des-manettes-pour-mupen64plus)
    * [Nouvelle manette Logitech F310](#nouvelle-manette-logitech-f310)
    * [Ancienne manette Logitech Dual Action](#ancienne-manette-logitech-dual-action)
    * [Copie de l'état initial](#copie-de-létat-initial)
+
+
+# Utilisation
+
+Lancer une ROM :
+
+```sh
+mupen64plus /path/to/OcarinaOfTime.n64
+```
+
+Les sauvegardes sont dans :
+
+```
+/home/myself/.local/share/mupen64plus/save/OcarinaOfTime.st0
+```
+
+Et tant que j'y suis, les shortcuts :
+- touches `1` à `9` = choisir le slot courant
+- `F5` = save l'état mupen64 dans le slot courant
+- `F7` = load l'état mupen64
+
+
+# utiliser le plugin vidéo glide64 au lieu de rice
+
+Sur mes deux PC, glide64 était moins buggé que rice. Pour l'utiliser, rien d'autre à faire que :
+
+```sh
+sudo vim ~/.config/mupen64plus/mupen64plus.cfg
+
+# remplacer ceci :
+VideoPlugin = "mupen64plus-video-rice.so"
+
+# par cela :
+VideoPlugin = "mupen64plus-video-glide64"
+```
+
+(rien d'autre à faire, il configure le bouzin tout seul)
 
 # configuration des manettes pour Mupen64plus
 
@@ -14,11 +53,6 @@ Les correspondances sont à définir dans :
 ```
 /usr/share/games/mupen64plus/InputAutoCfg.ini
 ```
-
-Et tant que j'y suis, les shortcuts :
-- touches `1` à `9` = choisir le slot courant
-- `F5` = save l'état mupen64 dans le slot courant
-- `F7` = load l'état mupen64
 
 ## Nouvelle manette Logitech F310
 
