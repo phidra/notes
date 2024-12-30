@@ -137,6 +137,19 @@ L'opération équivalente à `std::mktime` avec UTC (i.e. convertir un `std::tm`
 - elle est non-standard, c'est spécifique à GNU (donc il faut tester, peut-être que ça ne marche pas sur LLVM ?)
 - le man semble indiquer que la fonction est MT-safe, i.e. qu'on peut l'utiliser dans un contexte multithreadé
 
+**EDIT** = utilisation du champ `tm_isdst` de `std::tm` par `std::mktime` :
+
+- ce champ `tm_isdst` indique si le `std::tm` est à interpréter en heure d'hiver ou en heure d'été
+- en résumé ([source](https://stackoverflow.com/questions/8558919/mktime-and-tm-isdst)) :
+    - la grande majorité du temps, on peut passer ce champ à `-1` ce qui laisse `std::mktime` trouver tout seul si on est en heure d'hiver ou d'été
+    - par exemple, le 24 juin 2024 à 17:00:00, on est en heure d'été
+    - mais dans le cas général, c'est ambigü à cause du passage en heure d'hiver : le dimanche 27 octobre 2024, si on parle en heure de Paris, il existe DEUX moments associés à l'horaire 2h17 du matin !
+    - il faut donc passer `tm_isdst` à `0` ou à `1` pour indiquer à `std::mktime` comment interpréter l'horaire (si on ne passe rien, ça a l'air implementation-defined)
+    - [ce post](https://www.redhat.com/en/blog/brief-history-mktime) indique comment récupérer les deux `std::time_t` possible s'il y a ambiguité :
+
+Autre chose à noter sur `std::mktime` : a priori, il se débrouille pour gérer les dépassements de valeurs : si on lui demande le `std::time_t` associé au 32 mars, il va correctement aller récupérer le 1er avril :+1:  (ce qui autorise à incrémenter le compteur de jour pour "trouver le lendemain", sans trop s'embêter).
+
+
 ## Création d'un chrono::time_point
 
 - Les clocks steady et system disposent toutes les deux d'une fonction `now` ([doc steady](https://en.cppreference.com/w/cpp/chrono/steady_clock/now), [doc system](https://en.cppreference.com/w/cpp/chrono/system_clock/now)) pour créer un `chrono::time_point` représentant le timepoint actuel.
