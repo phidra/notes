@@ -289,6 +289,12 @@ Donc en gros, si seul le résultat d'un traitement (simple) appliqué à tout l'
 
 Par ailleurs, avec `into_iter`, on "consomme" la collection, ce qui veut dire (je suppose) que son contenu est moved vers la suite du pipeline.
 
+**EDIT** : a priori, c'est plutôt l'itérateur qu'on consomme, et ça veut dire qu'on modifie l'état interne de l'itérateur pour le faire avancer, cf. [le rustbook](https://doc.rust-lang.org/book/ch13-02-iterators.html) :
+
+> Note that we needed to make v1_iter mutable: calling the next method on an iterator changes internal state that the iterator uses to keep track of where it is in the sequence. In other words, this code consumes, or uses up, the iterator. Each call to next eats up an item from the iterator. (...)
+>
+> Also note that the values we get from the calls to next are immutable references to the values in the vector. The iter method produces an iterator over immutable references. If we want to create an iterator that takes ownership of v1 and returns owned values, we can call into_iter instead of iter. Similarly, if we want to iterate over mutable references, we can call iter_mut instead of iter.
+
 ```rs
 for x in c {}
 // ^ Syntactic sugar, calls c.into_iter() and loops i until None.
