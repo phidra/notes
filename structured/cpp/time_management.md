@@ -42,12 +42,12 @@ Un "point fixe dans le temps" = un `timepoint` peut-être représenté classique
 Attention : pour qu'un datetime représente un timepoint de façon non-ambigüe, il doit **OBLIGATOIREMENT** être couplé à une timezone dans laquelle l'interprèter :
 
 - le datetime _"le 1er janvier 2024 à 22h18"_ correspondra à des timepoints différents selon que c'est un Français ou un Canadien qui parle.
-- dans l'autre sens, le timepoint _"2 heures après l'explosion du Krakatoa"_ sera représenté par des sextuplets différents en France ou au Canada.
+- dans l'autre sens, le timepoint _"2 heures après l'explosion du Krakatoa"_ est non-ambigü, mais sera représenté par des sextuplets différents en France ou au Canada.
 
 Le monde Python a des dénominations que j'aime bien ([la doc datetime](https://docs.python.org/3/library/datetime.html#aware-and-naive-objects)):
 
 - **timezone AWARE datetime** = un sextuplet couplé à une timezone :
-    > An aware object represents a specific moment in time that is not open to interpretation. 
+    > An aware object represents a specific moment in time that is not open to interpretation.
 - **timezone NAIVE datetime** = un sextuplet sans timezone :
     > A naive object does not contain enough information to unambiguously locate itself relative to other date/time objects.
 
@@ -63,6 +63,15 @@ Plus généralement, la notion de date ou d'heure est très liée à la planète
 - la notion d'heure à liée la rotation de la Terre sur elle-même
 
 À l'inverse, la notion de timepoint = "point fixe dans le temps" existe même hors de la planète Terre.
+
+**EDIT = ATTENTION** : selon la définition qu'on donne au mot _timezone_, même un datetime couplé à une timezone peut être ambigü. Par exemple, les deux exemples suivants couplent un datetime à une "timezone", mais l'un est ambigü :
+
+- :warning: = _"le 1er janvier 2024 à 22h18 heure de Paris"_ : la "timezone" est `heure de Paris` mais ceci est **PARFOIS AMBIGÜ**
+- :white_check_mark: = _"le 1er janvier 2024 à 22h18 UTC+01:00"_ : la "timezone" est `UTC+01:00` et n'est **JAMAIS AMBIGÜ**
+
+La première forme est ambigüe, car lors du passage à l'heure d'hiver, on recule d'une heure (à 3h du matin, il est 2h du matin). Par conséquent, on passe _DEUX FOIS_ par l'heure "2h17 du matin heure de Paris".
+
+À l'inverse, la deuxième forme décrit une heure précise par rapport à UTC (qui est toujours bien définie), typiquement, le premier 2h17 sera `2h17 UTC+01:00` et le second sera `2h17 UTC+02:00`.
 
 ## Conséquence sur le nommage des variables
 
