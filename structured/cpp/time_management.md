@@ -17,10 +17,12 @@ Préambule : dans ces notes, je ne m'intéresse qu'à la question de comment rep
     - `chrono::steady_clock` : à utiliser pour chronométrer des durées
     - `chrono::system_clock` : à utiliser pour connaître l'heure ou la date actuelle
 
+
 * [TimePoint et DateTime](#timepoint-et-datetime)
    * [Représentation d'un timepoint](#représentation-dun-timepoint)
    * [Dépendance du datetime à la timezone](#dépendance-du-datetime-à-la-timezone)
    * [Conséquence sur le nommage des variables](#conséquence-sur-le-nommage-des-variables)
+   * [Définir la timezone du process](#définir-la-timezone-du-process)
 * [Les types C de ctime](#les-types-c-de-ctime)
 * [Les types C++ de std::chrono](#les-types-c-de-stdchrono)
 * [Création et conversion des structures](#création-et-conversion-des-structures)
@@ -71,7 +73,9 @@ Plus généralement, la notion de date ou d'heure est très liée à la planète
 
 La première forme est ambigüe, car lors du passage à l'heure d'hiver, on recule d'une heure (à 3h du matin, il est 2h du matin). Par conséquent, on passe _DEUX FOIS_ par l'heure "2h17 du matin heure de Paris".
 
-À l'inverse, la deuxième forme décrit une heure précise par rapport à UTC (qui est toujours bien définie), typiquement, le premier 2h17 sera `2h17 UTC+01:00` et le second sera `2h17 UTC+02:00`.
+À l'inverse, la deuxième forme décrit une heure précise par rapport à UTC (UTC étant toujours bien définie), typiquement, le premier 2h17 sera `2h17 UTC+01:00` et le second sera `2h17 UTC+02:00`
+
+Le diff par rapport à UTC `+02:00` s'appelle [l'offset UTC](https://en.wikipedia.org/wiki/UTC_offset) ; on le trouve aussi sous la forme `+0200`
 
 ## Conséquence sur le nommage des variables
 
@@ -85,6 +89,39 @@ En résumé, le nommage de mes variables dépendra de la sémantique que j'assoc
 - sémantique de "une date et heure" (e.g. parce que je veux l'afficher dans une IHM) = mieux vaut nommer la variable `datetime`
 
 ^ Ce dernier distinguo est important : vouloir "une date et heure" n'est important que si un humain doit interagir avec la structure (e.g. affichage dans une IHM) : si je veux identifier un timepoint pour un ordinateur, un datetime n'est qu'un moyen parmi d'autres de le faire, et il n'est pas super robuste vu qu'il y a des grosses erreurs à faire avec les timezone...
+
+## Définir la timezone du process
+
+C'est pas strictement lié au C++, mais comme les fonctions C++ sont dépendantes de la timezone locale je mets ces notes ici quand même : voici comment 1. définir la timezone système d'un container docker Debian et 2. modifier la timezone locale vue par le process :
+
+Définir la timezone système :
+
+```Dockerfile
+RUN DEBIAN_FRONTEND=noninteractive TZ="Europe/Paris" apt-get -y install tzdata
+```
+
+Si jamais on a *déjà* installé `tzdata`, on peut aussi reconfigure :
+
+```sh
+export TZ=Europe/Paris
+ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
+dpkg-reconfigure -f noninteractive tzdata
+```
+
+Enfin, programmatiquement, on peut setter la timezone du process (ce qui ne modifie _que_ la timezone locale vue par le process, et non la timezone système) avec le code suivant — qui nécessite que `tzdata` soit installée :
+
+```cpp
+// cf. ma POC `cpp/CATEGORY_stdlib/chrono_02_localtime_et_timezone`
+// ainsi que man 3 setenv et man 3 tzset
+// (notamment pour gérer proprement les erreurs)
+std::string timezone = "Europe/Paris";
+setenv("TZ", timezone.c_str(), 1);
+tzset();
+
+// derrière, pour rebasculer sur la timezone système :
+unsetenv("TZ");
+tzset();
+```
 
 # Les types C de ctime
 
