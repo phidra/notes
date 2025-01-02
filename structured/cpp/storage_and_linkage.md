@@ -10,6 +10,7 @@ Une variable peut exister dans trois types de storages (mais je n'annote que `st
 
 - déclarer `static` une variable globale dans un cpp va modifier son linkage (qui va passer de `external` à `internal`) sans modifer son storage qui sera `static` dans tous les cas
 - déclarer `static` une variable locale d'une fonction va modifier son storage (qui va passer de `stack` à `static`) sans modifier son linkage, qui sera `no linkage` dans tous les cas
+- une variable globale dans un cpp aura un storage `static` de toutes façons ; la déclarer `static` ne changera que son linkage (qui passera de `external` à `internal`)
 
 * [Storage](#storage)
    * [Constant initialization](#constant-initialization)
@@ -191,7 +192,7 @@ On a trois niveaux de visibilité :
 
 ## Impact de static sur une variable globale
 
-À noter que de façon contre-intuitive, pour une variable globale dans un fichier cpp (i.e. définie en dehors d'une fonction ou d'une classe, mais éventuellemnt dans un namespace) est statique de toutes façons : le mot-clé `static` ne change que son linkage :
+À noter que de façon contre-intuitive, pour une variable globale dans un fichier cpp (i.e. définie en dehors d'une fonction ou d'une classe, mais éventuellement dans un namespace) est statique de toutes façons : le mot-clé `static` ne change que son linkage :
 
 ```cpp
 static int ma_variable_globale = 42;  // INTERNAL linkage + STATIC storage
