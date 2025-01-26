@@ -9,6 +9,10 @@
 * [Mettre en cache le mot de passe du serveur git si pas d'authentification par clé](#mettre-en-cache-le-mot-de-passe-du-serveur-git-si-pas-dauthentification-par-clé)
 * [Utiliser reflog pour savoir ce qui s'est passé sur une branche LOCALE](#utiliser-reflog-pour-savoir-ce-qui-sest-passé-sur-une-branche-locale)
    * [Formatage](#formatage)
+* [Définir des hooks custom](#définir-des-hooks-custom)
+* [Ignorer les commits de formattage lorsqu'on git blame](#ignorer-les-commits-de-formattage-lorsquon-git-blame)
+* [Configuration git blame](#configuration-git-blame)
+
 
 # Utiliser rebase --onto
 
@@ -244,3 +248,31 @@ git log -g --abbrev-commit --pretty=oneline
 ```
 
 Du coup, on peut formater le log comme on l'entend, avec le formatage classique des logs.
+
+# Définir des hooks custom
+
+Une façon pratique d'activer des hooks custom est de définir un répertoire de hooks custom :
+
+```sh
+git config core.hooksPath my_custom_hooks
+```
+
+^ à l'intérieur de ce répertoire, ajouter un fichier `pre-commit`
+
+# Ignorer les commits de formattage lorsqu'on git blame
+
+Parfois, on passe un grand coup de formatter sur tout le repo ; inconvénient = tous les git blame ultérieurs finiront par voir ce commit comme parent (i.e. ce commit pollue les `git blame`)
+
+Solution = définir une liste de commits à ignorer dans un fichier + dire à git d'ignorer tous les commits de ce fichier :
+
+# Configuration git blame
+
+Pour ignorer les commits de reformattage de code lors d'un git blame, configurer git avec le fichier ignore suivant :
+
+```sh
+git config blame.ignoreRevsFile the_commits_to_ignore_with_git_blame
+```
+
+(à l'intérieur, une liste des ids sha ; les commentaires sont ignorés)
+
+
