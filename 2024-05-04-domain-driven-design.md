@@ -14,119 +14,119 @@ Je n'annote pas tout exhaustivement (les présentes notes ne constituent donc PA
 
 Les numéros des pages font référence à mon édition = `ISBN-13: 978-0-321-12521-7`
 
+
 * [Domain-Driven Design: Tackling Complexity in the Heart of Software](#domain-driven-design-tackling-complexity-in-the-heart-of-software)
-   * [I: Putting the Domain Model to Work](#i-putting-the-domain-model-to-work)
-      * [One. Crunching Knowledge](#one-crunching-knowledge)
-      * [Two. Communication and the Use of Language](#two-communication-and-the-use-of-language)
-      * [Three. Binding Model and Implementation](#three-binding-model-and-implementation)
-   * [II: The Building Blocks of a Model-Driven Design](#ii-the-building-blocks-of-a-model-driven-design)
-      * [Four. Isolating the Domain](#four-isolating-the-domain)
-      * [Five. A Model Expressed in Software](#five-a-model-expressed-in-software)
-      * [Six. The Life Cycle of a Domain Object](#six-the-life-cycle-of-a-domain-object)
-      * [Seven. Using the Language: An Extended Example](#seven-using-the-language-an-extended-example)
-   * [III: Refactoring Toward Deeper Insight](#iii-refactoring-toward-deeper-insight)
-      * [Eight. Breakthrough](#eight-breakthrough)
-      * [Nine. Making Implicit Concepts Explicit](#nine-making-implicit-concepts-explicit)
-      * [Ten. Supple Design](#ten-supple-design)
-      * [Eleven. Applying Analysis Patterns](#eleven-applying-analysis-patterns)
-      * [Twelve. Relating Design Patterns to the Model](#twelve-relating-design-patterns-to-the-model)
-      * [Thirteen. Refactoring Toward Deeper Insight](#thirteen-refactoring-toward-deeper-insight)
-   * [IV: Strategic Design](#iv-strategic-design)
-      * [Fourteen. Maintaining Model Integrity](#fourteen-maintaining-model-integrity)
-      * [Fifteen. Distillation](#fifteen-distillation)
-      * [Sixteen. Large-Scale Structure](#sixteen-large-scale-structure)
-      * [Seventeen. Bringing the Strategy Together](#seventeen-bringing-the-strategy-together)
+   * [Part I Putting the Domain Model to Work](#part-i-putting-the-domain-model-to-work)
+      * [Chapitre 1 Crunching Knowledge](#chapitre-1-crunching-knowledge)
+      * [Chapitre 2 Communication and the Use of Language](#chapitre-2-communication-and-the-use-of-language)
+      * [Chapitre 3 Binding Model and Implementation](#chapitre-3-binding-model-and-implementation)
+   * [Part II The Building Blocks of a Model-Driven Design](#part-ii-the-building-blocks-of-a-model-driven-design)
+      * [Chapitre 4 Isolating the Domain](#chapitre-4-isolating-the-domain)
+      * [Chapitre 5 A Model Expressed in Software](#chapitre-5-a-model-expressed-in-software)
+      * [Chapitre 6 The Life Cycle of a Domain Object](#chapitre-6-the-life-cycle-of-a-domain-object)
+      * [Chapitre 7 Using the Language: An Extended Example](#chapitre-7-using-the-language-an-extended-example)
+   * [Part III Refactoring Toward Deeper Insight](#part-iii-refactoring-toward-deeper-insight)
+      * [Chapitre 8 Breakthrough](#chapitre-8-breakthrough)
+      * [Chapitre 9 Making Implicit Concepts Explicit](#chapitre-9-making-implicit-concepts-explicit)
+      * [Chapitre 10 Supple Design](#chapitre-10-supple-design)
+      * [Chapitre 11 Applying Analysis Patterns](#chapitre-11-applying-analysis-patterns)
+      * [Chapitre 12 Relating Design Patterns to the Model](#chapitre-12-relating-design-patterns-to-the-model)
+      * [Chapitre 13 Refactoring Toward Deeper Insight](#chapitre-13-refactoring-toward-deeper-insight)
+   * [Part IV Strategic Design](#part-iv-strategic-design)
+      * [Chapitre 14 Maintaining Model Integrity](#chapitre-14-maintaining-model-integrity)
+      * [Chapitre 15 Distillation](#chapitre-15-distillation)
+      * [Chapitre 16 Large-Scale Structure](#chapitre-16-large-scale-structure)
+      * [Chapitre 17 Bringing the Strategy Together](#chapitre-17-bringing-the-strategy-together)
    * [Conclusion](#conclusion)
 
 
 
-
-## I: Putting the Domain Model to Work
-
-TODO
-
-### One. Crunching Knowledge
+## Part I Putting the Domain Model to Work
 
 TODO
 
-### Two. Communication and the Use of Language
+### Chapitre 1 Crunching Knowledge
 
 TODO
 
-### Three. Binding Model and Implementation
+### Chapitre 2 Communication and the Use of Language
 
 TODO
 
-
-
-## II: The Building Blocks of a Model-Driven Design
-
-TODO
-
-### Four. Isolating the Domain
-
-TODO
-
-### Five. A Model Expressed in Software
-
-TODO
-
-### Six. The Life Cycle of a Domain Object
-
-TODO
-
-### Seven. Using the Language: An Extended Example
+### Chapitre 3 Binding Model and Implementation
 
 TODO
 
 
 
-## III: Refactoring Toward Deeper Insight
+## Part II The Building Blocks of a Model-Driven Design
 
 TODO
 
-### Eight. Breakthrough
+### Chapitre 4 Isolating the Domain
 
 TODO
 
-### Nine. Making Implicit Concepts Explicit
+### Chapitre 5 A Model Expressed in Software
 
 TODO
 
-### Ten. Supple Design
+### Chapitre 6 The Life Cycle of a Domain Object
 
 TODO
 
-### Eleven. Applying Analysis Patterns
-
-TODO
-
-### Twelve. Relating Design Patterns to the Model
-
-TODO
-
-### Thirteen. Refactoring Toward Deeper Insight
+### Chapitre 7 Using the Language: An Extended Example
 
 TODO
 
 
-## IV: Strategic Design
+
+## Part III Refactoring Toward Deeper Insight
 
 TODO
 
-### Fourteen. Maintaining Model Integrity
+### Chapitre 8 Breakthrough
 
 TODO
 
-### Fifteen. Distillation
+### Chapitre 9 Making Implicit Concepts Explicit
 
 TODO
 
-### Sixteen. Large-Scale Structure
+### Chapitre 10 Supple Design
 
 TODO
 
-### Seventeen. Bringing the Strategy Together
+### Chapitre 11 Applying Analysis Patterns
+
+TODO
+
+### Chapitre 12 Relating Design Patterns to the Model
+
+TODO
+
+### Chapitre 13 Refactoring Toward Deeper Insight
+
+TODO
+
+
+## Part IV Strategic Design
+
+TODO
+
+### Chapitre 14 Maintaining Model Integrity
+
+TODO
+
+### Chapitre 15 Distillation
+
+TODO
+
+### Chapitre 16 Large-Scale Structure
+
+TODO
+
+### Chapitre 17 Bringing the Strategy Together
 
 TODO
 
