@@ -1,6 +1,7 @@
 * [imagemagick pour calculer la différence entre deux images](#imagemagick-pour-calculer-la-différence-entre-deux-images)
 * [imagemagick pour splitter un PDF](#imagemagick-pour-splitter-un-pdf)
 * [imagemagick pour concaténer plusieurs images en un PDF](#imagemagick-pour-concaténer-plusieurs-images-en-un-pdf)
+* [pdftk pour concaténer plusieurs PDF en un seul](#pdftk-pour-concaténer-plusieurs-pdf-en-un-seul)
 * [plotter avec sqliteviz des valeurs loggées avec timestamp](#plotter-avec-sqliteviz-des-valeurs-loggées-avec-timestamp)
 * [grepper un process](#grepper-un-process)
 * [retrouver un process à partir de son pid](#retrouver-un-process-à-partir-de-son-pid)
@@ -70,6 +71,14 @@ Pour qu'elle devienne :
 
 ```sh
 convert -resize 50% my_image_{1,2,3,4,5,6,7,8,9}.png out.pdf
+```
+
+# pdftk pour concaténer plusieurs PDF en un seul
+
+**tags** : pdf
+
+```sh
+pdftk IN1.pdf IN2.pdf cat output OUT.pdf
 ```
 
 
