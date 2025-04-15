@@ -784,6 +784,12 @@ rust-analyzer --version
 # rust-analyzer 0.3.1506-standalone
 ```
 
+EDIT 2025-04 = en alternative, installer `rust-analyzer` avec `rustup` :
+
+```sh
+rustup component add rust-analyzer
+```
+
 Note : on dirait que `rust-analyzer` nécessite un projet cargo pour fonctionner, et qu'il ne peut pas compiler un code-source standalone :
 
 ```
