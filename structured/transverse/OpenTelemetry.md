@@ -16,6 +16,8 @@ OpenTelemetry [est un standard de fait](https://signoz.io/blog/opentelemetry-alt
 
 ChatGPT définit l'observabilité comme "la capacité à comprendre l'état interne d'un système en examinant ses sorties".
 
+La notion d'observabilité va plus loin que l'observation de l'état du système (e.g. par RAM/CPU) : il s'agit de savoir **si le service souhaité est rendu**. C'est p.ex. la différence entre "savoir que le process du service est en train de tourner" et "savoir que le service répond aux requêtes".
+
 https://opentelemetry.io/docs/languages/cpp/ :
 
 > OpenTelemetry, also known as OTel for short, is a vendor-neutral open source Observability framework for instrumenting, generating, collecting, and exporting telemetry data such as traces, metrics, logs.
