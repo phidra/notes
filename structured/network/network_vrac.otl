@@ -1,0 +1,596 @@
+OÙ J'EN SUIS :
+	RÉSUMÉ :
+		avant 2025 = j'avais pris quelques notes sur les réseaux + routing
+		avril 2025 :
+			j'essaye de faire en sorte qu'une VM windows qui tourne sur un host linux puisse accéder au VPN de son host
+			(ce qui explique que les questions restantes tournent beaucoup autour de la virtualisation)
+			ça me conduit à devoir comprendre de plus près tout un tas de notions réseaux
+			en mixant ChatGPT + du googling, je me construis une compréhension plus précise de ces sujets
+		RESTE À FAIRE :
+			Dans les grandes lignes, seulement deux choses :
+				creuser mes questions restantes
+				lire d'autres ressources, et notamment celles de cloudflare learning
+			éventuellement, mettre un peu d'ordre dans les notes
+		(note = au moins à court-terme, j'abandonne l'idée d'en faire des notes markdown)
+	QUESTIONS RESTANTES :
+		Y a-t-il d'autres moyens que bridge et NAT pour fournir l'accès à internet/réseau local de mon PC à une VM/container docker ?
+		comment un container docker a-t-il accès à internet ? Et une VM ?
+		La notion de bridge est-elle visible de la VM ou du container ?
+			ou bien n'est-ce qu'une notion du "parent" ?
+			TODO = tester dans une VM linux d'afficher les interfaces pour voir ce que l'OS voit
+		Que fait l'option --network=host de docker ?
+		NAT ? Confirmer ma compréhension :
+			le principe est de translater les IP = un paquet qui est émis de mon PC vers internet prend plutôt l'IP de ma box (et l'IP de mon PC est invisible depuis internet)
+			associé au port forwarding pour (je suppose) discriminer les différents hosts
+			----------------------------------------
+			mais pas que = permet d'avoir p.ex. 10 ips publiques, que se "partagent" 100 ordinateurs avec leurs ips privées
+			QUESTION = dans le cadre des VM, et notamment de KVM, le NAT est utilisé ? Avec le bridge ou sans ?
+		utilisation de NAT ou bridge pour communiquer avec une VM ?
+		analyser mes routes :
+			C'est quoi les infos complémentaires de ip route / route -n / ip a ?
+			C'est quoi "connecté (en externe)" ?
+			Comment identifier l'interface "par défaut" ?
+			QUESTION = où est configurée la table de routage ?
+		je comprends comment un paquet issu de mon PC sur mon sous-réseau peut envoyer un paquet à un site internet mais je comprends moins le retour :
+			comment le site internet connaît l'IP de mon PC sur mon sous-réseau ? Comment peut-il envoyer un paquet à une IP privée ?
+			mon guess serait qu'il indique à la fois la passerelle cible, puis l'IP cible dans le sous-réseau
+			ainsi, le site internet envoie un paquet qui dit "route ce paquet vers cette passerelle, puis derrière, vers telle IP de son sous-réseau"
+			----------------------------------------
+			une question dans le même genre = quand on fait du peer-to-peer, comment les deux PC peuvent communiquer ? Comment peuvent-ils même connaître leurs IPs ?
+		question : ma box est-elle connectée à internet directement ? a-t-elle une IP sur internet ?
+			Ou bien fait-elle elle aussi partie d'un réseau privé, et elle doit router ses propres paquets vers une seconde passerelle, qui, elle, est connectée à internet ?
+			une autre (meilleure ?) façon de poser cette question = y a-t-il forcément 2 niveaux de réseaux au max, le local et internet :
+				niveau local    = depuis mon poste vers ma passerelle
+				niveau internet = depuis ma passerelle vers la passerelle de destination (ce qui comporte plein de passages intermédiaires par des routeurs)
+				niveau local    = depuis la passerelle de destination vers le poste de destination
+			pour faire le lien avec les Autonomous Systems : est-ce que ma box est l'un des nodes du réseau de mon AS (et son IP publique est son IP sur ce réseau, soit son IP internet) ?
+			dit encore autrement : mon IP publique sur internet est-elle celle de ma box, ou celle d'un autre noeud du réseau du FAI (vers lequel ma box route les paquets à destination d'internet)
+	RESSOURCES :
+		creuser ces quelques ressources sur le sujet du routage sur internet (et le lien avec les AS), quelques ressources :
+			https://www.bortzmeyer.org/un-million-de-routes.html
+			https://fr.wikipedia.org/wiki/Default-free_zone
+			https://fr.wikipedia.org/wiki/Routage
+			https://fr.wikipedia.org/wiki/Autonomous_System
+			https://fr.wikipedia.org/wiki/Table_de_routage
+			https://fr.wikipedia.org/wiki/Sous-r%C3%A9seau
+				Historiquement, on appelle également sous-réseau chacun des réseaux connectés à Internet.
+		a priori, ces ressources sont topissimes pour mon niveau de compréhension actuel :
+			https://www.cloudflare.com/fr-fr/learning/security/glossary/what-is-bgp/
+			https://www.cloudflare.com/fr-fr/learning/network-layer/what-is-an-autonomous-system/
+			https://www.cloudflare.com/fr-fr/learning/dns/what-is-dns/
+			https://www.cloudflare.com/fr-fr/learning/network-layer/what-is-routing/
+
+
+COMMANDES UTILES :
+	trouver le NDD associé à une IP :
+		dig +short -x 8.8.8.8
+			dns.google.
+	trouver l'IP d'un NDD :
+		dig +short google.fr
+			172.217.20.195
+	lister les routes :
+		ip route
+			default via 192.168.1.254 dev enp5s0 proto dhcp metric 100
+			169.254.0.0/16 dev enp5s0 scope link metric 1000
+			172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown
+			192.168.1.0/24 dev enp5s0 proto kernel scope link src 192.168.1.25 metric 100
+		route -n
+			Table de routage IP du noyau
+			Destination     Passerelle      Genmask         Indic Metric Ref    Use Iface
+			0.0.0.0         192.168.1.254   0.0.0.0         UG    100    0        0 enp5s0
+			169.254.0.0     0.0.0.0         255.255.0.0     U     1000   0        0 enp5s0
+			172.17.0.0      0.0.0.0         255.255.0.0     U     0      0        0 docker0
+			192.168.1.0     0.0.0.0         255.255.255.0   U     100    0        0 enp5s0
+	lister les interfaces :
+		ip a
+			1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+				link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+				inet 127.0.0.1/8 scope host lo
+				   valid_lft forever preferred_lft forever
+				inet6 ::1/128 scope host
+				   valid_lft forever preferred_lft forever
+			2: enp5s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+				(...)
+			3: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default
+				link/ether 02:42:51:fa:97:e4 brd ff:ff:ff:ff:ff:ff
+				inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+				   valid_lft forever preferred_lft forever
+		nmcli device status
+			DEVICE   TYPE      STATE                  CONNECTION
+			enp5s0   ethernet  connecté               Connexion filaire 1
+			docker0  bridge    connecté (en externe)  docker0
+			lo       loopback  non-géré               --
+			----------------------------------------
+			NOTE : c'est pas limpide, mais "(en externe)" semble signifier que l'interface est un bridge ou looback...
+	pinger un host, en utilisant une interface en particulier (pour tester une interface) :
+		ping -c 1 -W 1 -I enp5s0 8.8.8.8
+			PING 8.8.8.8 (8.8.8.8) from 192.168.1.25 enp5s0: 56(84) bytes of data.
+			64 bytes from 8.8.8.8: icmp_seq=1 ttl=117 time=3.45 ms
+			--- 8.8.8.8 ping statistics ---
+			1 packets transmitted, 1 received, 0% packet loss, time 0ms
+			rtt min/avg/max/mdev = 3.452/3.452/3.452/0.000 ms
+			----------------------------------------
+			^ depuis l'interface de ma connexion filaire, le ping réussit.
+		ping -c 1 -W 1 -I lo 8.8.8.8
+			ping: Warning: source address might be selected on device other than: lo
+			PING 8.8.8.8 (8.8.8.8) from 192.168.1.25 lo: 56(84) bytes of data.
+			--- 8.8.8.8 ping statistics ---
+			1 packets transmitted, 0 received, 100% packet loss, time 0ms
+			----------------------------------------
+			^ depuis mon interface loopback, le ping échoue.
+	lister les bridges (notamment, libvirt créée un bridge par défaut = virbr0) :
+		nmcli connection show --active
+			NAME                 UUID                                  TYPE      DEVICE
+			Connexion filaire 1  704319cb-0669-388b-848a-ee525dbaf054  ethernet  enp5s0
+			docker0              df58a58f-73af-4148-9c3f-82daf1d8677d  bridge    docker0
+			----------------------------------------
+			^ le "type" indique si la connexion est un bridge
+		ip link show type bridge
+			3: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN mode DEFAULT group default
+				link/ether 02:42:51:fa:97:e4 brd ff:ff:ff:ff:ff:ff
+		brctl show   (sudo apt install bridge-utils)
+			bridge name     bridge id               STP enabled     interfaces
+			docker0         8000.024251fa97e4       no
+	consulter le cache ARP (= les host dont mon PC connaît l'adresse MAC) :
+		arp -n
+			Adresse                  TypeMap AdresseMat          Indicateurs           Iface
+			192.168.1.254            ether   34:27:92:4e:73:e2   C                     enp5s0
+			192.168.1.50                     (incomplet)                               enp5s0
+			192.168.1.137            ether   00:41:0e:fe:bf:b5   C                     enp5s0
+		ip neigh
+			192.168.1.254 dev enp5s0 lladdr 34:27:92:4e:73:e2 REACHABLE
+			192.168.1.50 dev enp5s0  FAILED
+			192.168.1.137 dev enp5s0 lladdr 00:41:0e:fe:bf:b5 STALE
+			fe80::3627:92ff:fe4e:73e2 dev enp5s0 lladdr 34:27:92:4e:73:e2 router REACHABLE
+			fe80::3627:9213:374e:73e2 dev enp5s0 lladdr 34:27:92:4e:73:e2 router STALE
+
+
+RÉSEAU LOCAL, MATÉRIEL, ET ROUTAGE :
+	Différence latency/bandwidth :
+		https://hpbn.co/primer-on-latency-and-bandwidth/
+		Latency = temps entre l'envoi d'un paquet et sa réception.
+		Bandwidth = débit maximal d'un lien de communication.
+	sous-réseau :
+		Un sous-réseau (ou subnet) est une subdivision d'un réseau IP plus large.
+			NDM = un sous-réseau, c'est un morceau d'un réseau
+		Il permet de diviser un réseau en segments plus petits, ce qui facilite la gestion, améliore la sécurité et optimise l'utilisation des adresses IP.
+		Chaque sous-réseau a une plage d'adresses IP qui lui est propre, et les appareils (comme les ordinateurs, les imprimantes, etc.) connectés à ce sous-réseau peuvent communiquer directement entre eux.
+			QUESTION = ce qui est moins clair, c'est la dernière phrase : elle sous-entend que les devices d'un réseau (et non d'un sous-réseau) ne peuvent pas communiquer directement entre eux ?
+		Imaginons un réseau d'entreprise avec l'adresse IP 192.168.1.0/24. Cela signifie que le réseau peut avoir jusqu'à 256 adresses IP (de 192.168.1.0 à 192.168.1.255).
+			^ le couple {IP + masque} définit un groupe d'adresses IP (qui constitue un réseau ou un sous-réseau)
+		Sur ce réseau à 256 adresses, on peut créer deux sous-réseaux :
+			Sous-réseau 1 : 192.168.1.0/25 (adresses de 192.168.1.0 à 192.168.1.127)
+			Sous-réseau 2 : 192.168.1.128/25 (adresses de 192.168.1.128 à 192.168.1.255)
+	passerelle :
+		Une passerelle est un point d'accès qui permet à un sous-réseau de communiquer avec d'autres réseaux, y compris Internet.
+		Elle agit comme un intermédiaire entre le réseau local et d'autres réseaux.
+		Dans la plupart des cas, la passerelle est un routeur qui a une interface sur le sous-réseau local et une autre interface sur le réseau externe.
+			^ la passerelle est un noeud particulier du réseau qui a accès à d'autres réseaux
+			par exemple, ma box fait le lien entre mon réseau local (sur lequel j'ai une IP locale) et internet
+		Une autre façon de voir la passrelle, c'est : l'endroit où envoyer les paquets qui ne sont pas destinés à des adresses IP locales.
+		Note : dans le cas d'un réseau local sans accès à internet (e.g. nos LAN-party des années 2000), le réseau local n'a tout simplement pas de passerelle.
+			(car il n'y a pas de possibilité d'envoyer un paquet en dehors du sous-réseau, et que c'est l'unique métier de la passerelle)
+	envoi d'un paquet :
+		lorsque mon interface réseau est configurée (manuellement ou par DHCP), elle est associée à une IP + un masque de sous-réseau
+		un paquet (e.g. créé par wget ou curl pour faire un HTTP GET d'une ressource) contient une IP de destination
+		la pile TCP/IP vérifie si l'IP de destination est sur le même sous-réseau que l'IP de l'interface réseau :
+			si oui, elle envoie directement le paquet sur le réseau (à l'adresse MAC, via ARP ; il y a un cache local visible avec arp -a) et on s'arrête là
+		si la destination n'est pas dans le même sous-réseau, le paquet est créé avec deux infos intéressantes :
+			l'IP de destination (hors du sous-réseau, donc...)
+			l'IP de la passerelle
+		on regarde alors dans la table de routage de l'OS pour savoir où envoyer le paquet, et par quelle interface
+		le plus fréquent = comme on veut sortir du sous-réseau, le paquet est envoyé à la passerelle via l'interface par défaut, et la passerelle le propage alors sur le réseau externe
+		(pour savoir où la passerelle envoie le paquet = quel est le prochain hop, elle consulte sa propre table de routage)
+	ranges d'adresses et masques :
+		NDM = le masque n'est pas un filtre (ou plus le filtre est large, plus il "laisse passer des adresses")
+			la bonne vision est au contraire de considérer qu'on "MASQUE" des adresses
+			donc plus le masque occupe beaucoup d'octets, moins on a d'adresses dispo
+			d'où le comportement (un peu contre-intuitif) = 192.168.1.0/8 autorise plus d'adresses que 192.168.1.0/24
+		pour vérifier si deux IPs sont dans le même sous-réseau, on applique le masque aux deux IPs
+			i.e. on nullifie tous les bits de l'adresse IP sauf ceux masqués
+			par exemple, si on nullifie tous les bits sauf ceux masqués de :
+				192.168.1.66/24
+				192.168.1.88/24
+			alors on obtient :
+				192.168.1.0
+				192.168.1.0
+			comme ces deux IPs masquées sont identiques, c'est qu'elles sont dans le même sous-réseau
+			(sinon, elles sont dans des sous-réseaux différents)
+		IP privées :
+			https://fr.wikipedia.org/wiki/Adresse_IP#Plages_d'adresses_IP_sp%C3%A9ciales
+			----------------------------------------
+			10.0.0.0/8
+				FIN = 10.255.255.255
+			172.16.0.0/12
+				FIN = 172.31.255.255
+			192.168.0.0/16
+				FIN = 192.168.255.255	
+	Comment connaître la taille de mon réseau local ?
+		en regardant la taille du masque de sous-réseau associé à mon interface réseau
+		ce masque indique le nombre d'IP sur le même sous-réseau que l'interface
+	Lorsque j'ai deux interfaces (filaire + wifi), les deux peuvent être :
+		sur le même sous-réseau, p.ex. si elles sont toutes les deux connectées à la même box (dans ce cas, elles ont chacune une IP différente)
+		sur des sous-réseau différents (c'est sans doute le cas à LyBy)
+	Pourquoi mon PC a-t-il une table de routage ?! Ce n'est pourtant pas un routeur ?
+		ce n'est pas un routeur au sens où il ne permet pas de router des paquets externes...
+		... mais il a tout de même besoin de savoir où envoyer des paquets = ceux qu'il emet lui-même !
+		du coup, ce n'est pas un routeur, mais ses besoins en routage font qu'il a une table de routage quand même
+	Différence passerelle vs. routeur + comment une passerelle peut ne pas être un routeur ?
+		TL;DR = à mon niveau de compréhension, je peux en rester à "une passerelle est forcément un routeur"
+		----------------------------------------
+		définition d'un routeur = un routeur est un noeud d'un réseau capable de transférer un paquet d'un réseau à un autre, pour le rapprocher de sa destination
+		dans la plupart des cas, une passerelle est un routeur :
+			la passerelle est, au sein d'un sous-réseau, le noeud vers lequel envoyer tous les paquets dont la destination est hors du sous-réseau local
+		mais il peut arriver qu'on utilise une passerelle comme "le point de destination par défaut d'un paquet", mais que la passerelle transfère le paquet non pas à un réseau externe, mais ailleurs dans le même réseau
+			dans ce cas, la passerelle ne joue pas le rôle de routeur
+			exemple : en convertissant du protocole HTTP en FTP
+			exemple : si la passerelle est un proxy
+		c'est suffisamment des edge-cases pour que je le laisse de côté dans ma compréhension des choses
+	différence entre passerelle et proxy ?
+		de mon bout de lorgnette de débutants, on peut facilement confuser les rôles qui sont proches = jouer le rôle d'intermédiaire entre un client qui envoie un paquet, et la destination du paquet
+		passerelle :
+			le client essaye d'envoyer un paquet DIRECTEMENT vers la destination
+			l'adresse de destination du paquet est celle du serveur de destination
+			la passerelle est un intermédiaire "technique" : le fait de passer par une passerelle (et d'ailleurs, par d'autres routeurs intermédiaires) est un détail d'implémentation technique du routage IP
+		proxy :
+			le client envoie INDIRECTEMENT son paquet vers la destination, en quelque sorte "en demandant" au proxy de faire la requête À SA PLACE
+			l'adresse de destination du paquet est celle du proxy
+			d'ailleurs, le serveur de destination ne voit que l'adresse IP du proxy comme "source", et non celle du client
+			le proxy est un intermédiaire "fonctionnel" le client a connaissance de celui-ci
+		le client n'a pas forcément connaissance de la passerelle (car c'est un détail de la pile TCP/IP), mais il a connaissance du proxy
+		le proxy est un middleware, l'intérêt peut-être l'anonymat, le filtrage, la mise en cache, le contrôle d'accès, etc.
+	différence entre switch et hub :
+		TL;DR = hub is dumb, switch is smart
+		physiquement, les deux se présentent pareil = un point central auquel connecter tous les PC du réseau
+		mais le traitement des paquets est très différents :
+			hub = un paquet entrant est routé vers tous les PC connectés (et ceux qui ne sont pas concernés se contenteront de le rejeter)
+			switch = un paquet entrant est analysé routé vers tous les PC connectés (et ceux qui ne sont pas concernés se contenteront de le rejeter)
+		un hub n'a donc pas d'intelligence, il ne peut pas inspecter les paquets
+		un switch inspecte les paquets, et n'encombre pas les liaisons non-concernées
+		par exemple, supposons 4 PC sur le réseau (A, B, C, D) et deux communications en cours : A-B et C-D :
+			avec un hub, les paquets de la communication A-B encombrent le lien entre C et D (et vice-versa)
+			avec un switch, les paquets de la communication A-B ne traversent physiquement que les liens A->switch et switch->B
+			les liens entre le switch et C (ou D) ne reçoivent jamais ces paquets -> leur bande-passante est pleinement libre pour autre chose
+		on a donc plus de risques de collisions avec un hub, et une bande-passante plus petite
+	différence hub / switch / routeur :
+		hub (concentrateur)  = appareil le plus "bête" : tout ce qu'il reçoit sur un port, il l'envoie sur les autres ports ==> pas de confidentialité
+		switch (commutateur) = appareil plus intelligent : il n'envoie les paquets qu'aux destinataires (en les reconnaissant par leur adresse MAC)
+		routeur              = appareil le plus intelligent : car il sait mettre en relation des réseaux différents
+			ex: le routeur est la frontière entre Internet et un réseau local (plusieurs ordis, avec plusieurs IPs 192.168.1.X)
+			un routeur a plusieurs interfaces, p.ex. la box a une interface avec internet (branchée sur le téléphone), et une interface RJ45 pour le réseau local
+	configuration d'un réseau local sans accès à internet :
+		pour configurer manuellement un nouveau PC dans un LAN local (sans accès internet, comme dans les années 2000), on n'a réellement besoin que de :
+			Adresse IP
+			Masque de sous-réseau
+		la passerelle peut-être laissée vide
+		le serveur DNS peut être laissé vide si on utilise les IPs des membres du réseau pour communiquer
+			(et si on veut utilisre des NDD pour représenter les machines du LAN, on peut utiliser un DNS local, ou le fichier hosts)
+		QUESTION = comment le switch connaîtra-t-il l'adresse MAC de mon PC si mon PC ne lui envoie jamais de paquet ?
+			au démarrage du PC (ou lorsqu'on connecte un câble ethernet, et que la carte réseau détecte un évènement de connexion), l'OS envoie des paquets
+			e.g. il broadcaste des trames de diffusion sur le réseau (et ce, même s'il n'a pas encore d'IP !) ou des paquets ARP
+			ces paquets permettent au switch de savoir que connecté à tel port, il y a telle adresse MAC
+	DHCP = le process s'appelle DORA :
+		D = Discover :
+			lorsque mon PC se connecte au réseau, il n'a pas encore d'IP, il broadcaste un paquet DHCP discover sur le réseau, qui recherche un serveur DHCP
+		O = Offer :
+			un serveur DHCP qui reçoit le paquet répond avec une offre DHCP (= IP + masque + passerelle par défaut + serveur DNS)
+		R = Request :
+			cette phase serait mieux nommée A comme accept : mon PC envoit une requête d'acceptation de l'offre au serveur
+		A = Acknowledge :
+			le serveur confirme à mon PC qu'il peut utiliser l'IP et les autres paramètres ; à ce stade, mon PC peut utiliser cette IP
+		NOTE : la box internet, un routeur, ou un serveur dédié peuvent jouer le rôle d'un serveur DHCP (mais pas un switch : ils ne gèrent pas le DHCP)
+	routage par adresses MAC vs. par adresses IP :
+		En résumé :
+			au sein d'un même sous-réseau, les paquets sont routés (d'un host au switch puis à un autre host) avec l'adresse MAC de destination (les IP ne sont pas utilisées)
+			en dehors du sous-réseau, les paquets sont routés (d'un routeur à l'autre, et ainsi de suite jusqu'à la passerelle du sous-réseau de destination) avec l'adresse IP de destination
+		Au sein du sous-réseau local, l'adresse IP n'est utilisée que pour discriminer si le paquet doit être routé dans le sous-réseau ou en dehors.
+		En fait, c'est la même la définition que wikipedia donne d'un réseau local = LAN :
+			https://fr.wikipedia.org/wiki/R%C3%A9seau_local
+			Un réseau local, en anglais Local Area Network ou LAN, est un réseau informatique où les terminaux qui y participent (ordinateurs, etc.) s'envoient des trames au niveau de la couche de liaison sans utiliser l’accès à internet.
+			(en sachant que la couche de liaison est la couche 2 = celle des adresses MAC, les adresses IP sont la couche 3 = la couche réseau)
+	ARP pour connaître les adresses MAC sur un réseau local :
+		au sein d'un réseau local, les paquets sont routés vers l'adresse MAC du destinataire ; le PC émetteur a donc besoin de connaître l'adresse MAC du destinataire.
+		Comment fait-il ?
+			à partir de l'IP de destination, il broadcaste une requête ARP "quelle adresse MAC a telle adresse IP ?"
+			le destinataire répond avec un paquet ARP qui dit "je suis l'ordinateur avec telle IP, et voici mon adresse MAC" ; il envoit ce paquet vers l'adresse MAC qui a émis la requête
+		Les noeuds ont des tables ARP locales pour mettre en cache les associations entre adresse IP et adresse MAC (avec une durée limitée)
+		Note : pour de grands réseaux, les paquets ARP peuvent créer de la congestion, mais pour les petits résesaux, ça n'est pas un souci.
+		Note : ARP spoofing = un attaquant envoie de fausses réponses ARP pour associer son adresse MAC à l'adresse IP d'un autre ordinateur.
+	Bridge matériel :
+		Un bridge matériel est proche à la fois :
+			d'une passerelle, destinée à connecter deux réseaux A et B, et qui possède deux interfaces, l'une dans le réseau A, et l'autre dans le réseau B
+			d'un switch, destiné à router les paquets au sein d'un réseau local, en fonction de leur adresse MAC
+		En effet, un bridge route les paquets internes à un réseau selon leur adresse MAC, mais qui permet de router les paquets non pas à l'intérieur d'un unique réseau, mais entre deux réseaux séparés.
+		Du coup, tout se passe comme si l'agrégat de ces deux réseaux (avec le bridge au milieu) constituaient un unique réseau local.
+		Ou dit autrement, un bridge est un switch capable de relier deux réseaux.
+		EDIT : après une meilleure compréhension des deux couches liaison et transprt, je vois les choses autrement : un bridge relie deux réseaux au niveau liaison
+		----------------------------------------
+		Un bridge route les paquets en fonction de leur adresse MAC :
+			lorsqu'un paquet arrive sur l'une des interfaces du bridge, il examine l'adresse MAC de destination et détermine si le paquet doit être transmis à l'autre réseau ou non.
+			(un peu comme un switch, il construit des genres de tables qui lui permettent de mémoriser quelles adresses MAC sont dans quel réseau)
+		En connectant deux réseaux, le bridge donne l'impression qu'ils ne forment qu'un unique réseau local.
+	Retour sur ce qui se passe en bas-niveau = domaine de collision vs. domaine de diffusion, etc.:
+		répéteur = on "prolonge" le câble réseau : les deux nodes au bout de chaque morceau du récepteur appartiennent au même domaine de collision
+		hub = on "partage" le câble réseau : ici, on n'a plus uniquement deux nodes (un à chaque bout), mais plusieurs, qui appartiennent au même domaine de collision
+		bridge = ici, on a bien deux domaines de collision différents (i.e. "deux câbles différents"), de chaque côté du bridge
+			mais un seul réseau du point de vue couche 2 = MAC (i.e. un node de la moitié gauche peut communiquer en routage MAC avec un node de la moitié droite)
+			(a fortiori un seul sous-résesau du point de vue couche 3 = IP)
+			NOTE : d'une certaine façon, le bridge est un switch qui ne relie que deux nodes
+		switch = ici, on a plusieurs domaines de collision différents (un par couple port+node connecté au port)
+			mais un seul réseau du point de vue couche 2 = MAC (i.e. un node de la moitié gauche peut communiquer en routage MAC avec un node de la moitié droite)
+			(a fortiori un seul sous-résesau du point de vue couche 3 = IP)
+			NOTE : d'une certaine façon, le switch est une extension d'un bridge, capable de relier plusieurs segments de résesaux plutôt que "juste deux"
+		différence switch/bridge :
+			https://reussirsonccna.fr/le-bridge/
+				le Bridge est l’ancêtre du Switch car la principale différence entre les deux vient du nombre de ports physiques :
+					Le Bridge a 2 ports physiques
+					Le Switch peut avoir de 4 à plusieurs centaines de ports physiques !
+				(...)
+				Aujourd’hui on ne trouve quasiment plus de Bridge car ils sont remplacés par les Switch, plus puissant avec une densité de ports plus importante
+				Typiquement, le Bridge est utilisé pour faire la jonction entre deux parties d’un réseau, par exemple lorsqu’on veut raccorder deux bâtiments entre eux alors on utilise un Bridge.
+			https://www.linktionary.com/s/segment.html
+				multiport switches are now the preferred method for segmenting a network.
+				A multiport switch is actually a bridge with multiple ports
+		routeur = un routeur sépare deux réseaux différentes au niveau IP (couche 3)
+			on franchit la barrière introduite par un routeur quand on a besoin d'envoyer un paquet vers un node dont l'adresse est dans un sous-réseau différent (l'adresse IP masquée n'est pas la même que l'émetteur)
+		network segment = segment de réseau :
+			stricto-sensu, c'est un "morceau" d'un réseau
+			le terme a des sens différents pour les couches 1, 2 et 3, mais d'après la page wikipedia française, il est plutôt utilisé pour parler de la couche 1 = le domaine de collision
+			pour la couche 1 = physique, un segment de réseau est le "domaine de collision" :
+				ça correspond à tout ce qui peut "partage" le signal sur le câble
+				soit directement = les deux appareils connectés à chaque bout du câble
+				soit indirectement = tous les appareils connectés via un répéteur ou un hub
+			pour la couche 2 = liaison, un segment de réseau est "tout ce qui adressable par adresse MAC"
+				soit directement = sur le même domaine de collision
+				soit indirectement = sur des domaines de collision différents, mais reliés par un bridge (ou un switch : qui peut le plus peut le moins)
+			pour la couche 3 = transport, un segment de réseau est le "domaine de diffusion" aussi appelé "sous-réseau" = "tout ce qui est adressable par adresse IP sans passer par un routeur"
+				(i.e. tout ce qui a même IP de base + masque)
+				dans la majorité des cas, les segments de réseau de couche 2 et de couche 3 sont identiques
+				dit autrement, dans la majorité des cas, dire "on n'a pas besoin de passer par un routeur" revient à dire "on peut router par adresses MAC"
+			sources :
+				https://en.wikipedia.org/wiki/Network_segment
+				https://en.wikipedia.org/wiki/Collision_domain
+				https://en.wikipedia.org/wiki/Broadcast_domain
+				----------------------------------------
+				https://fr.wikipedia.org/wiki/Domaine_de_diffusion
+				https://fr.wikipedia.org/wiki/Domaine_de_collision
+				https://fr.wikipedia.org/wiki/Segment_de_r%C3%A9seau
+		résolution des collisions :
+			pour ethernet filaire, c'est CSMA/CD qui est utilisé pour résoudre les collisions :
+				https://fr.wikipedia.org/wiki/Carrier_Sense_Multiple_Access_with_Collision_Detection
+				https://en.wikipedia.org/wiki/Carrier-sense_multiple_access_with_collision_detection
+				----------------------------------------
+				parallèle entre ethernet est une conversation (si deux personnes parlent en même temps, elles s'arrêtent toutes les deux, et l'une des deux reprend avant l'autre)
+				grosso-modo, un node attend que personne d'autre ne transmette pour transmettre son message
+				pendant qu'il transmet, le node checke que personne ne transmets en même temps
+				si ça arrive, le node annule la transmission, et réessaye après un temps random
+				ça marche bien, mais ça scale mal quand le réseau est encombré
+				du coup, mieux vaut limiter le domaine de collision, et c'est bien ce qu'on fait quand on utilise un switch plutôt qu'un hub (le domaine de collision est limité à deux nodes = mon PC, et le switch)
+				(la page wikipedias a un diagramme de l'algo très descriptif)
+			pour wifi, c'est CSMA/CA qui est utilisé :
+				https://fr.wikipedia.org/wiki/Carrier_Sense_Multiple_Access_with_Collision_Avoidance
+				https://en.wikipedia.org/wiki/Carrier-sense_multiple_access_with_collision_avoidance
+				----------------------------------------
+				algorithme distribué qui permet le partage du média (le spectre) entre plusieurs stations tout en réduisant la probabilité de collisions entre trames et le risque de brouillage
+				(wifi nécessite un algo différent, notamment car c'est plus difficile d'à la fois émettre et écouter si quelqu'un d'autre émet)
+				si au moment où on veut transmettre, le média a été libre pendant une certaine fenêtre (DIFS) alors on peut transmettre immédiatement
+				sinon, on attend le DIFS + un temps un peu random
+		lien entre résolution des collisions et segment de réseau :
+			On Ethernet using shared media, collisions are resolved using carrier-sense multiple access with collision detection (CSMA/CD) in which the competing packets are discarded and re-sent one at a time. This becomes a source of inefficiency in the network.
+			----------------------------------------
+			HUB = Collision domains are also found in an Ethernet hub or repeater environment where each host segment connects to a hub, and all segments represent only one collision domain within one broadcast domain.
+				^ tous les nodes connectés à un hub forment un unique collision domain dans un broadcast domain
+			SWITCH = Modern wired networks use a network switch to reduce or eliminate collisions. By connecting each device directly to a port on the switch, either each port on a switch becomes its own collision domain
+				^ au sein d'un même broadcast domain, il y a de multiples collision domain (un par node : le collision domain est juste chaque paire d'un node et du switch)
+	ARP :
+		ARP est le protocole servant à associer adresse MAC à adresse IP.
+			"arp -a" pour voir le cache local
+		ARP poisining :
+			http://qpleple.com/arp/
+
+
+ROUTAGE SUR INTERNET :
+	QUESTION = pourquoi y a-t-il plus de 3 hops sur internet ?
+		on dirait que internet = un seul gros sous-réseau -> du coup il ne devrait y avoir que 3 hops dans le routage :
+			dans mon sous-réseau = depuis mon poste vers ma passerelle
+			dans le réseau internet = depuis ma passerelle vers la passerelle de mon destinataire
+			dans le sous-réseau de mon destinataire = depuis la passerelle vers le destinataire
+		or ça n'est sans doute pas aussi simple, vu qu'un simple traceroute montre plus de hops que ça
+		RÉPONSE :
+			internet, c'est PLUSIEURS réseaux connectés (appelés AS = Autonomous System)
+			si l'AS de la source n'est pas directement connecté à l'AS de destination, il faut passer par un (ou des) AS intermédiaire(s), d'où les multiples hops
+	routage sur internet :
+		https://arstechnica.com/tech-policy/2010/11/understanding-the-internets-insecure-routing-infrastructure/
+			NOTE : l'article a plus de 10 ans (mais reste intéressant)
+		internet est constitué de morceaux de réseaux indépendants (de graphes indépendants) reliés entre eux par des routeurs
+		ces morceaux sont appelés les Autonomous Systems = AS :
+			https://fr.wikipedia.org/wiki/Autonomous_System
+		chaque AS a son propre range d'IP, matérialisé par un préfixe -> il y en a 341k
+		typiquement chaque AS est géré par un ISP (= FAI)
+		chaque routeur (interface entre deux AS) a une table contenant 341k entrées, lui permettant de router les paquets en fonction de leur IP
+		en gros, il raisonne comme ça :
+			je vois que le paquet chercher à atteindre l'IP 154.34.122.228
+			ça n'est pas dans mon morceau de réseau -> il faut que je transmette au prochain hop
+			ça commence par 154.34.xxx.xxx, et ma table de routage indique que le prochain hop pour ce préfixe est de transmettre le paquet à tel autre AS
+		la façon dont les routeurs échangent les infos sur les IPs de leur propre AS, et de comment les router, c'est avec le BGP = Border Gateway Protocol
+		l'article mentionne deux choses que je ne fais que survoler mais qui ont l'air intéressantes :
+			une histoire de hiérarchie de route, en fonction de qui doit de l'argent à qui
+			un problème réseau survenu à l'époque, où une partie du traffic internet a été routé par la Chine à tort
+	routing table :
+		https://en.m.wikipedia.org/wiki/Routing_table
+			The construction of routing tables is the primary goal of routing protocols.
+			Static routes are entries made in a routing table by non-automatic means and which are fixed rather than being the result of routing protocols and associated network topology discovery procedures.
+		The primary function of a router is to forward a packet toward its destination network, which is the destination IP address of the packet.
+		To do this, a router needs to search the routing information stored in its routing table.
+		The routing table contains network/next hop associations.
+		These associations tell a router that a particular destination can be optimally reached by sending the packet to a specific router that represents the next hop on the way to the final destination
+		Assuming that the routing tables are consistent, the simple algorithm of relaying packets to their destination's next hop thus suffices to deliver data anywhere in a network.
+		Hop-by-hop is the fundamental characteristic of the IP Internet layer[1] and the OSI Network Layer.
+		When a router interface is configured with an IP address and subnet mask, the interface becomes a host on that attached network.
+		A directly connected network is a network that is directly attached to one of the router interfaces.
+			^ NDM : tel que je comprends les choses, le router saura lui-même comment envoyer le paquet vers un host d'un "directly connected network", sans avoir à passer par la table de routage et un "next-hop"
+		The network address and subnet mask of the interface, along with the interface type and number, are entered into the routing table as a directly connected network.
+		A remote network is a network that can only be reached by sending the packet to another router.
+		Routing table entries to remote networks may be either dynamic or static.
+			Dynamic routes are routes to remote networks that were learned automatically by the router through a dynamic routing protocol.
+			Static routes are routes that a network administrator manually configured.
+	routing protocol :
+		https://en.m.wikipedia.org/wiki/Routing_protocol
+		----------------------------------------
+		A routing protocol specifies how routers communicate with each other to distribute information that enables them to select routes between any two nodes on a computer network.
+		Routers perform the "traffic directing" functions on the Internet; data packets are forwarded through the networks of the internet from router to router until they reach their destination computer.
+		Routing algorithms determine the specific choice of route.
+		Each router has a prior knowledge only of networks attached to it directly.
+		A routing protocol shares this information first among immediate neighbors, and then throughout the network.
+		This way, routers gain knowledge of the topology of the network.
+		The ability of routing protocols to dynamically adjust to changing conditions such as disabled data lines and computers and route data around obstructions is what gives the Internet its fault tolerance and high availability.
+
+
+RÉSEAU SUR MON POSTE LINUX :
+	interface réseau :
+		NIC = Network Interface Card = composant matériel qui permet à un appareil de se connecter à un réseau ; Il a une adresse MAC unique.
+		Une interface réseau est un point de connexion entre un ordinateur (ou un autre appareil) et un réseau.
+		Elle permet à l'appareil de communiquer avec d'autres appareils sur le même réseau ou sur Internet.
+		----------------------------------------
+		Une interface réseau est un composant matériel ou logiciel qui permet la communication entre un appareil et un réseau.
+		Cela peut inclure des cartes réseau physiques (comme Ethernet ou Wi-Fi) ou des interfaces virtuelles (comme celles créées par des machines virtuelles ou des conteneurs).
+		----------------------------------------
+		Interfaces physiques : Ce sont des cartes réseau physiques installées dans votre ordinateur, comme une carte Ethernet (pour les connexions filaires) ou une carte Wi-Fi (pour les connexions sans fil).
+		Interfaces virtuelles : Ce sont des interfaces créées par des logiciels, comme celles utilisées par des machines virtuelles (par exemple, VirtualBox, VMware) ou des conteneurs Docker. Elles permettent à plusieurs systèmes d'exploitation ou applications de partager une seule interface physique.
+		----------------------------------------
+		NDM : typiquement, si je suis connecté à la fois en filaire et en wifi, je vais avoir deux interfaces résesau, l'une pour le réseau filaire, l'autre pour le réseau wifi.
+	table de routage :
+		La table de routage est une structure de données utilisée par le système d'exploitation pour déterminer comment acheminer les paquets de données vers leur destination.
+		Elle contient des informations sur les réseaux disponibles, les interfaces associées, et les routes à suivre.
+		NDM : elle est globale à l'OS, i.e. il y a une table de routage globale, et non une table par interface
+			c'est justement la table de routage qui indique l'interface à utiliser pour router le paquet en fonction de la destination
+			dit autrement : certaines routes doivent obligatoirement passer par une interface précise
+			(et d'un certain point de vue, c'est le cas pour la route par défaut aussi : elle définit l'interface par défaut)
+			(en vrai, il peut y avoir d'autres facteurs qui joue sur le routage, comme par exemple l'encombrement réseau = metrics)
+	ce qui se passe quand je passe une commande wget ou curl :
+		STEP 1 = résolution du NDD pour avoir l'IP
+			NDM = si besoin, une requête vers le serveur DNS sera elle aussi routée avec table de routage, MAIS comme l'IP du serveur DNS est connue, on n'a pas de serpent qui se mord la queue
+		STEP 2 = check de la table de routage :
+			L'OS consulte la table de routage pour déterminer si une route spécifique existe pour l'adresse IP de destination.
+			Si une route spécifique est trouvée, l'OS utilise l'interface associée à cette route.
+		STEP 3 = route par défaut
+			si pas de route spécifique dans la table de routage, on utilise la route par défaut
+			du coup, le paquet sera envoyé via l'interface associée à la route par défaut (généralement la passerelle)
+		STEP 4 = envoi du paquet :
+			Une fois l'interface choisie, le paquet est envoyé via cette interface. L'OS encapsule le paquet dans un cadre (frame) approprié pour le type d'interface (Ethernet, Wi-Fi, etc.) et l'envoie.
+	quid s'il y a le choix entre plusieurs interfaces ?
+		Si plusieurs interfaces sont disponibles, l'OS choisit généralement celle qui a la route par défaut configurée.
+		Si plusieurs routes par défaut existent, l'OS peut utiliser des métriques pour déterminer laquelle utiliser.
+		La métrique est une valeur qui indique le coût de l'utilisation d'une route ; une valeur plus basse indique une préférence plus élevée.
+	interface virtuelle :
+		interface non pas associée à un matériel (comme une carte réseau ou une carte wifi), mais créées logiciellement
+		elle dispose de sa propre IP+masque de sous-réseau + adresse MAC :
+			Chaque interface réseau, qu'elle soit physique ou virtuelle, a sa propre adresse MAC.
+			Lorsque vous configurez une interface virtuelle sur votre PC, elle reçoit une adresse IP ainsi qu'une adresse MAC.
+			Cela signifie que l'interface virtuelle peut être vue comme un appareil distinct sur le réseau.
+		si elle a une IP+masque de sous-réseau compatible avec le sous-réseau qui accueuille mon PC et la passerelle, alors les autres noeuds du réseau (e.g. la passerelle ou un autre PC) pourront lui envoyer des paquets
+		QUESTION = comment ? ça transitera forcément par mon PC, mais comment le processus de routing saura qu'il faudra passer par mon PC ?
+			Lorsqu'un autre nœud du réseau souhaite envoyer un paquet à l'adresse IP de votre interface virtuelle, il doit d'abord résoudre cette adresse IP en une adresse MAC.
+			Pour ce faire, il envoie une requête ARP en mode broadcast sur le réseau local, demandant : "Qui a l'adresse IP X.X.X.X ?"
+			Votre PC, qui possède l'interface virtuelle avec l'adresse IP correspondante, répond à cette requête ARP en fournissant son adresse MAC associée à l'interface virtuelle.
+			Cela permet à l'autre nœud de savoir que pour envoyer des paquets à l'adresse IP de l'interface virtuelle, il doit utiliser l'adresse MAC de votre PC.
+			----------------------------------------
+			TL;DR = au final, l'interface a beau être virtuelle, elle est hiérarchiquement au même niveau que l'interface physique, sur mon PC.
+		du coup, la vraie question est : comment l'envoi de paquet atterrit-il au bon endroit en fonction des adresses MAC ?
+			ici, il faut rentrer dans la couche bas-niveau : comment les paquets circulent sur le réseau
+			initialement, on avait une topologie en bus, où tous les paquets étaient émis "en même temps vers tout le monde"
+			(et il y avait des protocoles physiques pour gérer les collisions de trame ; les noeuds qui recevaient des trames qui ne leur étaient pas destinés se contentaient de les rejeter)
+			puis, on est passé à une topologie en étoile : tous les noeuds sont reliés à un switch au milieu
+			QUESTION = comment le switch sait-il sur quel câble il doit envoyer un paquet à destination de telle adresse MAC ?
+				Le switch auquel est connecté mon PC va mémoriser dans sa "MAC Address Table" le lien entre une adresse MAC et le port sur lequel il faut router les paquets à destination de cette adresse MAC
+				(l'association se fait au moment où le switch reçoit un paquet de la part d'un PC connecté au switch : il associe alors le port sur lequel il a reçu le paquet à l'adresse MAC)
+			QUESTION = avec les interfaces virtuelles, un même câble doit être utilisé pour PLUSIEURS noeuds (mon interface physique, et toutes les interfaces virtuelles), comment ça marche ?
+				le switch se contente d'associer PLUSIEURS adresses MAC au port physique sur lequel est connecté le câble
+			QUESTION = comment fait mon PC pour traiter des paquets d'une adresse MAC qui n'est pas la sienne ?
+				en effet, il reçoit sur son interface physique (associée à son adresse MAC physique) un paquet à destination de l'adresse MAC de l'interface virtuelle
+				comment "sait-il" qu'il ne doit pas discarder le paquet, mais le rediriger vers l'interface virtuelle ?
+				RÉPONSE = ici aussi, le PC connaît les interfaces virtuelles : quand il reçoit un paquet, il regarde si on adresse MAC de destination est celle d'une de ses interfaces (physique ou virtuelles)
+		l'interface de loopback (boucle locale) est une interface virtuelle du PC vers lui-même
+			utile pour débugger la stack TCP/IP : on peut s'envoyer un paquet à soi-même
+	Bridge logiciel :
+		https://www.ibm.com/docs/en/linux-on-systems?topic=choices-using-linux-bridge
+			A network bridge is a Link Layer device which forwards traffic between networks based on MAC addresses and is therefore also referred to as a Layer 2 device.
+			It makes forwarding decisions based on tables of MAC addresses which it builds by learning what hosts are connected to each network.
+			A software bridge can be used within a Linux host in order to emulate a hardware bridge, for example in virtualization applications for sharing a NIC with one or more virtual NICs.1
+			In the context of KVM, a Linux bridge is used to connect the KVM guest interface to a KVM host network interface.
+		Un bridge logiciel émule un bridge matériel au sein de mon PC : les deux réseaux reliés seront par exemple :
+			le réseau local de mon PC
+			un réseau local virtuel (qui accueillera la VM, voire même plusieurs VM)
+		Dit autrement, créer un bridge logiciel sur mon PC créée un réseau local virtuel (avec le bridge entre ce réseau virtuel et le "vrai" réseau local de mon PC)
+
+
+TCP
+	https://hpbn.co/building-blocks-of-tcp/
+	handshake :
+		TCP , threeway handshake. Il faudra obligatoirement attendre un round trip complet avant de commencer à utiliser une connexion.
+		(Mais le sender pourra part contre envoyer son premier paquet utile juste après le troisième paquet du handshake (ack) sans attendre plus longtemps.
+		Note : pour ce threeway handshake, la bandwidth n'intervient pas : seule la latency est limitante.
+		Conséquence : créer une connexion TCP est coûteux (et en réutiliser une est donc intéressant)
+	mécanismes de contrôle :
+		Flow control = chaque côté de la connexion transmet sa receive-window (rwnd).
+			Mis à jour dynamiquement au fur et à mesure des ACK.
+			Utile, mais n'empêche pas d'overflow le réseau intermédiaire.
+		Slow start + congestion control : congestion window (initialement conservative).
+			Limite la quantité de paquets pas encore ACK sur le réseau.
+			Augmentation exponentielle, jusqu'à atteindre la bandwidth max du réseau.
+			Dépend du nombre d'acks, donc du nombre de round trip : si le serveur est plus près, ça va mieux.
+		Slow start a peu d'impact pour une connexion longue durée, mais est embêtant pour une connexion courte et bursty (dans ce cas, la connexion peut prendre fin avant même qu'on atteigne la maximum window size)
+		Les mécanismes de TCP justifient la plupart des optimisations visant à éviter de repartir d'une connexion fraiche.
+		Dans TCP, perdre un paquet est un mécanisme de feedback "normal" permettant de réguler l'échange (il n'est donc pas aberrant de dropper un paquet volontairement).
+		Congestion avoidance algorithme = réagit à la perte de paquets en ralentissant l'échange.
+
+
+LIBVIRT :
+	https://wiki.libvirt.org/VirtualNetworking.html
+		il y a un "virtual network switch" = une interface virtuelle qui apparaît sur mon PC comme "virbr0" (créée par le daemon libvirt) :
+			On a Linux host server, the virtual network switch shows up as a network interface.
+			The default one, created when the libvirt daemon is first installed and started, shows up as virbr0.
+		mode 1 = mode par défaut = NAT :
+			les autres noeuds du réseaux local à l'host ne voient pas l'IP de la VM, mais celles du host :
+				By default, a virtual network switch operates in NAT mode.
+				This means any guests connected through it, use the host IP address for communication to the outside world.
+				Computers external to the host can't initiate communications to the guests inside, when the virtual network switch is operating in NAT mode.
+			c'est avec iptables que le NAT est effectué :
+				WARNING - The NAT is set up using iptables rules. Be careful if you change these while the virtual switch is running.
+				If something goes wrong with the iptables rules, your virtual machines may stop communicating properly.
+				----------------------------------------
+				effectivement, quand j'affiche les chaînes iptables, j'en vois plein avec LIBVIRT dans le nom :
+					sudo iptables -L -v -n
+			les VM peuvent se connecter à ce switch virtuel et configurer leur réseau avec DHCP :
+				Each virtual network switch can be given a range of IP addresses, to be provided to guests through DHCP.
+		mode 2 = routed :
+			si je comprends bien, dans ce mode, le "virtual network switch" est un router virtuel (le réseau derrière ce router est celui des VM)
+			si les IP des VM sont dans un AUTRE sous-réseau que le réseau local de l'host, les paquets sont routés en IP, comme avec les hops classiques des réseaux ip
+				du coup, il faut configurer les autres router et mon PC (en leur ajoutant des routes statiques) pour qu'ils aient connaissance de ce réseau, et sachent router les paquets dont les IP lui appartiennent
+			si les IP des VM sont dans le même sous-réseau, je suppose que le routage se fait normalement
+			ici, pas de NAT, donc les autres noeuds du réseau local à l'host voient les IPs des VM (et non celles de l'host) et peuvent initer une communication avec lui
+		mode 3 = isolated :
+			le réseau des VM n'est pas accessible par l'host ou par d'autres noeuds
+	EDIT : sachant que je comprends maintenant qu'un bridge est simplement un switch limité à deux ports, je comprends mieux pourquoi libvirt (et virt-manager) désignent par "bridge" le "virtual network switch"
+	STILL TO ANNOTATE
+		STILL TO ANNOTATE
+		STILL TO ANNOTATE
+		STILL TO ANNOTATE
+		STILL TO ANNOTATE
+			le fait qu'il y a DEUX types de propriétés : celles de la VM, et celles de libvirt
+				Édition > Détails de la connexion > Réseaux virtuels
+			du coup, je peux créer un autre network dans un mode différent que NAT si besoin, dans les propriétés de libvirt (et non de la VM)
+			du coup, dans les propriétés de la VM, je n'ai PAS les 3 modes de la doc libvirt (ça, c'est les propriétés de libvirt), j'ai le choix du virtual network switch ou bien d'un autre moyen
+			je peux choisir d'utiliser un autre réseau que le "virtual network switch"
+			cette doc pourrait expliquer comment connecter ma VM à un autre réseau :
+				https://linuxconfig.org/how-to-use-bridged-networking-with-libvirt-and-kvm
+			ou sinon, à essayer simplement = créer un nouveau réseau libvirt NAT qui pointe vers l'interface tun du VPN ?
+				^ C'EST SANS DOUTE ÇA MA PROCHAINE ÉTAPE !!!
+				^ C'EST SANS DOUTE ÇA MA PROCHAINE ÉTAPE !!!
+				^ C'EST SANS DOUTE ÇA MA PROCHAINE ÉTAPE !!!
+				(avec le fait de faire des tests via une VM ubuntu)
+		STILL TO ANNOTATE
+		STILL TO ANNOTATE
+		STILL TO ANNOTATE
+		STILL TO ANNOTATE
+
