@@ -804,15 +804,30 @@ cf. [mes notes spécifiques sur le sujet](../python/pyenv.md)
 
 # javascript et typescript
 
-Regarder quelle est la dernière version de node sur https://nodejs.org/en
+Notes d'installation de node+npm datant d'avril 2025 ; c'est tellement le bazar que [le site officiel](https://nodejs.org/en/download) propose un tool paramétrable pour aider à l'installation, qui prend en input :
 
-Installer la dernière version disponible :
+- la version de node souhaitée
+- l'OS
+- l'installer souhaité (nvm, docker, chocolatey, etc.)
+- le package manager js souhaité (npm, yarn, pnpm)
+
+(on peut aussi télécharger un binaire précompilé)
+
+Même si mes anciennes notes déconseillaient nvm car il ralentissait le démarrage du terminal, je redonne sa chance au produit et j'installe node+npm via nvm :
 
 ```sh
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install nodejs
-sudo apt autoremove
-npm config set prefix '~/.local/'  # en tant que REGULARUSER
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+
+# lancer un nouveau shell, ou sinon, sourcer le fichier de config :
+. "$HOME/.nvm/nvm.sh"
+
+# installer node 22 :
+nvm install 22
+
+# vérifier les installations :
+node -v     # v22.15.0
+nvm current # v22.15.0
+npm -v      # 10.9.2
 ```
 
 Installation de typescript + LSP :

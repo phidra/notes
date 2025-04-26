@@ -6,7 +6,7 @@
       * [npm run build](#npm-run-build)
       * [npm run dev](#npm-run-dev)
 * [Installation](#installation)
-   * [TL;DR](#tldr)
+   * [Via un PPA](#via-un-ppa)
    * [analyser la version installée — npm](#analyser-la-version-installée--npm)
    * [analyser la version installée — node](#analyser-la-version-installée--node)
    * [nvm](#nvm)
@@ -16,7 +16,7 @@
 
 **C'est quoi ?**
 
-- `node.js` est un moteur d'exécution javascript ; il joue le rôle d'interpréteur javascript indépendant du navigateur (ce qui premet de coder des apps backend en js).
+- `node.js` est un moteur d'exécution javascript ; il joue le rôle d'interpréteur javascript indépendant du navigateur (ce qui permet de coder des apps backend en js).
 - `npm` est le gestionnaire de paquets pour `node.js` (équivalent de pip pour python) ; il permet de gérer les dépendances d'un projet, son installation nécessite node.js.
 
 **Installation locale / globale** : tout comme pip, npm peut installer des paquets globalements ou localement :
@@ -137,7 +137,9 @@ Pourquoi ? Parce que appeler `npm run build` suivi du fait de lancer un serveur 
 
 # Installation
 
-## TL;DR
+Pour ce que j'utilise actuellement comme méthode d'installation cf. [mes notes de workflow](../workflow/dev-workflow.md).
+
+## Via un PPA
 
 [Cette page digitalocean](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-20-04-fr) recommande l'utilisation de [ce PPA](https://github.com/nodesource/distributions#deb), c'est ce que j'ai suivi :
 

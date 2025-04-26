@@ -4,8 +4,7 @@
 
 # Installation / mise à jour
 
-cf. [mes notes sur npm](./npm.md).
-
+cf. [mes notes de workflow](../workflow/dev-workflow.md).
 
 # Vrac
 
