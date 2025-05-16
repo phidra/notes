@@ -16,6 +16,7 @@
 * [connaître l'entrypoint ou la commande d'une image](#connaître-lentrypoint-ou-la-commande-dune-image)
 * [matcher toute l'arborescence ou juste les fichiers avec zsh](#matcher-toute-larborescence-ou-juste-les-fichiers-avec-zsh)
 * [vider le cache bash](#vider-le-cache-bash)
+* [sommer une colonne d'un fichier CSV](#sommer-une-colonne-dun-fichier-csv)
 
 
 # imagemagick pour calculer la différence entre deux images
@@ -305,4 +306,12 @@ hash -r
 
 # si besoin :
 man bash
+```
+
+# sommer une colonne d'un fichier CSV
+
+**tags** : awk, csv, data-processing
+
+```sh
+awk -F, '{sum += $1} END {print sum}' /tmp/input_file.csv
 ```
