@@ -1,4 +1,4 @@
-# C++ Design Patterns - The Most Common Misconceptions (2 of N) 
+# C++ Design Patterns - The Most Common Misconceptions (2 of N)
 
 - **url** = https://www.youtube.com/watch?v=pmdwAf6hCWg
 - **type** = vidéo

@@ -1,0 +1,57 @@
+#  Les clés de l’architecture pour les devs
+
+- **url** = https://www.youtube.com/watch?v=ZoYDxF_7LoI
+- **type** = vidéo
+- **auteur** = [Christian SPERANDIO](https://medium.com/@bkcmzrtt) et [Cyrille MARTRAIRE](https://ddd.academy/cyrille-martraire/), tous deux devs expérimentés chez [Arolla](https://www.arolla.fr/)
+- **date de publication** = 2025-05-13
+- **source** = [Devoxx 2025](https://www.youtube.com/@DevoxxFRvideos)
+- **tags** = language>agnostic ; topic>architecture ; level>intermediate
+
+**TL;DR** = une prez orientée archi assez généraliste, plutôt intéressante car donne le mindset général à avoir, mais pas très concrète donc ça ne parlera qu'à ceux qui connaissent déjà le sujet.
+
+- 1:30 archi = des bouts qui parlent entre eux
+- 1:40 archi jamais finie, toujours en train de changer
+- 3:45 on ne saura jamais tout, accepter de vivre et d'avancer avec l'incertitude
+- 7:45 penser problème et non solution
+- 8:40 system features + quality attributes :
+    - performance
+    - scalability
+    - downtime
+    - security
+    - upgradeability
+    - extensibility
+    - development
+    - productivity
+    - cost
+    - developer sourcing
+    - regulatory constraints
+    - accessibility
+    - deployability
+- 14:10 Technical contraints guide the design
+- 14:50 le découpage technique (avec les critères de quality attributes) et découpage métier sont corrélés
+- 16:00 key = penser modularité
+- 18:00 l'architecture se pense à plusieurs niveaux : business = domaine métier, modules, infra technique, runtime ...
+- 19:00 plusieurs personnes volent à des hauteurs différentes, le point important est la qualité de la relation entre les personnes de différentes niveaux.
+- 20:00 les différents niveaux peuvent être découpés différemment, e.g. dans le monolithe modulaire, il y a un découpage donné pour les modules, alors qu'au niveau runtime, il n'y a pas de découpage.
+    - Exemple concret de différence : au niveau module, on a un premier module pour le parsing de ce qu'on reçoit, et un deuxième module pour l'agrégation. Au niveau runtime, on n'a qu'un unique process (qui contient les deux modules)
+- Big ball of mud = pas de modularité
+- 23:00 tout ça (interface, injection, etc.) c'est du travail en plus, mais ça nous créer l'opportunité de changer ce qu'il y a derrière l'interface plus tard, on se laisse donc la possibilité de changer d'avis, au lieu de se marier avec l'implémentation.
+- 27:20 l'architecture, c'est faire des tradeoffs tout le temps. Quand on a une idée de solution en tête, si on voit que des avantages, on n'a pas fini le boulot, il fait aussi regarder les inconvénients
+- 28:50 qu'est ce qui peut mal se passer avec un tuyau asynchrone (pub-sub) :
+    - quota exceeded
+    - lost message
+    - out of order delivery
+    - duplicate delivery
+    - ...
+- 34:00 l'architecture est dynamique : on ne la fige pas au début, c'est plutôt qu'elle évolue
+- 36:30 = un contrat, une fois qu'il est publié, on en est dépossédé : on n'a plus le droit de faire de breaking change
+- 38:10 des contrats stables autorisent les deux côtés à chercher librement, sans impacter l'autre : **Contracts are forever**
+- 39:30 bonne pratiques
+    - adr (si on ne sait pas justifier, c'est au il y a un souci)
+    - tester l'archi avec [ArchUnit](https://www.archunit.org/) (orienté java, apparemment)
+    - aller au tableau blanc
+    - alterner conception seul puis à plusieurs où on confronte ses solutions 
+- 43:00 livres références :
+    - [The Software Architect Elevator](https://www.amazon.com/Software-Architect-Elevator-Redefining-Architects/dp/1492077542)
+    - [Release It!: Design and Deploy Production-Ready Software](https://www.amazon.fr/Release-Design-Deploy-Production-Ready-Software/dp/1680502395)
+    - [Designing Data–Intensive Application](https://www.amazon.fr/Designing-Data-Intensive-Applications-Martin-Kleppmann/dp/1449373321)
