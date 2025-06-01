@@ -62,12 +62,41 @@ OÙ J'EN SUIS :
 
 
 COMMANDES UTILES :
-	trouver le NDD associé à une IP :
-		dig +short -x 8.8.8.8
-			dns.google.
-	trouver l'IP d'un NDD :
-		dig +short google.fr
-			172.217.20.195
+	(note : les serveurs DNS écoutent habituellement sur le port 53)
+	DNS avec nslookup :
+		trouver l'IP d'un NDD :
+			nslookup gmail.com
+			# Server:         127.0.0.53
+			# Address:        127.0.0.53#53
+			#
+			# Non-authoritative answer:
+			# Name:   gmail.com
+			# Address: 142.250.179.69
+			# Name:   gmail.com
+			# Address: 2a00:1450:4007:810::2005
+		trouver l'IP d'un NDD en utilisant TEL serveur DNS :
+			nslookup gmail.com 8.8.8.8
+			# Server:         8.8.8.8
+			# Address:        8.8.8.8#53
+			#
+			# Non-authoritative answer:
+			# Name:   gmail.com
+			# Address: 172.217.20.197
+			# Name:   gmail.com
+			# Address: 2a00:1450:4007:810::2005
+	DNS avec dig :
+		trouver l'IP d'un NDD :
+			dig +short google.fr
+				172.217.20.163
+		trouver l'IP d'un NDD en utilisant TEL serveur DNS :
+			dig +short @8.8.8.8 google.fr
+				172.217.20.163
+		REVERSE = trouver le NDD associé à une IP :
+			dig +short -x 172.217.20.195
+				waw02s08-in-f3.1e100.net.
+				waw02s08-in-f195.1e100.net.
+				par10s50-in-f3.1e100.net.
+	DNS avec nslookup :
 	lister les routes :
 		ip route
 			default via 192.168.1.254 dev enp5s0 proto dhcp metric 100
