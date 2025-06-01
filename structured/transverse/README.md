@@ -24,6 +24,9 @@ En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets t
       * [Quel intérêt de la sonde de startup ?](#quel-intérêt-de-la-sonde-de-startup-)
 * [Télémétrie avec OpenTelemetry](#télémétrie-avec-opentelemetry)
 * [stdout vs stderr](#stdout-vs-stderr)
+* [Gestion de projet BUILD vs RUN](#gestion-de-projet-build-vs-run)
+   * [BUILD](#build)
+   * [RUN](#run)
 
 
 # Quotes
@@ -302,4 +305,54 @@ C'est plus simple avec un exemple concret : un programme qui convertit un fichie
 - un log d'erreur du genre `Input file 'toto.csv' is not a CSV file !` ira sur **stderr** (ça aussi c'est intuitif)
 - un log pas d'erreur du genre `Reading input file 'toto.csv'` ira aussi sur **stderr** (ça c'est moint intuitif !)
 - résultat : on peut rediriger stdout vers un fichier pour enregistrer le json produit, tout en ayant les "logs" (normaux, ou en erreur) disponibles sur stderr
+
+
+# Gestion de projet BUILD vs RUN
+
+
+(j'ai pris les deux premiers liens google : [source1](https://fr.linkedin.com/pulse/le-run-et-build-en-gestion-de-projet-ma%C3%AEtriser-les-deux-moueza-sihbe) + [source2](https://blog-gestion-de-projet.com/passage-projet-build-au-run/))
+
+## BUILD
+
+**BUILD** = le projet est en cours de développement :
+
+- Analyse des besoins
+- Conception
+- Développement
+- Tests
+- Déploiement initial
+
+ENJEU = respecter qualité + délais.
+
+LIVRABLES :
+
+- doc projet + doc utilisateur + formation
+- PV de recette validé
+- backlog résiduel (reste à faire)
+- PV de réception des livrables
+
+À la fin du BUILD, pour transitionner vers RUN : livraison du projet au client + recette (prioriser les anomalies selon 2 axes : reproductibilité + criticité)
+
+## RUN
+
+**RUN** = le projet est réalisé, il est en phase d'exploitation :
+
+- Support utilisateur
+- Maintenance corrective
+- Maintenance préventive
+- Supervision
+- Gestion des incidents
+
+ENJEU = garantie du Maintien en Conditions Opérationnelles (MCO)
+
+LIVRABLES :
+
+- contrat SLA
+- dimensionnement + constitution de l'équipe de maintenance
+- matrice RACI = qui fait quoi (Responsible / Accountable / Consulted / Informed)
+- processus + matrice d'escalade
+- liste des KPI à suivre
+- registre des demandes de changements
+- rapports de suivi
+
 
