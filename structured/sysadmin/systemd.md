@@ -1,10 +1,14 @@
-**TL;DR** : pour gérer les services, utiliser :
+**TL;DR** : pour gérer les services, utiliser la CLI de **systemd** = `systemctl` :
 
 ```sh
 sudo systemctl ACTION SERVICE
 ```
 
-# HOWTO
+* [HOWTO gérer ses services avec systemd](#howto-gérer-ses-services-avec-systemd)
+* [Logs des services systemd](#logs-des-services-systemd)
+* [Historique : pourquoi plusieurs commandes ? Quel lien avec sysV init ou upstart ?](#historique--pourquoi-plusieurs-commandes--quel-lien-avec-sysv-init-ou-upstart-)
+
+# HOWTO gérer ses services avec systemd
 
 - status d'un service :
     ```sh
@@ -33,10 +37,30 @@ sudo systemctl ACTION SERVICE
     systemctl list-unit-files '*service' | sort
     ```
 
-# Pourquoi plusieurs commandes ?
+# Logs des services systemd
+
+**TL;DR** = `journalctl` pour consulter les logs d'un service géré par systemd.
+
+Pas mal de flags et options, cf. [source1](https://www.linuxtricks.fr/wiki/systemd-utiliser-journalctl-les-logs-de-systemd), [source2](https://www.loggly.com/ultimate-guide/using-journalctl/).
+
+```sh
+# limiter à un service en particulier :
+sudo journalctl -u NetworkManager
+sudo journalctl -u systemd-networkd
+
+# limiter aux logs depuis le dernier reboot :
+sudo journalctl -b
+
+# lister les reboots :
+sudo journalctl --list-boots
+```
+
+
+# Historique : pourquoi plusieurs commandes ? Quel lien avec sysV init ou upstart ?
 
 Sur ubuntu, historiquement, il y a eu 3 façons de démarrer un service lorsque le système boot :
-- le plus ancien = [init de systemv](https://fr.wikipedia.org/wiki/Init#%C2%AB_init_%C2%BB_de_Unix_System_V_(SysV_init))
+
+- le plus ancien = [init de systemV](https://fr.wikipedia.org/wiki/Init#%C2%AB_init_%C2%BB_de_Unix_System_V_(SysV_init))
     - script dans `/etc/init.d`
     - `/etc/rc#.d`
     - puis appel de `update-rc.d`
