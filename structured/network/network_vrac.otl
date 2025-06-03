@@ -96,7 +96,6 @@ COMMANDES UTILES :
 				waw02s08-in-f3.1e100.net.
 				waw02s08-in-f195.1e100.net.
 				par10s50-in-f3.1e100.net.
-	DNS avec nslookup :
 	lister les routes :
 		ip route
 			default via 192.168.1.254 dev enp5s0 proto dhcp metric 100
@@ -172,6 +171,27 @@ COMMANDES UTILES :
 			192.168.1.137 dev enp5s0 lladdr 00:41:0e:fe:bf:b5 STALE
 			fe80::3627:92ff:fe4e:73e2 dev enp5s0 lladdr 34:27:92:4e:73:e2 router REACHABLE
 			fe80::3627:9213:374e:73e2 dev enp5s0 lladdr 34:27:92:4e:73:e2 router STALE
+	si on utilise systemd-networkd (plutôt que NetworkManager), on peut aussi utiliser :
+		networkctl (qui a le même comportement que "networkctl list")
+			:IDX LINK            TYPE     OPERATIONAL SETUP
+			:  1 lo              loopback carrier     unmanaged
+			:  2 wlp1s0          wlan     routable    unmanaged
+			:  3 virbr0          bridge   no-carrier  unmanaged
+			:  4 docker0         bridge   no-carrier  unmanaged
+			:  5 br-f742ead463f9 bridge   no-carrier  unmanaged
+			:5 links listed.
+		networkctl status
+			:  Interfaces: 2, 1, 3, 4, 5
+			:	   State: routable
+			:Online state: unknown
+			:	 Address: 192.168.1.50 on wlp1s0
+			:			  192.168.122.1 on virbr0
+			:			  172.17.0.1 on docker0
+			:			  172.18.0.1 on br-f742ead463f9
+			:			  aaaa:bbb:ccc:dddd:eeee:ffff:gggg:hhhh on wlp1s0
+			:			  aaaa:bbb:ccc:dddd:eeee:ffff:gggg:hhh2 on wlp1s0
+			:	 Gateway: 192.168.1.254 on wlp1s0
+			:			  aaaa:bbb:ccc:dddd:eeee:ffff:gggg:hhh3 on wlp1s0
 
 
 RÉSEAU LOCAL, MATÉRIEL, ET ROUTAGE :
