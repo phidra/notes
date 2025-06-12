@@ -2,9 +2,13 @@
 
 * [Installation](#installation)
 * [Notes vrac](#notes-vrac)
+* [HOWTOs](#howtos)
+   * [retrouver une table par son nom](#retrouver-une-table-par-son-nom)
+* [Vue des données](#vue-des-données)
 * [Bosser avec des données géographiques](#bosser-avec-des-données-géographiques)
    * [Avec une base postGIS](#avec-une-base-postgis)
    * [Avec une base spatialite](#avec-une-base-spatialite)
+
 
 # Installation
 
@@ -30,6 +34,27 @@ Globalement, le tool est plus ergonomique que pgadmin4.
     - un diagramme Entity Relashionship Diagram !
 - c'est général : on peut consulter les Propriétés de chaque objet : database, schéma, table, colonne...
     - et il y a un fil d'Ariane pour naviguer facilement
+
+# HOWTOs
+
+## retrouver une table par son nom
+
+Cas vécu = si j'ai plusieurs serveurs, chacun ayant des dizaines de bases (et chaque base ayant plusieurs schemas, sans compter les tables), comment retrouver une table dont je connais le nom ?
+
+Cliquer sur le menu `Rechercher` > `Métadonnées de base de données`
+
+Le formulaire qui s'ouvre permet ce que je veux ; notamment on peut se restreindre :
+
+- à un serveur (connexion)
+- à une base
+- à un schéma
+- à un type de données : table / procédure-stockée / view / etc.
+
+Dans la fenêtre de résultat qui s'ouvre une fois la recherche lancée :
+
+- attention, si la recherche est lourde, elle peut prendre plusieurs secondes (une icône indique alors que la recherche est toujours en cours)
+- note UX : depuis le panel de résultat, il n'y a pas de possibilité d'éditer la recherche en cours...
+    - mais il suffit de rouvrir la fenêtre de recherche pour retrouver sa recherche en cours et l'éditer
 
 # Vue des données
 
