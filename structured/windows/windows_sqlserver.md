@@ -9,6 +9,8 @@
    * [utiliser un résultat dans un script](#utiliser-un-résultat-dans-un-script)
    * [boucler sur les tables](#boucler-sur-les-tables)
 * [Transact-SQL aka t-sql](#transact-sql-aka-t-sql)
+   * [Procédures stockées](#procédures-stockées)
+
 
 
 # Lancer SqlServer via docker
@@ -145,4 +147,10 @@ GO
 
 > Keyword or statement option 'ADMINISTER BULK OPERATIONS' is not supported on the 'Linux' platform.
 
+## Procédures stockées
+
+```sql
+EXEC mon_schema.ma_procedure @mon_param=219
+-- à noter que la PS renvoie des valeurs : ce que je récupère en l'exécutant est un équivalent d'un SELECT
+```
 
