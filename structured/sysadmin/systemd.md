@@ -34,7 +34,7 @@ sudo systemctl ACTION SERVICE
     ```
 - lister les services connus :
     ```sh
-    systemctl list-unit-files '*service' | sort
+    systemctl list-unit-files --type=service | sort
     ```
 
 # Logs des services systemd

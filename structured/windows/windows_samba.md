@@ -2,6 +2,8 @@
 
 ([doc ubuntu](https://doc.ubuntu-fr.org/samba))
 
+(EDIT : pour partager facilement des fichiers, voir aussi [le partage webdav avec rclone](../tools/rclone.md)).
+
 # Depuis l'host linux
 
 ```sh
