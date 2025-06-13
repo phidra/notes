@@ -1,3 +1,7 @@
+* [Installation](#installation)
+* [Partager un répertoire en lecture seule en HTTP](#partager-un-répertoire-en-lecture-seule-en-http)
+* [Partager un répertoire en lecture/écriture avec webdav](#partager-un-répertoire-en-lectureécriture-avec-webdav)
+
 # Installation
 
 Sur ubuntu 24.04, ceci m'a suffi :

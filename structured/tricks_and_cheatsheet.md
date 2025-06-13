@@ -315,3 +315,15 @@ man bash
 ```sh
 awk -F, '{sum += $1} END {print sum}' /tmp/input_file.csv
 ```
+
+# partager des fichiers en HTTP avec python
+
+**tags** : file-sharing, python
+
+NOTE : cf. aussi [le partage de fichiers avec rclone](./tools/rclone.md).
+
+
+```sh
+# depuis le répertoire à partager :
+python3 -m http.server 5555
+```
