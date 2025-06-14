@@ -68,11 +68,27 @@ https://opentelemetry.io/docs/what-is-opentelemetry/
 
 ^ 3 types de telemetry data :
 
-- **Metrics** = état de la machine : RAM, CPU, req/s, etc.
+- **Metrics** = une métrique est "l'enregistrement d'une valeur numérique à un moment donné" (je vois ça comme un "log particulier", dans le sens où le contenu loggé est une valeur chiffrée)
+    - typiquement, une métrique pourra stocker l'état de la machine à un instant T : RAM, CPU, etc.
+    - mais ça n'est PAS limité à l'état de la machine : toute valeur numérique peut être enregistrée
+    - notamment on peut stocker des métriques métier : req/s, nombre d'utilisateurs actuellement connectés, nombre d'appels à telle API, valeur moyenne d'un panier sur la dernière minute, etc.
 - **Traces** = enchaînement d'actions, séquence d'évènements (je reçois telle requête, j'appelle telle fonction, je passe par tel code)
 - **Logs** = un poil plus flou, c'est un simple "record de quelque chose" :
     - un log est simplement "une information timestampée"
     - une trace est un log particulier, associé à un évènement utilisateur + à des infos permettant de la corréler à d'autres logs/traces.
+
+----
+
+Concernant les métriques, [cette excellente vidéo](https://www.youtube.com/watch?v=jC1icupHlMs) sur l'observabilité donne deux caractéristiques supplémentaires des métriques, elles ont vocation :
+
+- à être **agrégées** pour réduire les coûts de stockage :
+    - sur les 15 derniers jours on va vouloir stocker tous les évènements à la granularité la plus fine possible (e.g. milliseconde)
+    - sur les 2 derniers mois, on peut stocker les évènements en les agrégeant minute par minute
+    - sur les 6 derniers mois, on peut stocker les évènements en les agrégeant heure par heure
+    - sur les N dernières années, on peut se contenter de stocker les évènements en les agrégeant jour par jour
+- à être **associée à des labels** permettant de construire des statistiques dessus :
+    - e.g. l'environnement (`prod`, `pre-prod`), peut-être des labels métiers (`tel-business`), etc.
+    - attention : si le label est trop granulaire (e.g. si on labellise chaque métrique avec le `user-id` alors on tue l'intérêt, on ne peut plus agréger les métriques à cause de la trop grande cardinalité)
 
 ----
 
