@@ -15,3 +15,5 @@ Simple things should be simple, complex things should be possible ([Alan KAY](ht
 (Modeling) is the essence of our work; coding is just a formality. ([source](https://dev.to/mateusznowak/heroes-of-domain-driven-design-prologue-f37))
 
 
+Il y a trois nombres importants en informatique : zéro, un et beaucoup ([source](https://www.youtube.com/watch?v=1igv2rHGKfo))
+
