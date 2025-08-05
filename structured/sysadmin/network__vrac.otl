@@ -12,6 +12,69 @@ OÙ J'EN SUIS :
 				lire d'autres ressources, et notamment celles de cloudflare learning
 			éventuellement, mettre un peu d'ordre dans les notes
 		(note = au moins à court-terme, j'abandonne l'idée d'en faire des notes markdown)
+		----------------------------------------
+		Ceci a quelques commandes que je dois ajouter dans mes notes :
+			https://linuxexpert.org/obsolete-command-line-tools-of-linux/
+			----------------------------------------
+			utiliser "ip" au lieu de "ifconfig"
+				Why It’s Obsolete:
+					ifconfig was traditionally used for network interface configuration, but it has significant limitations, especially with modern networking configurations and IPv6.
+				Risks of Continuing to Use ifconfig:
+					Inability to manage newer network technologies effectively.
+					Lack of support for modern protocols like IPv6.
+				Modern Alternative:
+					ip
+				Why Switch:
+					The ip command from the iproute2 package is far more versatile, supporting a wide range of networking tasks, including routing, tunnel management, and more.
+					It’s the standard tool recommended by most Linux distributions.
+			utiliser "ss" au lieu de "netstat"
+				Why It’s Obsolete:
+					netstat was commonly used to display network connections, routing tables, interface statistics, and more.
+					However, it lacks the detailed filtering and performance of newer tools.
+				Risks of Continuing to Use netstat:
+					Potential inaccuracies and inefficiencies when dealing with modern networks.
+				Modern Alternative:
+					ss
+				Why Switch:
+					ss provides more detailed and faster output, with better filtering options and support for newer networking features.
+					It’s part of the iproute2 suite and integrates well with other modern networking tools.
+			DNS> utiliser "dig" ou "host" au lieu de "nslookup" :
+				Why It’s Obsolete:
+					nslookup has been deprecated in favor of more robust tools for querying DNS, such as dig and host.
+				Risks of Continuing to Use nslookup:
+					Limited functionality and less informative error messages.
+				Modern Alternatives:
+					dig
+					host
+				Why Switch:
+					dig and host offer more comprehensive DNS querying capabilities, better error reporting, and are widely supported by modern systems.
+			route
+				Why It’s Obsolete:
+					route was used to manipulate the IP routing table, but like ifconfig, it has been superseded by more capable tools.
+				Risks of Continuing to Use route:
+					Limited functionality and outdated methodology for routing management.
+				Modern Alternative:
+					ip route
+				Why Switch:
+					ip route provides a more powerful and flexible way to manage routing tables, integrating seamlessly with other iproute2 tools.
+			arp
+				Why It’s Obsolete:
+					arp was used to manipulate the ARP cache. With modern networking tools, a more comprehensive approach is available.
+				Risks of Continuing to Use arp:
+					Limited functionality and support for newer network architectures.
+				Modern Alternative:
+					ip neigh
+				Why Switch:
+					ip neigh provides more detailed and versatile management of ARP and neighbor cache entries, making it a better fit for modern networking needs.
+			traceroute
+				Why It’s Obsolete:
+					traceroute is a classic tool for tracing the path packets take across a network. However, it lacks the interactivity and real-time feedback that newer tools offer.
+				Risks of Continuing to Use traceroute:
+					Inefficiencies in troubleshooting and network diagnostics.
+				Modern Alternative:
+					mtr
+				Why Switch:
+					mtr combines the functionality of traceroute and ping in a single interactive tool, offering real-time network diagnostics with continuous updates.
 	QUESTIONS RESTANTES :
 		Y a-t-il d'autres moyens que bridge et NAT pour fournir l'accès à internet/réseau local de mon PC à une VM/container docker ?
 		comment un container docker a-t-il accès à internet ? Et une VM ?
