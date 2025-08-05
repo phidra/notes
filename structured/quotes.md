@@ -19,3 +19,12 @@ Il y a trois nombres importants en informatique : zéro, un et beaucoup ([source
 
 The design of the database is far more important than the design of the software, or, as Eric S. Raymond wrote in his book The Cathedral and the Bazaar : Smart data structures and dumb code works a lot better than the other way around. ([source](https://www.tonymarston.net/php-mysql/dont-do-domain-driven-design.html))
 
+> Architecture is often perceived as a high-status role that attracts a better salary than engineering. A common and potentially corrosive organisational anti-pattern is to position architecture as something you are promoted to from a senior engineering role.
+>
+> Although most people become architects after a stint in engineering, this should be seen as a tangential move to a different specialism rather than a promotion. Architecture is concerned with a wider, more holistic view of technology based on a deep understanding of how the business works as opposed to the more focused, delivery-oriented concerns of engineering.
+>
+> It should be possible for organisation to decouple seniority from specialism so that engineers and architects can be regarded as peers. There should also be a blurred boundary between the two disciplines as engineers shouldn't be denied the opportunity to do architecture work or make architecture decisions.
+
+([source](https://www.ben-morris.com/enterprise-architecture-anti-patterns/))
+
+
