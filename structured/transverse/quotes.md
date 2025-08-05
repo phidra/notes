@@ -17,3 +17,5 @@ Simple things should be simple, complex things should be possible ([Alan KAY](ht
 
 Il y a trois nombres importants en informatique : zéro, un et beaucoup ([source](https://www.youtube.com/watch?v=1igv2rHGKfo))
 
+The design of the database is far more important than the design of the software, or, as Eric S. Raymond wrote in his book The Cathedral and the Bazaar : Smart data structures and dumb code works a lot better than the other way around. ([source](https://www.tonymarston.net/php-mysql/dont-do-domain-driven-design.html))
+
