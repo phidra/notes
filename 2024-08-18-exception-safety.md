@@ -53,11 +53,13 @@ Il y a plusieurs niveaux d'exception safety :
 
 ^ c'est le niveau min, généralement considéré comme buggé : si une opération nécessaire à f échoue, il peut se passer n'importe quoi, y compris le non-respect des invariants.
 
-> Higher levels of safety can sometimes be difficult to achieve, and might incur an overhead due to extra copying.Parfois, il faut arbitrer entre safety et perfs
+> Higher levels of safety can sometimes be difficult to achieve, and might incur an overhead due to extra copying.
+
+Parfois, il faut arbitrer entre safety et perfs
 
  La suite est un exemple concret avec l'appel de la méthode `push_back` sur un `Vector`, pour lequel l'allocation peut échouer :
 
- - avec nothrow, l'opération est garantie de réussir (e.g. l'allocation ne peut en fait pas échouer ? ou en alternative, on change le contrat de la fonction pour considérer qu'elle peut renvoyer true ou false : l'opération "ne peut pas échouer" dans le sens où si l'allocation échoue, elle renvoie false, et ce n'est pas considéré comme un échec)
- - avec strong safety, on essaye d'allouer : si ça reussit, on y move le Vector, si ça échoue, on aborte la fonction ; ainsi, soit le `push_back` réussit (commit) soit le Vector reste inchangé (rollback) et tout se passe comme si la fonction n'avait pas été appelée, ce qui est la définition de strong safety
- - avec basic safety, la seule garantie après l'appel est que le Vector est valide (e.g. son nombre d'éléments est égal à end-begin, ou encore son buffer sera bien désalloué à la destruction), mais si l'appel a échoué, il se pourrait que faire un push_back sur un Vector contenant N éléments conduise à un Vector vide ne contenant plus aucun élément
- - avec no exception safety, tout peut arriver si l'implémentation de push_back fait face à une exception lancée : le Vector peut leaker, par exemple, ou begin peut pointer vers une adresse invalide...
+ - avec **nothrow**, l'opération est garantie de réussir (e.g. l'allocation ne peut en fait pas échouer ? ou en alternative, on change le contrat de la fonction pour considérer qu'elle peut renvoyer true ou false : l'opération "ne peut pas échouer" dans le sens où si l'allocation échoue, elle renvoie false, et ce n'est pas considéré comme un échec)
+ - avec **strong safety**, on essaye d'allouer : si ça reussit, on y move le Vector, si ça échoue, on aborte la fonction ; ainsi, soit le `push_back` réussit (commit) soit le Vector reste inchangé (rollback) et tout se passe comme si la fonction n'avait pas été appelée, ce qui est la définition de strong safety
+ - avec **basic safety**, la seule garantie après l'appel est que le Vector est valide (e.g. son nombre d'éléments est égal à end-begin, ou encore son buffer sera bien désalloué à la destruction), mais si l'appel a échoué, il se pourrait que faire un push_back sur un Vector contenant N éléments conduise à un Vector vide ne contenant plus aucun élément
+ - avec **no exception safety**, tout peut arriver si l'implémentation de push_back fait face à une exception lancée : le Vector peut leaker, par exemple, ou begin peut pointer vers une adresse invalide...
