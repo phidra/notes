@@ -2,7 +2,6 @@ Ici sont regroupées des notes qui concerne des sujets **transverses**, i.e. des
 
 En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets tout dans le présent fichier. Possiblement, je le splitterai en plusieurs sections.
 
-
 * [Gestion des erreurs](#gestion-des-erreurs)
    * [Recoverable vs. irrecoverable](#recoverable-vs-irrecoverable)
    * [Erreurs "normales"](#erreurs-normales)
@@ -18,6 +17,7 @@ En attendant d'y voir plus clair sur la façon d'organiser ce contenu, je mets t
       * [Points de vue nuancés](#points-de-vue-nuancés)
       * [Points de vue en défaveur du testing de trucs privés](#points-de-vue-en-défaveur-du-testing-de-trucs-privés)
       * [Arguments pour tester des trucs privés](#arguments-pour-tester-des-trucs-privés)
+   * [Property-based testing](#property-based-testing)
 * [Deployment](#deployment)
    * [k8s liveness readiness startup probes](#k8s-liveness-readiness-startup-probes)
       * [Quel intérêt de la sonde de startup ?](#quel-intérêt-de-la-sonde-de-startup-)
@@ -221,6 +221,20 @@ Autre argument : certaines fonctions "utilitaires" sont beaucoup, beaucoup, beau
 - si on voulait tester tous les edge-cases de conversion par la fonction publique, il faudrait systématiquement wrapper ce qu'on veut tester dans un cycle requête->réponse, alors qu'on ne veut que tester la conversion...
 - (certes, on pourrait argumenter qu'une telle fonction gagnerait à être publique plutôt que privée, mais ça reste une bonne illustration)
 
+
+## Property-based testing
+
+Quelques notes issues de [100% test coverage is not enough](https://blog.robertroskam.com/p/100-test-coverage-is-not-enough ), lu le 6 novembre 2023 :
+
+- 100% code coverage ne garantit pas que le programme est correct
+- l'exemple illustratif est parfait pour illustrer ce point, car simplissime :
+   ```py
+   def inverse_of(x: int) -> float:
+       return 1/x
+   ```
+- property basée testing peut être complémentaire au 100% coverage
+- c'est un genre de fuzzing pour les tests U
+- plutôt adapté aux tests des fonctions bas niveau, plutôt qu'aux tests d'une API de haut niveau
 
 # Deployment
 
