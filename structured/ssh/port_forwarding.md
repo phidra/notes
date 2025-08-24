@@ -1,8 +1,20 @@
-**TL;DR** : pour rendre accessible le port distant `8877` sur le port `7000` de ma machine locale :
+**TL;DR** :
+
+USECASE 1 = pour rendre accessible le port distant `8877` sur le port `7000` de ma machine locale :
 
 ```sh
 ssh -i ~/.ssh/luke.dsa -N -L 7000:localhost:8877 luke@coruscant
 ```
+
+^ avec cette commande, à chaque fois que je consulterai le port `7000` de ma machine locale, je consulterai en fait le port `8877` de coruscant.
+
+USECASE 2 = si ma machine n'a pas accès à une ressource (e.g. `192.168.1.2`) , mais que coruscant y a accès, je peux "passer par" coruscant pour y accéder sur mon poste :
+
+```sh
+ssh -i ~/.ssh/luke.dsa -N -L 7000:192.168.1.2:8877 luke@coruscant
+```
+
+^ avec cette commadne, à chaque fois que je consulterai le port `7000` de ma machine locale, je consulterai en fait le port `8877` de `192.168.1.2`, mais en passant par coruscant.
 
 Références :
 
