@@ -292,11 +292,11 @@ RÉSEAU LOCAL, MATÉRIEL, ET ROUTAGE :
 			l'IP de la passerelle
 		on regarde alors dans la table de routage de l'OS pour savoir où envoyer le paquet, et par quelle interface
 		le plus fréquent = comme on veut sortir du sous-réseau, le paquet est envoyé à la passerelle via l'interface par défaut, et la passerelle le propage alors sur le réseau externe
-		(pour savoir où la passerelle envoie le paquet = quel est le prochain hop, elle consulte sa propre table de routage)
+		(pour savoir où la passerelle envoie le paquet (= quel est le prochain hop), elle consulte sa propre table de routage)
 	ranges d'adresses et masques :
-		NDM = le masque n'est pas un filtre (ou plus le filtre est large, plus il "laisse passer des adresses")
+		NDM = le masque n'est pas un filtre à trou (où plus le trou est gros, plus il "laisse passer des adresses")
 			la bonne vision est au contraire de considérer qu'on "MASQUE" des adresses
-			donc plus le masque occupe beaucoup d'octets, moins on a d'adresses dispo
+			donc plus le masque est gros (il occupe beaucoup d'octets), plus il masque d'adresses, moins on a d'adresses dispo
 			d'où le comportement (un peu contre-intuitif) = 192.168.1.0/8 autorise plus d'adresses que 192.168.1.0/24
 		pour vérifier si deux IPs sont dans le même sous-réseau, on applique le masque aux deux IPs
 			i.e. on nullifie tous les bits de l'adresse IP sauf ceux masqués
@@ -322,11 +322,11 @@ RÉSEAU LOCAL, MATÉRIEL, ET ROUTAGE :
 		ce masque indique le nombre d'IP sur le même sous-réseau que l'interface
 	Lorsque j'ai deux interfaces (filaire + wifi), les deux peuvent être :
 		sur le même sous-réseau, p.ex. si elles sont toutes les deux connectées à la même box (dans ce cas, elles ont chacune une IP différente)
-		sur des sous-réseau différents (c'est sans doute le cas à LyBy)
+		sur des sous-réseau différents (c'est sans doute le cas au travail)
 	Pourquoi mon PC a-t-il une table de routage ?! Ce n'est pourtant pas un routeur ?
 		ce n'est pas un routeur au sens où il ne permet pas de router des paquets externes...
-		... mais il a tout de même besoin de savoir où envoyer des paquets = ceux qu'il emet lui-même !
-		du coup, ce n'est pas un routeur, mais ses besoins en routage font qu'il a une table de routage quand même
+		... mais il a tout de même besoin de savoir où envoyer certains paquets = ceux qu'il emet lui-même !
+		du coup, ce n'est pas un routeur, mais il a quand même besoin de router ses propres paquets : ses propres besoins en routage font qu'il a une table de routage quand même
 	Différence passerelle vs. routeur + comment une passerelle peut ne pas être un routeur ?
 		TL;DR = à mon niveau de compréhension, je peux en rester à "une passerelle est forcément un routeur"
 		----------------------------------------
@@ -339,24 +339,27 @@ RÉSEAU LOCAL, MATÉRIEL, ET ROUTAGE :
 			exemple : si la passerelle est un proxy
 		c'est suffisamment des edge-cases pour que je le laisse de côté dans ma compréhension des choses
 	différence entre passerelle et proxy ?
-		de mon bout de lorgnette de débutants, on peut facilement confuser les rôles qui sont proches = jouer le rôle d'intermédiaire entre un client qui envoie un paquet, et la destination du paquet
+		de mon bout de lorgnette de débutant, on peut facilement confuser ces rôles qui sont proches
+			en effet, les deux jouent le rôle d'intermédiaire entre un client qui envoie un paquet, et la destination du paquet
 		passerelle :
 			le client essaye d'envoyer un paquet DIRECTEMENT vers la destination
-			l'adresse de destination du paquet est celle du serveur de destination
+			POINT CRUCIAL = l'adresse de destination du paquet est celle du serveur de destination
 			la passerelle est un intermédiaire "technique" : le fait de passer par une passerelle (et d'ailleurs, par d'autres routeurs intermédiaires) est un détail d'implémentation technique du routage IP
+			le client qui cherche à envoyer le paquet n'a pas forcément connaissance de la passerelle
 		proxy :
 			le client envoie INDIRECTEMENT son paquet vers la destination, en quelque sorte "en demandant" au proxy de faire la requête À SA PLACE
-			l'adresse de destination du paquet est celle du proxy
+			POINT CRUCIAL = l'adresse de destination du paquet est celle du proxy
 			d'ailleurs, le serveur de destination ne voit que l'adresse IP du proxy comme "source", et non celle du client
-			le proxy est un intermédiaire "fonctionnel" le client a connaissance de celui-ci
+			le proxy est un intermédiaire "fonctionnel" le client a connaissance du proxy
 		le client n'a pas forcément connaissance de la passerelle (car c'est un détail de la pile TCP/IP), mais il a connaissance du proxy
 		le proxy est un middleware, l'intérêt peut-être l'anonymat, le filtrage, la mise en cache, le contrôle d'accès, etc.
 	différence entre switch et hub :
 		TL;DR = hub is dumb, switch is smart
+		----------------------------------------
 		physiquement, les deux se présentent pareil = un point central auquel connecter tous les PC du réseau
 		mais le traitement des paquets est très différents :
 			hub = un paquet entrant est routé vers tous les PC connectés (et ceux qui ne sont pas concernés se contenteront de le rejeter)
-			switch = un paquet entrant est analysé routé vers tous les PC connectés (et ceux qui ne sont pas concernés se contenteront de le rejeter)
+			switch = un paquet entrant est analysé, et routé uniquement vers le PC concerné
 		un hub n'a donc pas d'intelligence, il ne peut pas inspecter les paquets
 		un switch inspecte les paquets, et n'encombre pas les liaisons non-concernées
 		par exemple, supposons 4 PC sur le réseau (A, B, C, D) et deux communications en cours : A-B et C-D :
@@ -415,7 +418,7 @@ RÉSEAU LOCAL, MATÉRIEL, ET ROUTAGE :
 		En effet, un bridge route les paquets internes à un réseau selon leur adresse MAC, mais qui permet de router les paquets non pas à l'intérieur d'un unique réseau, mais entre deux réseaux séparés.
 		Du coup, tout se passe comme si l'agrégat de ces deux réseaux (avec le bridge au milieu) constituaient un unique réseau local.
 		Ou dit autrement, un bridge est un switch capable de relier deux réseaux.
-		EDIT : après une meilleure compréhension des deux couches liaison et transprt, je vois les choses autrement : un bridge relie deux réseaux au niveau liaison
+		EDIT : après une meilleure compréhension des deux couches liaison et transport, je vois les choses autrement : un bridge relie deux réseaux au niveau liaison plutôt qu'au niveau réseau
 		----------------------------------------
 		Un bridge route les paquets en fonction de leur adresse MAC :
 			lorsqu'un paquet arrive sur l'une des interfaces du bridge, il examine l'adresse MAC de destination et détermine si le paquet doit être transmis à l'autre réseau ou non.
