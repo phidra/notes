@@ -255,6 +255,39 @@ COMMANDES UTILES :
 			:			  aaaa:bbb:ccc:dddd:eeee:ffff:gggg:hhh2 on wlp1s0
 			:	 Gateway: 192.168.1.254 on wlp1s0
 			:			  aaaa:bbb:ccc:dddd:eeee:ffff:gggg:hhh3 on wlp1s0
+	Exemple de la vraie vie de debugging réseau (le 26 août 2025) :
+		MANIFESTATION DU PROBLÈME = j'essaye de pinger une IP du boulot avec le VPN actif, ça ne marche pas :
+			ping 172.18.148.20
+				(rien)
+			mtr 172.18.148.20
+				Host
+				1. (no route to host)
+		quand j'analyse les routes (avec le VPN actif), les requêtes commençant par 172.18.XXX.XXX sont routées vers un bridge `br-f742ead463f9` avec le status `linkdown` :
+			ip route|grep 172
+				172.18.0.0/16 dev br-f742ead463f9 proto kernel scope link src 172.18.0.1 linkdown
+		effectivement, parmi mes interfaces, j'ai bien un bridge `DOWN` appelé comme ça :
+			ip link show type bridge
+				[...]
+				6: br-f742ead463f9: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN mode DEFAULT group default
+					link/ether 02:42:d7:da:fe:70 brd ff:ff:ff:ff:ff:ff
+				[...]
+		en cherchant un peu, et sur les conseils d'un collègue, j'inspecte les réseaux docker, et effectivement, le bridge vient de là :
+			docker network ls
+				NETWORK ID     NAME                     DRIVER    SCOPE
+				f742ead463f9   mysuperproject_default   bridge    local
+				[...]
+			docker network inspect mysuperproject_default
+			[
+				{
+					"Name": "mysuperproject_default",
+					"Id": "f742ead463f998113fc043a6d10da97dfa0cff9ef53478fa02e132fd5fa6c5a9",
+					"Created": "2025-04-10T16:50:39.268645006+02:00",
+					[...]
+				}
+			]
+		Banco ! Mon bridge parasite est bien un réseau docker ; je le supprime :
+			docker network rm mysuperproject_default
+		Ça résout mon souci, je peux maintenant pinger mon IP, yay \o/
 
 
 RÉSEAU LOCAL, MATÉRIEL, ET ROUTAGE :
