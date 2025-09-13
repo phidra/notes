@@ -8,6 +8,8 @@
    * [Précisions additionnelles sur l'utilisation en C++](#précisions-additionnelles-sur-lutilisation-en-c)
 * [Infos complémentaires](#infos-complémentaires)
 
+(cf. aussi [ma POC en C++](https://github.com/phidra/pocs/blob/master/cpp/CATEGORY_stdlib/condition_variable/main.cpp) qui montre le bon usage des CV pour éviter les spurious et lost wakeups)
+
 # C'est quoi une condition-variable aka CV ?
 
 Mécanisme de bas-niveau permettant de "réveiller" un autre thread.
