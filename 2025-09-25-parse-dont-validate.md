@@ -9,6 +9,19 @@
 
 **TL;DR** = un post centré autour d'un message que je juge très très important = construire des types qui ne permettent que de représenter un état valide (c'est pas tout à fait ce sur quoi il centre le post, mais je reformule avecc mes mots à moi... d'autant que ça va 100% avec [make illegal states unrepresentable](https://fsharpforfunandprofit.com/posts/designing-with-types-making-illegal-states-unrepresentable/))
 
+**EDIT** : [cet article](https://refactoringenglish.com/blog/software-essays-that-shaped-me/#-by-alexis-king-2019) formule le message de l'article original un peu mieux que moi :
+
+> whenever you validate any data, you should convert it to a new type
+
+Dit autrement, lorsqu'on doit valider un input, la bonne pratique est de travailler avec DEUX types différents :
+
+- celui qui encode la donnée brute, non-validée, reçue en entrée (e.g. une `string`)
+- celui qui encode la donnée validée (e.g. un type custom `Username` qui ne peut contenir QUE des données valides, p.ex. QUE des username de moins de 20 caractère)
+
+Il faut donc créer un type représentant la donnée valide, et ne véhiculer **QUE** celui-ci une fois la donnée validée.
+
+---
+
 Les exemples sont en Haskell, ça nuit un chouïa à la lisibilité des exemples, mais ça reste du Haskell assez simple et facile à lire.
 
 La situation est celle où on reçoit une donnée en input, qui peut éventuellement être invalide, on peut :
