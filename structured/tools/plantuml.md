@@ -1,5 +1,12 @@
 **CONTEXTE** = janvier 2026, j'essaye PlantUML (attention, la doc est blindée de pubs...)
 
+* [Installation :](#installation-)
+* [Notes à l'usage](#notes-à-lusage)
+* [Exemple :](#exemple-)
+* [Snippets](#snippets)
+   * [Légende de couleurs](#légende-de-couleurs)
+
+---
 
 # Installation :
 
@@ -84,4 +91,21 @@ frame "Titre de mon diagramme" {
 @enduml
 ```
 
+# Snippets
 
+## Légende de couleurs
+
+```plantuml
+@startuml
+component "Frontend" #LightBlue
+component "Backend"  #LightGreen
+component "Batch"    #LightGray
+
+legend right
+|= Couleur |= Signification |
+|<#LightBlue> | Composant IHM |
+|<#LightGreen> | Service métier |
+|<#LightGray> | Traitement batch |
+endlegend
+@enduml
+```
