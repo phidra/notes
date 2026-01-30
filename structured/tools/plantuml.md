@@ -1,10 +1,12 @@
 **CONTEXTE** = janvier 2026, j'essaye PlantUML (attention, la doc est blindée de pubs...)
 
+
 * [Installation :](#installation-)
 * [Notes à l'usage](#notes-à-lusage)
 * [Exemple :](#exemple-)
 * [Snippets](#snippets)
    * [Légende de couleurs](#légende-de-couleurs)
+   * [Séquences indépendantes dans un diagramme de séquence](#séquences-indépendantes-dans-un-diagramme-de-séquence)
 
 ---
 
@@ -107,5 +109,32 @@ legend right
 |<#LightGreen> | Service métier |
 |<#LightGray> | Traitement batch |
 endlegend
+@enduml
+```
+
+## Séquences indépendantes dans un diagramme de séquence
+
+```plantuml
+@startuml
+participant Client
+participant Gateway
+participant Service
+
+== Démarrage ==
+
+Client -> Gateway : init()
+Gateway -> Service : loadConfig()
+
+== Exécution nominale ==
+
+Client -> Gateway : call()
+Gateway -> Service : process()
+Service --> Gateway : ok
+
+== Cas d’erreur ==
+
+Client -> Gateway : call()
+Gateway -> Service : process()
+Service --> Gateway : error
 @enduml
 ```
