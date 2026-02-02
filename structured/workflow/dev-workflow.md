@@ -828,6 +828,9 @@ nvm install 22
 node -v     # v22.15.0
 nvm current # v22.15.0
 npm -v      # 10.9.2
+
+# mettre à jour vers la dernière version de npm :
+nvm install --latest-npm
 ```
 
 Installation de typescript + LSP :
