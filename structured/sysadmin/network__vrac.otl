@@ -691,6 +691,14 @@ TCP
 		Les mécanismes de TCP justifient la plupart des optimisations visant à éviter de repartir d'une connexion fraiche.
 		Dans TCP, perdre un paquet est un mécanisme de feedback "normal" permettant de réguler l'échange (il n'est donc pas aberrant de dropper un paquet volontairement).
 		Congestion avoidance algorithme = réagit à la perte de paquets en ralentissant l'échange.
+	socket server + port TCP aléatoire :
+		le client a utilisé un port random sur son poste pour initier la connexion avec mon serveur TCP
+		mon serveur TCP spawne bien une nouvelle socket par client
+		mais là où j'avais mal compris, c'est que côté serveur toutes ces sockets sont connectées au port 443
+		lorsque un serveur HTTPS est connecté à N clients, on a N+1 sockets liées au port 443
+			une socket d'écoute (en charge d'accepter des connexions, et de spawner des sockets connectées)
+			N sockets connectées, une par client, qui relient le port 443 au port random du client
+		IMPORTANT = contrairement à ce que je pensais, pour TOUTES ces sockets, le port côté serveur reste 443 : c'est seulement côté client qu'il y a un port aléatoire choisi
 
 
 LIBVIRT :
