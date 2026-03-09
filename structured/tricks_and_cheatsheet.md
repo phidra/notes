@@ -2,6 +2,7 @@
 * [imagemagick pour splitter un PDF](#imagemagick-pour-splitter-un-pdf)
 * [imagemagick pour concaténer plusieurs images en un PDF](#imagemagick-pour-concaténer-plusieurs-images-en-un-pdf)
 * [pdftk pour concaténer plusieurs PDF en un seul](#pdftk-pour-concaténer-plusieurs-pdf-en-un-seul)
+* [pdftk pour extraire une ou plusieurs pages d'un PDF](#pdftk-pour-extraire-une-ou-plusieurs-pages-dun-pdf)
 * [plotter avec sqliteviz des valeurs loggées avec timestamp](#plotter-avec-sqliteviz-des-valeurs-loggées-avec-timestamp)
 * [grepper un process](#grepper-un-process)
 * [retrouver un process à partir de son pid](#retrouver-un-process-à-partir-de-son-pid)
@@ -17,6 +18,8 @@
 * [matcher toute l'arborescence ou juste les fichiers avec zsh](#matcher-toute-larborescence-ou-juste-les-fichiers-avec-zsh)
 * [vider le cache bash](#vider-le-cache-bash)
 * [sommer une colonne d'un fichier CSV](#sommer-une-colonne-dun-fichier-csv)
+* [partager des fichiers en HTTP avec python](#partager-des-fichiers-en-http-avec-python)
+
 
 
 # imagemagick pour calculer la différence entre deux images
@@ -80,6 +83,13 @@ convert -resize 50% my_image_{1,2,3,4,5,6,7,8,9}.png out.pdf
 
 ```sh
 pdftk IN1.pdf IN2.pdf cat output OUT.pdf
+```
+
+# pdftk pour extraire une ou plusieurs pages d'un PDF
+
+```sh
+pdftk INPUT.pdf cat 1 output OUTPUT.pdf
+pdftk INPUT.pdf cat 1-2 output OUTPUT.pdf
 ```
 
 
