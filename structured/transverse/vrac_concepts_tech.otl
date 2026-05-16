@@ -1,0 +1,742 @@
+NOTES TECH> quelle différence entre un CTO et un head-of-tech :
+	CTO : rôle stratégique et exécutif, orienté vision, business et gouvernance.
+		« Où va la tech de l’entreprise et pourquoi ? »
+		----------------------------------------
+		Définition de la vision technologique
+		Alignement tech ↔ stratégie business
+		Arbitrages structurants (build vs buy, cloud, dette technique)
+		Gouvernance IT (sécurité, conformité, standards)
+		Représentation externe (partenaires, investisseurs, régulateurs)
+		Budget, priorisation macro, risques
+	Head of Tech : rôle opérationnel, orienté delivery, équipes et exécution technique.
+		« Comment livre-t-on efficacement maintenant ? »
+		----------------------------------------
+		Pilotage du delivery technique
+		Management des leads / équipes (recrutement, perf, coaching)
+		Qualité, fiabilité, dette technique
+		Mise en œuvre concrète de la vision CTO
+		Organisation du travail (process, outillage, CI/CD)
+	Ils travaillent ensemble :
+		Le CTO décide et arbitre
+		Le Head of Tech exécute et optimise
+	écueils classiques :
+		CTO sans pouvoir réel → CTO “architecte senior”
+		Head of Tech surdimensionné → CTO de fait, mais sans le titre
+
+
+NOTES TECH> "appliance" :
+	En informatique, une appliance est un équipement matériel ou logiciel livré “clé en main”, conçu pour remplir une fonction précise
+	Son système est verrouillé avec peu ou pas de possibilités de modification par l’utilisateur.
+	On N’ADMINISTRE pas une appliance comme un serveur généraliste, on le configure plutôt.
+	exemples :
+		firewall
+		routeur industriel
+
+
+NOTES TECH> greenfield vs. brownfield :
+	https://www.3dfindit.com/en/corporate/engiclopedia/greenfield-and-brownfield
+	----------------------------------------
+	greenfield = repartir d'une feuille blanche pour son projet
+	brownfield = essayer de refaire évoluer l'existant
+	green vs. brown = c'est une image : on cherche à implanter une nouvelle usine, choisit-on :
+		greenfield = un nouveau site où l'herbe est encore verte
+		brownfield = un site déjà existant où le sol est sali par une usine pré-existante
+	c'est un choix stratégique à prendre :
+		green = on peut faire propre, mais on ne capitalise pas sur ce qui a déjà été fait + on va redécouvrir des difficultés
+		brown = on réutilise des briques existantes, mais on supporte le poids du legacy, on doit éventuellement commencer par refactorer/moderniser
+
+
+NOTES TECH> north-south vs. east-west traffic control :
+	NORTH-SOUTH = traffic entre mon système interne et le monde extérieur :
+		North-south traffic describes data moving between a client (outside the data center) and a server (inside the data center).
+		For example, when a user visits a website, their request travels from their device (north) to the server (south), and the response goes back (north).
+	EAST-WEST = traffic à l'intérieur de mon système interne :
+		East-west traffic refers to data moving laterally between servers or services within the same data center or cloud environment.
+		This includes communication between microservices, databases, or load balancers.
+
+
+NOTES TECH> ServiceMesh :
+	Un Service Mesh est une couche d’infrastructure qui gère de manière transparente les communications réseau entre services (service‑to‑service), sans que les applications aient à implémenter ces mécanismes elles‑mêmes.
+		e.g. Istio, AWS App Mesh, ...
+	NOTE : il s'occupe du traffic interne à mon système (east-west traffic)
+	Pourquoi ?
+		car tout ceci doit sinon être géré microservice par microservice
+		quand il y en a des centaines, ça devient compliqué + duplication/incohérences
+		solution = ServiceMesh :
+			Les services parlent en clair à leur sidecar local
+			Les sidecars gèrent : sécurité + réseau + politiques
+	Deux plans :
+		Data Plane : un proxy réseau (e.g. Envoy) injecté à côté de chaque service (sidecar) traite tout le trafic entrant et sortant
+		Control Plane : composant centralisé de configuration des proxies (règles de routage + politiques de sécurité + certificats)
+	Fonctionnalités :
+		sécurité = mTLS automatique, rotation des certificats, authentifications, auth policies
+		gestion du trafic = retries + timeouts + circuit breaking + canary releases + blue/green
+		observabilité (sans modifier le code applicatif)
+	Le ServiceMesh ne remplace PAS :
+		API Gateway (north‑south)
+		OAuth / IAM utilisateur
+		logique métier
+		orchestration
+	Quand l'utiliser :
+		microservices nombreux
+		équipes multiples
+		exigences fortes en sécurité
+		besoin d’observabilité transverse
+		Kubernetes déjà en place
+		----------------------------------------
+		Un Service Mesh mal maîtrisé ajoute plus de complexité qu’il n’en retire.
+
+
+NOTES TECH> AD = ActiveDirectory :
+	Active Directory (AD) est le service d’annuaire de Microsoft.
+		AD = annuaire + authentification + autorisation
+		Cœur de l’identité en environnement Microsoft
+	Il sert à :
+		identifier des entités (utilisateurs, machines, services)
+		authentifier ces entités
+		autoriser leurs accès
+		centraliser les politiques de sécurité
+	AD stocke des objets structurés :
+		Utilisateurs       = personnes physiques
+		Ordinateurs        = serveurs, postes
+		Groupes            = rôles, équipes
+		Comptes de service = applis, batchs
+		GPO                = politiques de sécurité
+	AD vs. LDAP :
+		AD sait parler le LDAP mais va beaucoup plus loin :
+			Kerberos (authentification)
+			NTLM (legacy)
+			DNS intégré
+			GPO (politiques)
+			trusts inter‑domaines
+			PKI
+		LDAP sait dire “le mot de passe correspond”, pas “qui es‑tu dans le SI”.
+		LDAP est un protocole d’accès à des identités.
+		Active Directory est un système d’identité complet, qui inclut LDAP mais y ajoute des mécanismes forts d’authentification, d’autorisation, de fédération et de gouvernance.
+	AD est un IdP (Identity Provider), et permet :
+		Authentification centralisée
+		Single Sign‑On
+		Délégation d’identité aux services (= les services peuvent déléguer à AD l'authentification de leurs utilisateurs, et se reposer sur des tokens)
+	Managed Service Accounts
+		Un gMSA ( Group Managed Service Account) est un compte de service Active Directory géré automatiquement par le domaine , conçu pour exécuter des services et applications serveur , sans gestion manuelle de mot de passe.
+		Comptes de service classiques = Mot de passe connu des admins + stocké en clair (config, registry, scripts) + rarement changé
+		gMSA = Mot de passe : généré automatiquement + long et complexe + roté régulièrement + jamais connu par un humain + Stocké uniquement dans AD + Distribué uniquement aux machines autorisées
+
+
+NOTES TECH> Kerberos :
+	Kerberos est un protocole d’authentification réseau conçu pour permettre à un client et un service de prouver leur identité mutuellement, sans jamais échanger de mot de passe, même chiffré.
+	Objectif = authentification forte sur réseaux non sûrs
+	Protocole défini par IETF (historiquement ni windows ni linux)
+	Lien avec TLS ;
+		TLS et Kerberos ne résolvent pas le même problème
+			TLS      = sécurisation du transport, du canal
+				TLS dit "je parle au bon serveur"
+			Kerberos = Authentification, sécurisation de l'identité
+				Kerberos dit "voici qui je suis"
+		TLS :
+			✅ TLS sait faire
+				Authentifier le serveur via certificat X.509
+				Chiffrer le canal
+				Garantir intégrité + confidentialité
+				Optionnellement authentifier le client via certificat client (mTLS)
+			❌ TLS ne sait pas faire
+				Authentifier un utilisateur ou service métier
+				Gérer : identité + délégation + SSO + autorisations dynamiques
+				Fournir un contexte d’identité exploitable applicativement
+			TLS dit> « Suis‑je bien en train de parler à ce serveur, et est‑ce que le canal est sûr ? »
+		Kerberos :
+			✅ Kerberos sait faire
+				Authentification forte sans mot de passe transmis
+				Mutual authentication
+				client ↔ serveur
+				SSO
+			❌ Kerberos ne sait pas faire (seul)
+				Chiffrer tout le flux applicatif de bout en bout
+				Remplacer TLS sur Internet
+				Protéger contre :
+					downgrade protocol
+					middleboxes
+					inspection réseau
+			Kerberos dit> « Qui es‑tu exactement, et au nom de qui agis‑tu ? »
+		P.ex. si un client veut se connecter à un serveur SQL :
+			Sans Kerberos> TLS authentifie le serveur SQL MAIS l’appli doit encore prouver qui elle est souvent via :
+				login SQL
+				mot de passe
+				secret stocké
+			Sans TLS> Kerberos ne chiffre pas automatiquement toute la session applicative
+	Lien avec mTLS = mTLS pourrait théoriquement remplacer Kerberos, mais :
+		mTLS                       --- Kerberos
+		----------------------------------------
+		Gestion de certs lourde    --- Intégré AD
+		Pas de SSO natif           --- SSO natif
+		Pas de groupes dynamiques  --- AD groups
+		Pas de délégation          --- Délégation
+	Lien avec Azure AD et Entra ID :
+		Azure AD ≠ Active Directory
+		Azure Active Directory (Azure AD) = service cloud d’identité Microsoft
+		Microsoft Entra ID = nouveau nom d’Azure AD (rebranding)
+		----------------------------------------
+		en quelque sorte, AD est un AD "on-premises" là où EntraID / AzureAD est un AD dans le cloud
+	Exemple = utilisation de AD pour authentifier les utilisateurs d'un SqlServer :
+		TL;DR = Kerberos est utilisé initialement pour sécuriser la session, puis le serveur accepte les requêtes ultérieures car elles utilisent la même connexion TCP
+		Résumé des rôles de chacun dans ce cas :
+			Kerberos   = authentifier l’identité
+			TLS        = Protéger le canal
+			TCP        = Maintenir la session
+			SQL Server = Lier requêtes ↔ session
+		Principe :
+			l'utilisateur s'authentifie localement via AD
+			Kerberos permet à SqlServer et l'application d'échanger l'identité de l'utilisateur (puis le rôle de Kerberos/AD s'arrête là)
+			SqlServer mémorise cette identité, et l'associe à la connexion TCP du client (dans un objet de type Session)
+			derrière, il considère que toute requête émanant de la même connexion TCP est à attribuer à la même session
+		Attention : authentification AD pour SqlServer ne fonctionne pas comme une API OAuth :
+			authentification OAuth = stateless
+			authentification AD    = statefull
+		Une fois l'authentification de session effectuée, pour qu'un attaquant hijacke ma session, il doit :
+			détourner la connexion TCP
+			casser TLS
+			prendre le contrôle du process client
+		Ça n'est pas impossible, mais c'est hors-scope de AD ou Kerberos.
+
+
+NOTES TECH> matrice de flux :
+	TL;DR = c'est un document expliquant l'architecture physique = quel host est en contact avec quel host.
+	----------------------------------------
+	c'est un tableau avec les colonnes suivantes :
+		SRC = ip
+		SRC = port (si fixe)
+		DST = ip
+		DST = port
+		protocole
+		mesures de sécurité (authentification du flux, Access-List, chiffrement…)
+		commentaire
+		plus généralement : toute information utile permettant de mieux caractériser le flux (ex : par quel équipement réseau celui-ci transite-t-il, est-il monitoré…).
+	BUT = identifier tous les flux qui circulent dans un SI, servir aux admins pour configurer le pare-feu d'une machine, la table de filtrage d'un pare-feu, les ACL sur un switch ou un routeur, etc.... Elle est utile à la compréhension des interconnexions, notamment en cas d’incident de sécurité
+	RESSOURCES :
+		https://www.reddit.com/r/Sysadmin_Fr/comments/1dl6w7i/matrice_de_flux/?rdt=45231
+		https://cyberveille.esante.gouv.fr/sites/default/files/media/document/2023-12/ANS%20-%20Fiche%20technique%20%233%20-%20Formaliser%20une%20matrice%20de%20flux%20-%20KIT%20de%20cartographie%20du%20SI.pdf
+
+
+NOTES TECH> sécurité : SBOM = Software Bill Of Material :
+	Un SBOM décrit exhaustivement ce qui compose un logiciel.
+		typiquement fabriqué lors de la CI qui builde un artifact
+	Un SBOM est un document structuré et machine‑readable qui liste :
+		les composants logiciels (directs et transitifs)
+		leurs versions exactes
+		leurs origines (éditeur, dépôt, URL)
+		leurs licences
+		leurs hashs / identifiants
+		parfois leurs relations de dépendance
+	OBJECTIF : savoir précisément ce qui est exécuté, et d’où ça vient.
+	Les deux formats dominants :
+		SPDX
+		CycloneDX
+	un SBOM peut être lié cryptographiquement à l'artifact
+	UTILITÉ :
+		réaction aux compromissions : si log4j est compromis, si on n'a pas de SBOM, on lutte pour répondre à ces questions :
+			"Utilise-t-on log4j ?"
+			"Dans quelle version ?"
+			"Où exactement ?"
+		scanning de compromissions :
+			Un SBOM peut être croisé avec des bases CVE, scanné en continu.
+			SCA = outil qui analyse le SBOM pour savoir si un artifact est vulnérable.
+
+
+NOTES TECH> supply chain :
+	En cybersécurité, la supply chain (chaîne d’approvisionnement) est l’ensemble des composants, acteurs et processus tiers qui participent au SI à tout niveau (conception, développement, déploiement, exploitation)
+	TL;DR = la supply chain désigne tout ce que tu n’as pas écrit toi-même mais que tu exécutes quand même.
+		Et aujourd’hui, c’est l’un des vecteurs d’attaque les plus critiques pour les systèmes modernes.
+	Ça recouvre quoi :
+		Logiciels et dépendances
+			Bibliothèques open source (npm, Maven, PyPI, NuGet, etc.)
+			Frameworks
+			SDK tiers
+			Images Docker de base
+			Packages système (apt, yum…)
+		Chaîne de build et de déploiement (si l’attaquant compromet le pipeline, il peut injecter du code sans toucher au repo applicatif)
+			Outils CI/CD (GitHub Actions, GitLab CI, Jenkins…)
+			Scripts de build
+			Dépôts de code source
+			Artefacts générés (binaires, conteneurs)
+		Fournisseurs et prestataires (on fait confiance à leur sécurité par transitivité)
+			Éditeurs de logiciels
+			Intégrateurs
+			Mainteneurs open source
+			Infogérants
+			SaaS critiques (authentification, paiement, monitoring…)
+		Infrastructure et services managés
+			Cloud providers
+			DNS
+			CDN
+			Registres d’images
+			Services de mise à jour automatique
+	Le maillon le plus faible de la chaîne pourra être attaqué.
+	Ce qu’on cherche à sécuriser (en pratique)
+		Intégrité : le code n’a pas été altéré
+		Traçabilité : savoir qui a produit quoi
+		Reproductibilité : builds déterministes
+		Confiance explicite : signatures, attestations
+	Contre-mesures typiques
+		SBOM ( Software Bill of Materials)
+		Signature de code et d’artefacts (Sigstore, cosign)
+		Vérification des dépendances (SCA)
+		Isolation et durcissement des pipelines CI
+		Principe du zero trust appliqué aux dépendances
+		Revue et gouvernance des fournisseurs
+
+
+NOTES TECH> Secret Manager et gestion des secrets par les apps :
+	POSITION DU PROBLÈME :
+		J'ai besoin que mon application utilise un secret, par exemple :
+			la clé de déchiffrement d'une base de donnée locale chiffrée
+			une API_KEY d'un service tiers, à utiliser en production
+		Quelles sont les bonnes pratiques pour gérer ce secret : où je stocke le secret ? Comment je déploie l'application ?
+	GUIDELINE = une application ne "possède" jamais un secret durable par elle‑même.
+	Il y a deux situations très différentes, selon qu'on parle d'une app côté server (considérée comme fiable) ou côté client (considérée comme non-fiable).
+		ATTENTION : le SecretManager ne concerne que l'app côté server, il n'est jamais utilisé par une app côté client.
+	SITUATION 1 = APP SERVER :
+		Bonne pratique = ne JAMAIS stocker le secret dans le code
+			à la place : injecter le secret par le pipeline ou à l’exécution de mon app
+			comment injecter le secret à l'exécution ?
+				envvar                     = DB_ENCRYPTION_KEY
+				requêter un secret manager = HashiCorp Vault, AWS Secrets Manager
+				Fichier monté              = /run/secrets/db_key
+			à proscrire :
+				❌ secrets dans le code
+				❌ secrets dans les variables d’environnement en clair
+				❌ secrets commités dans Git
+				❌ secrets copiés manuellement sur les serveurs
+		Secret Manager :
+			c'est quoi = Un service externe, dédié à la gestion sécurisée des secrets ; les applications côté serveur accèdent au secret via une API.
+				Un Secret Manager est un service qui stocke, chiffre, contrôle l’accès, distribue et permet la rotation des secrets, sans jamais les exposer inutilement.
+				Il est requêté par mon application, qui s'authentifie auprès du Secret Manager, puis récupère ses secrets à l'exécution, via une API.
+				Un Secret Manager est le composant qui permet à une application serveur d’utiliser des secrets sans jamais les posséder durablement ni les exposer.
+				Les secrets sont sécurisés dans le SecretManager, et non dans le code, dans l'image Docker, ou en clair sur le disque.
+			Exemples de Secret Manager :
+				HashiCorp Vault
+				AWS Secrets Manager
+				Azure Key Vault
+				GCP Secret Manager
+			Features d'un Secret Manager :
+				chiffrement at rest = lorsqu'ils sont non-utilisés, les secrets sont stockés chiffrés
+				Contrôle d’accès fin = définit qui a le droit de lire/écrire quel secret
+				Injection sécurisée à l’exécution = l’application ne connaît pas le secret au build, elle le récupère au runtime via :
+					API sécurisée
+					sidecar (ServiceMesh)
+					mount de fichier
+				Rotation et révocation des secrets
+				Audit & traçabilité = Qui a accédé à quoi ? Quand ? Depuis où ?
+			D'un point de vue archi :
+				Le secret n’est pas un asset de l’application : l’application est CONSOMMATRICE du secret, pas PROPRIÉTAIRE.
+				Le Secret Manager est une brique transverse de la plateforme : la sécurité est déportée vers ce composant spécialisé.
+			Scope du Secret Manager :
+				Une fois le secret accessible en clair par le process qui l’utilise, le rôle du Secret Manager est terminé.
+				Tout ce qui se passe après relève non de la protection du secret lui‑même (ce qui est le rôle du Secret Manager), mais plutôt :
+					de la sécurité du runtime
+					de l'isolement
+					de la réduction d’impact
+				Il y a des bonnes pratiques pour ça (e.g. réduire la durée de vie du secret, ou viser à limiter l'impact en cas de fuite)
+			NDM> il y a une phase de configuration du SecretManager pour lui "dire" que telle application a le droit d'accéder au SecretManager pour y lire tel secret.
+		Comment mon application s'authentifie auprès du Secret Manager ?
+			TL;DR = à qui fait-on confiance pour savoir qui a le droit d'accéder au SecretManager ?
+				L'enjeu est l'authentification de l'app qui demande un secret = "Qui est en train de demander ce secret, et sur quelle base je peux lui faire confiance ?"
+				Le Secret Manager ne protège pas un secret abstraitement : il délivre un secret à une identité :
+					il demande "prouve-moi que tu es bien telle identité"
+					puis, il mappe cette identité vers une ou plusieurs policies
+					ces policies autorisent l’accès à certains chemins de secrets
+			C'est quoi une identité d'application ?
+				Une application n’a pas d’identité intrinsèque comme un humain ; on lui en attribue une par construction d’infrastructure.
+				L’identité n’est pas le binaire, ni le code, c'est :
+					tel code
+					exécuté sur telle plateforme
+					dans ce contexte
+					avec tels attributs d’infrastructure
+				Deux déploiements du même code peuvent avoir des identités différentes.
+				On cherche donc à répondre à la question :
+					"Cette requête vient-elle bien de cette application, exécutée à cet endroit, maintenant ?"
+			Les grandes familles d’identités d’application
+				CAS 1 = si l'app est dans le cloud, la racine de confiance est l'infrastructure cloud :
+					La plate-forme cloude permet de confirmer que telle app est bien une app qui tourne sur son cloud :
+					La plate-forme cloud est un environnement d’exécution contrôlé, sur lequel l'attaquant aura du mal à agir.
+					On se repose sur le fait que l'infrastructure cloud est capable de garantir que telle application est bien légitime vu que c'est l'infra elle-même qui l'exécute
+						dit autrement, un Vault kubernetes va faire confiance à kubernetes quand il lui dira "telle application tourne sur une infrastructure que je contrôle et que je sais identifier"
+					Exemples :
+						Kubernetes = Service Account + JWT
+						AWS        = IAM Role (IRSA / EC2 Role)
+						Azure      = Managed Identity
+						GCP        = Workload Identity
+					Caractéristiques :
+						Pas de secret stocké dans l’app
+						L’identité est éphémère
+						Liée au runtime réel
+					C'est la solution à privilégier, mais elle n'est possible que si l'app tourne dans le cloud.
+				Si l'app est legacy/hors-cloud, la racine de confiance est un secret initial :
+					CAS 2 = Identité par certificat (machine ou workload)
+						L’application possède un certificat émis par une PKI interne + la clé privée qui va avec.
+						Le certificat joue le rôle de secret initial
+					CAS 3 = Identité par token statique pré-provisionné au déploiement (à n'utiliser qu'en dernier recours)
+						L'application possède un secret qu'elle exhibe pour prouver son identité.
+						Exemples :
+							Token Vault stocké en variable d’environnement
+							Fichier de credentials monté au démarrage
+							clé API / secret partagé
+				Les deux premiers moyens sont sains car non-usurpables :
+					CAS 1 = infrastructure = la plateforme (e.g. kubernetes) garantit l'identité de mon application au vu de son contexte d'exécution (usurper cette identité nécessite de compromettre la plateforme)
+					CAS 2 = certificat =  même si un attaquant vole mon certificat, il n'aura pas la clé privée qui va avec et ne pourra donc pas se faire passer pour mon application
+				En revanche, les autres moyens peuvent être usurpés : il "suffit" à un attaquant de voler le token ou la clé API pour se faire passer pour mon application.
+				Bonnes pratiques pour limiter la casse dans ce cas :
+					permissions très limitées (ce secret initial ne donne accès qu'au SecretManager)
+					révocable/remplaçable
+					idéalement limité par IP / machine
+		Injection = comment un secret passe-t-il du Secret Manager jusqu'à mon code applicatif ?
+			plusieurs moyens possibles :
+				pull = l’application :
+					s’authentifie elle-même
+					appelle l’API du Secret Manager
+					récupère les secrets à la demande
+				init container / bootstrap = Un composant :
+					s’exécute avant l’application
+					récupère les secrets
+					les écrit (fichier, env)
+					puis s’arrête
+				sidecar :
+					proche de init container
+					mais d'une part le sidecar est plutôt géré par l'infrastructure (dans le contexte, je suppose d'un ServiceMesh)
+					et d'autre part le sidecar continue de vivre après la phase d'init
+				agent local :
+					proche de sidecar
+					mais l'agent peut être mutualisé par plusieurs apps
+				envvar :
+					la plateforme s'interface avec le Secret Manager et l'expose comme envvar
+				fs :
+					la plateforme ou un agent s'interface avec le Secret Manager et l'expose comme fichier monté
+			(note : quand on parle de "plateforme", on parle de ce qui exécute l'app : Kubernetes, cloud managé, ou bare-metal)
+			le choix est un trade-off entre :
+				le couplage de l'app au secret manager
+				la durée de vie du secret
+				la surface d’attaque
+				la capacité de rotation
+			Tableau comparatif :
+				Mode             | Qui parle au Secret Manager ? | Quand ?                | Forme côté app
+				-----------------|-------------------------------|------------------------|------------------
+				MODE 1 = Pull    | L’application                 | À la demande           | Objet en mémoire
+				MODE 2 = Init    | Un job de bootstrap           | Au démarrage           | Fichier / env
+				MODE 3 = Sidecar | Conteneur adjacent            | Continu                | Fichier / socket
+				MODE 4 = Agent   | Process local                 | Continu                | Fichier / socket
+				MODE 5 = Env     | Plateforme                    | Au démarrage           | Variables d’env
+				MODE 6 = FS      | Plateforme                    | Au démarrage / runtime | Fichiers montés
+		Rôle du pipeline de CI/CD vis-à-vis du SecretManager :
+			Le pipeline intervient avant l’exécution de l’application, à un moment où l’application n’existe pas encore en tant que runtime mais où son identité future et ses droits doivent être définis
+			Le pipeline :
+				déclare auprès du secret-manager qui sera l’application
+				comment elle prouvera son identité
+				quels secrets elle pourra lire
+			exemple avec Vault :
+				création d’un role dans le SecretManager
+				mapping entre l'identité de l'application et le rôle dans le SecretManager (e.g. kubernetes serviceAccount → Vault role)
+				association du role à des policies
+			Le pipeline agit comme autorité de configuration de sécurité , pas comme consommateur d'un secret, ou setter (il n'a normalement pas vocation à écrire un secret)
+	SITUATION 2 = APP MOBILE/DESKTOP :
+		Le secret doit être lié au device, pas à l’application.
+		Tous les OS permettent de stocker un secret de façon sécurisée :
+			iOS     = Keychain
+			Android = Keystore
+			Windows = DPAPI
+			macOS   = Keychain
+			Linux   = Secret Service
+		Avantages à utiliser un moyen que l'OS propose :
+			✅ Chiffrement matériel si disponible
+			✅ Protection OS
+			✅ Pas accessible aux autres apps
+		À la première exécution :
+			Générer une clé aléatoire forte
+			La stocker dans le secure storage
+			Chiffrer la base locale avec cette clé
+		IMPORTANT = La clé n’est jamais livrée avec l’app (car sinon, elle serait partagée entre toutes les apps...)
+		Comment s'assurer que seule mon application a accès au secret ? Qu'est-ce qui empêche une autre app ou un script de demander à l'OS la clé de déchiffrement de ma base ?
+			sur une app mobile, le secure storage de l’OS sait quelle application a le droit d’utiliser une clé, les autres applications ne pourront pas l'utiliser, ni même la détecter
+			sur desktop, la sécurité repose sur l’isolation du compte utilisateur par l’OS, le secret est lié à l'utilisateur plutôt qu'à l'application
+				typiquement sous-linux, les wallets/keyrings/secret service sont déverouillés à la session utilisateur.
+				conséquence = l’OS ne protège pas une app contre une autre app du même user.
+			Si quelqu'un a un accès non-privilégié au device, il ne pourra pas lire la base.
+			Ça ne protège pas contre un accès privilégié (qui pourra faire ce qu'il veut sur l'app).
+			(et ça ne protège pas non plus contre les accès au secret depuis mon app : si quelqu'un peut faire de l'injection dans mon app, il aura accès au secret)
+		ATTENTION = les applications front (mobile/desktop) n'utilisent pas de SecretManager, elles sont considérées comme non-fiables !
+			seules les applications backend utilisent un Secret Manager
+
+
+NOTES TECH> Voie série / port série / RS-232 / RS-485 :
+	voie série = Désigne le canal de communication lui-même, c'est-à-dire le principe de transmettre des données bit par bit, séquentiellement, sur un même fil
+		(par opposition à la transmission parallèle)
+	port série = Désigne le connecteur physique (la prise) sur un équipement qui permet d'établir une communication série.
+	----------------------------------------
+	RS-232 et RS-485 sont des normes qui spécifient comment les signaux électriques sont transmis sur une voie série.
+	----------------------------------------
+	Communication série (concept général)
+	├── Port série (interface physique)
+	│   ├── RS-232  →  Standard électrique pour liaison point-à-point, courte distance
+	│   └── RS-485  →  Standard électrique pour bus multi-point, longue distance, robuste
+	----------------------------------------
+	RS-232 est souvent utilisé pour la maintenance et le diagnostic (connexion d'un PC portable à un équipement pour configuration ou debug).
+	RS-485 est privilégié pour les communications opérationnelles entre équipements (capteurs, automates, systèmes de signalisation) grâce à sa robustesse, sa portée et sa capacité multi-point.
+	----------------------------------------
+	Sur un PC, "port série" (aka port COMM) désigne les ports RS-232.
+	Ethernet et USB (mais également bluetooth et wifi) sont aussi des communications en série.
+
+
+NOTES TECH> Artifactory :
+	quel métier ?
+		il existe deux flux d'artefacts pour une chaîne de build logiciel, qui posent des soucis :
+			flux entrants = les dépendances de mon code (e.g. librairies)
+				PROBLÈME = viennent d'internet donc coupure réseau possible
+				PROBLÈME = viennent d'internet donc MITM possible
+				PROBLÈME = pas de contrôle centralisé = vulnérabilités possibles
+			flux sortants = ce que je produis (binaires, images docker, packages python, etc.)
+				PROBLÈME = où mettre mes artefacts : disques locaux ou partagés, etc.
+				PROBLÈME = chaque stack techno a sa propre façon de gérer les artefacts (maven, image docker, pypi, etc.)
+		le métier d'artifactory = avoir un point central, sécurisé et versionné pour tous les artefacts qui entrent et sortent de ma chaîne logicielle.
+	modèle de données :
+		niveau 1 = instance artifactory
+		niveau 2 = repository
+			nom
+			type de package (e.g. docker, npm, pypi, debian, ...)
+			type de dépôt :
+				local = les packages vivent dans l'instance artifactory
+				remote = même si on y accède via le cache de l'instance artifactory, les packages proviennent initialement du monde extérieur
+				virtual = agrégation de plusieurs dépôts (local + remote) derrière une seule URL
+		niveau 3 = artefacts
+			à l'intérieur d'un dépôt, les fichiers sont organisés selon les conventions du type de package
+			chaque artefact a des propriétés (métadonnées, clé/valeur) qui permettent de filtrer, tracer et auditer : build.number, git.commit, env, etc.
+	autres données :
+		les builds
+			Artifactory peut recevoir les informations de build de votre CI (Jenkins, GitHub Actions, GitLab CI, ...).
+			Concrètement, le pipeline de CI fait des appels API pour transmettre les infos à Artifactory.
+			Un build relie :
+				les artefacts produits (outputs)
+				les dépendances consommées (inputs)
+				le contexte (commit git, pipeline, timestamp)
+			Cela permet une traçabilité complète: "quel commit a produit cette image Docker, et quelles librairies contient-elle ?"
+		artifacts vs. packages :
+			artifacts = arborescence de fichiers bruts, organisés selon le type de dépôt (e.g. un repo docker aura des layers et un manifest.json)
+				en sélectionnant un fichier donné, on peut accéder à son URL de download, e.g. :
+					https://my.instance.ndd/artifactory/my-repository-docker-virtual/path/to/my/image/main/sha256__0ec06099ecec158ba9f7578745bc7b41696bb1176db66f52b6e031ef942fc8a1
+			packages = vue de plus haut-niveau (= un composant versionné) sur les artifacts
+		release lifecycle :
+			en gros, ça permet de suivre un package/artifact depuis son build vers la prod, en passant par les différents intermédiaires
+			Release Lifecycle formalise ce processus de promotion dans Artifactory : c'est toujours le même binaire qui avance d'étape en étape, avec une trace complète à chaque passage.
+			Release Bundle = groupe d'artefacts versionnés et signés cryptographiquement, qui représente une version immuable et livrable de votre logiciel
+			À chaque étape de promotion, Artifactory enregistre qui a promu, quand, et depuis quel état — c'est l'audit trail complet.
+	xray (intégré nativement à artifactory) scanne transitivement les vulnérabilités sur les artefacts stockés (en comparant avec des bases de vulnérabilités)
+
+
+NOTES TECH> websockets :
+	C'EST QUOI :
+		de façon contre-intuitive vu le nom, ça n'est PAS une alternative aux sockets TCP
+		c'est plutôt un protocole applicatif standard qui s’exécute par dessus TCP
+		si on veut comparer websockets et des alternatives, ça n'a pas de sens d'opposer websockets à sockets TCP, il faut plutôt comparer :
+			à gauche un protocole (standard comme HTTP ou custom = des read/write sur socket TCP) qui utilise des sockets TCP
+			à droite un protocole standardisé (les websockets) qui utilise des sockets TCP
+		RFC = https://datatracker.ietf.org/doc/html/rfc6455
+		----------------------------------------
+	QUAND LES UTILISER ?
+		échanges continus bidirectionnels (par opposition au mode request/reply de HTTP)
+		e.g. collaborative editor, chat
+	QUAND NE PAS LES UTILISER :
+		si besoin d'échanges unidirectionnels, il y a de meilleurs alternatives (e.g. requête HTTP pour pull server, ou SSE/long-polling pour push server)
+		si besoin d'échanges bidirectionnel, mais que le protocole websockets ne nous convient pas (e.g. on veut plus de contrôle), il faut plutôt faire son propre protocole custom
+		si besoin d'échanges stream-oriented plutôt que message-oriented, alors TCP sans doute plus adaptés que websockets
+	AVANTAGES :
+		framing = découpage en messages :
+			websockets est plus haut-niveau que TCP :
+				avec TCP, on write ou read un flux d'octets non-délimités
+				avec websockets, on envoie/reçoit un message (avec un début et une fin clairement identifiée, on sait toujours où commence et finit le message + s'il est complet)
+			illustration :
+				si un client veut envoyer 3 messages, chacun terminant par un délimiteur X :
+					MSG1XMSG2XMSG3X
+				alors en TCP, on pourra recevoir :
+					MSG
+					1XMSG2XMS
+					G3X
+				(à charge pour le serveur de tout concaténer, de scanner les 'X' pour splitter le flux d'octets reçus en messages)
+				a contrario, avec une websocket, le serveur reçoit les 3 messages :
+					MSG1X
+					MSG2X
+					MSG3X
+				(et ce, même si par exemple un gros message a été découpé en plusieurs frame en sous-main : le protocole le reconstruit et délivre le message reconstitué)
+		standard :
+			p.ex. pour le fait de véhiculer des messages : si je fais du TCP avec un protocole custom, tous les clients (navigateur, backend, IoT, etc.) devront réimplémenter mon protocole custom
+			à l'inverse, le framing des websockets est standard
+		meilleure robustesse aux fermetures/crash/déconnexions :
+			en TCP, on ne saura pas distinguer :
+				un arrêt volontaire
+				un crash
+				une coupure réseau
+				un timeout silencieux
+			en TCP, on se contentera de ne plus recevoir d'octets, sans savoir pourquoi...
+				plus précisément, on aura de l'info sur l'état du protocole RÉSEAU (e.g. ce socket est fermé)...
+				...mais pas APPLICATIF (e.g. tous les messages ont été envoyés)
+			si on veut avoir cette couche avec une socket TCP classique, il faut l'implémenter "manuellement" (e.g. ajouter un message BYE à la fermeture)
+			à l'inverse, websocket implémente cette gestion dans son protocole (il y a des frames dédiées à la fermeture de session = les frame "close")
+			l'absence de frame "close" indique qu'il y a eu une fermeture anormale (e.g. crash de l'appli) sans en savoir plus (mais c'est déjà pas mal, on sait distinguer les fermetures normales et anormales)
+		meilleure connaissance de l'état actuel de la connexion :
+			POSITION DU PROBLÈME = en cas de peer qui crashe, ou de réseau coupé, TCP peut rester bloqué des heures sans FIN ni RST
+			websockets a deux frames de contrôle : PING et PONG
+				un endpoint peut envoyer PING à tout moment
+				l’autre endpoint doit répondre rapidement par PONG
+			(a contrario, le TCP keepalive est très long (2h) et souvent désactivé, donc non garanti)
+			la librairie (ou l'application) décide ou non d'utiliser ce mécanisme
+				p.ex. Boost.Beast laisse l'utilisateur envoyer des PING, mais gère le PONG automatiquement
+			recommandé = envoyer un ping toutes les N secondes
+		protocole plus compatible avec l'infrastructure réseau :
+			pour faire du custom avec TCP, il faut souvent un port dédié (souvent bloqué)
+			à l'inverse, websocket = démarre en HTTP donc en 80/443, ce qui permet d'être compatible avec les infrastructures HTTP existantes
+			(e.g. la DSI n'a pas besoin d'ouvrir des ports custom)
+		backpressure :
+			c'est moins clair pour moi, mais websockets semble pouvoir exposer à l'appliation des infos de backpressure qui sont habituellement cachés dans la stack TCP/IP de l'OS
+			(et du coup, l'application peut prendre des mesures pour lutter contre la congestion)
+		phase de négociation initiale :
+			il y a une phase de négociation qui commence en HTTP et upgrade la connexion en WS
+			comme cette phase initiale est du HTTP, elle permet p.ex. du load balancing ou des redirections
+			cf. https://timkellogg.me/blog/2015/03/01/websockets-are-not-magic
+	INCONVÉNIENTS :
+		verbosité :
+			websocket est plus consommateur que TCP brut : handshake TCP initial, headers websocket
+			je crois comprendre que pour chaque message, il y a deux octets supplémentaires pour des headers websockets, et 4 en plus pour un "masque"
+			https://timkellogg.me/blog/2015/03/01/websockets-are-not-magic :
+				au moins 2 bytes supplémentaires par message dans le sens server → client
+				au moins 6 bytes supplémentaires par message dans le sens client → server
+		message-oriented plutôt que stream-oriented :
+			si je veux envoyer des messages bien séparés les uns des autres (ce qui est le cas la plupart du temps) alors websockets sont plus adaptées que TCP brut
+			si je veux envoyer des flux continus d'octets, alors TCP peut-être plus adapté que websockets
+	LIEN AVEC LA SÉCURITÉ :
+		d'un point de vue sécurité, la recommandation est d'utiliser TLS pour la sécurité et le chiffrement
+		ce qui apporte la sécurité, c'est TLS, pas les websockets
+		du coup stricto-sensu, les websockets n'apportent rien en sécu : n'importe quel protocole custom pourrait utiliser TLS...
+		(mais en pratique, l'utilisation de websockets over TLS est habituelle (wss) et prévue dès la RFC, donc c'est sans doute plus simple d'utiliser TLS avec wss que d'ajouter TLS sur son protocole custom)
+	PRÉCISIONS TECHNIQUES :
+		masque :
+			c'est quoi :
+				Tous les frames envoyés par le client vers le serveur sont masqués (les frames envoyés par le serveur vers le client ne le sont jamais)
+				masque de 32 bits (4 octets) + toutes les données sont XOR avec le masque
+			Ça n'est pas du chiffrement, c'est un mécanisme de protection d'infrastructure.
+			pourquoi = pour protéger les infrastructure HTTP intermédiaires (e.g. caches HTTP, proxies) d'une collision accidentelle
+				il ne s'agit PAS de protéger mon serveur, mais les infrastructures intermédiaires
+				il ne s'agit PAS de protéger contre un acteur malveillant, mais contre les erreurs accidentelles
+			comment :
+				sans le masque, un message websocket pourrait par hasard envoyer un message qui ressemblerait suffisamment à du HTTP (e.g. il commence par "GET") pour être interprété comme tel par un proxy intermédiaire
+				(et le proxy ferait alors n'importe quoi = il mettrait en cache du garbage -> pollution de cache)
+				pour éviter ça, on "randomise" un peu le message avec le masque pour qu'il n'aie plus aucune chance de ressembler à du HTTP
+		point neutre = acknowledgment :
+			websocket n'ajoute rien par rapport à TCP
+			dit autrement : on sait si le message a été correctement délivré à la pile TCP de mon OS (pour qu'il soit envoyé)
+			on sait que si la livraison n'a pas eu lieu, UN BEAU JOUR j'en serai averti
+			mais c'est tout (notamment, on ne sait pas immédiatement que la livraison a échoué)
+			dit autrement : le fait que l'envoi est réussi veut juste dire que le message a été accepté localement, pas qu'il a été reçu
+		concrètement, comment commence-t-on en HTTP(S) pour finir en WS(S) ?
+			une première requête HTTP GET demande un upgrade de protocole :
+				GET /my-websocket-endpoint HTTP/1.1
+				Host: example.com
+				Upgrade: websocket
+				Connection: Upgrade
+				Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==
+				Sec-WebSocket-Version: 13
+			le serveur accepte l'upgrade :
+				HTTP/1.1 101 Switching Protocols
+				Upgrade: websocket
+				Connection: Upgrade
+				Sec-WebSocket-Accept: HSmrc0sMlYUkAGmm5OPpG2HaGWk=
+			mais une fois l'upgrade effectué, le client et le serveur n'utilisent PLUS HTTP, mais basculent sur un autre protocole = websockets
+				impossible d'envoyer une requête HTTP
+				impossible de revenir en arrière
+			HTTP est la porte d'entrée vers websockets :
+				✅ Ce que WebSocket utilise d’HTTP
+					port 80 / 443
+					handshake standard
+					en-têtes HTTP
+					cookies
+					auth HTTP (Basic, Bearer, etc.)
+					routage par URL ( /ws, /chat, …)
+				❌ Ce que WebSocket n’utilise pas
+					méthodes HTTP après l’upgrade
+					headers HTTP ensuite
+					statelessness
+					request/response
+					codes HTTP
+	ÉVOLUTION = WebTransport :
+		webtransport est une évolution de websocket
+		récent, donc pas encore universellement supporté à date de rédaction (avril 2026)
+		avantages sur websockets :
+			pouvoir multiplexer plusieurs streams sur une seule connexion (alors qu'avec ws, il faut ouvrir une connection par stream)
+			ce qui va avec = réutiliser une connexion déjà existante pour véhiculer un autre stream
+			websocket ne fonctionne qu'à partir de HTTP 1.1, alors que webtransport fonctionne avec d'autres protocoles e.g. HTTP3 / QUIC
+			meilleure perfs car limite le head-of-line blocking :
+				https://en.wikipedia.org/wiki/Head-of-line_blocking
+				TL;DR = des paquest sont bloqués en attente d'envoi car le tout premier paquet de la file à envoyer ne peut pas être envoyé
+			propose un mode "unreliable" (que ne propose pas websockets)
+			chiffré par défaut
+
+
+NOTES TECH> GitOps :
+	avec gitops, le repo git est la single source of truth non seulement pour le code, mais également pour la configuration du déploiement
+	choisir de modifier le déploiement revient à pusher une modif sur un repo git
+	doco-cd = outil pour faire du gitops basé sur docker-compose = scruter un repo git, pour prendre des actions devops, comme un docker-compose up, en fonction des modifs sur le repo git
+		c'est un daemon sur le serveur docker qui récupère les infos de git (via pull ou webhook), et exécute "docker-compose up" dès qu'un changement est détecté
+
+
+NOTES TECH> matrice SWOT :
+	TL;DR = outil d'analyse pour prendre des décisions stratégiques.
+	----------------------------------------
+	S = Strengths
+	W = Weaknesses
+	O = Opportunities
+		de quelles opportunités (tendances, usages, lois, technologies) pouvez-vous tirer parti ?
+	T = Threats
+		quelles sont les menaces (dangers) qui peuvent affecter la performance de votre entreprise ?
+	----------------------------------------
+	Environnement EXTERNE = opportunités et menaces
+	Contexte INTERNE = forces et faiblesses
+
+
+NOTES TECH> RACI :
+	TL;DR = une façon de répartir les rôles de façon claire :
+	----------------------------------------
+	R = Responsible – Réalise la tâche :
+		celui qui RÉALISE la tâche concrètement (pour le compte de A)
+	A = Accountable – Décideur final, rend des comptes :
+		responsable de l’atteinte des objectifs mais également de la réussite ou de l'échec de la tâche
+		A est généralement le responsable hiérarchique du réalisateur
+		NDM> c'est lui qui rend des comptes si la tâche échoue
+	C = Consulted – Consulté, son avis est requis :
+		un C contribue à la réalisation de la tâche de façon ponctuelle notamment pour apporter son expertise ou donner son avis sur une tâche bien définie
+		l’avis de ces personnes C doit être sollicité avant de prendre une décision
+		communication à double-sens = les C doivent obligatoirement être consultés, et doivent obligatoirement RÉPONDRE à la consultation, en donnant leur avis
+	I = Informed – Informé du résultat :
+		le I ne contribue pas à la tâche mais doit être tenu au courant de son activité, de sa progression, de sa réalisation
+		(typiquement, il a besoin de cette information pour faire ses propres tâches)
+		communication à sens unique = les I doivent obligatoirement être informés, mais n'ont pas de réponse à apporter
+
+
+NOTES TECH> ESB :
+	ESB = Enterprise Service Bus = un bus de message sous stéroïdes, i.e. qui va plus loin que délivrer les messages.
+	Archi un peu plus ancienne = ESB = bus de messages "smart" :
+		orchestration
+		transformation
+		routage intelligent
+		logique d’intégration
+		gouvernance
+	Archi moderne = bus de messages "dumb" (centré sur sa fonction = transporter des messages, e.g. RabbitMQ), et l'intelligence est plutôt dans les microservices.
+
+
+NOTES TECH> DevOps SRE vs. DevOps CRE :
+	SRE = santé du système
+		Site Reliability Engineer
+	CRE = qualité d’expérience du service rendu
+		Customer Reliability Engineer
+	----------------------------------------
+	SRE cherche surtout à rendre le système fiable et opérable.
+	CRE cherche surtout à garantir que le service reste bon pour le client
+	Même si l’infrastructure est techniquement "up" (OK du point de vue du SRE), le service peut être dégradé (KO du point de vue du CRE)
+	Exemple simple, une API peut être :
+		en ligne à 99,99 % → bon score SRE
+		mais avec des temps de réponse très lents sur le parcours de paiement → mauvais score CRE
+
