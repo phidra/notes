@@ -1,0 +1,490 @@
+NOTES TECH> comment faire un service pour déléguer de façon asynchrone une tâche lourde, comme de l'encoding vidéo :
+	POSITION DU PROBLÈME = je veux proposer un service web permettant à un client :
+		de soumettre un contenu binaire à encoder (e.g. transcoder une vidéo)
+		de récupérer le contenu résultat
+		y compris pour de gros contenus
+	PISTE À ÉVITER = soumettre les inputs en POST, et recevoir les outputs dans la réponse
+		À ÉVITER = transporter de gros binaires via l'API HTTP	
+		pas de gestion des timeouts
+		pas de reprise sur erreur
+		pas scalable
+		coûteux en infra pour l'API (beaucoup de réseau ou de RAM consommée)
+	PISTE À PRIVILÉGIER = stockage des input/output dans un storage indépendant de l'API
+		l'API est une API qui gère uniquement des jobs asynchrones, et les métadonnées (elle ne voit pas les binaires)
+		les contenus (input et output) sont stockés dans un object-storage (e.g. S3)
+		l'encodeur lit et écrit directement depuis/sur le storage
+		+++ scalabilité
+		--- nécessite un stockage partagé
+		----------------------------------------
+		VARIANTE = variante où le client demande au serveur où uploader son contenu
+			c'est l'API qui drive où stocker les données
+		VARIANTE = variante où le storage est FTP :
+			+++ plus simple, et indépendant du cloud provider
+			--- mais inférieur à un vrai object-storage type S3
+				un serveur FTP scale moins que S3
+				pas de reprise sur uploads interrompus ou de contrôle d'intégrité
+				attention à sécuriser FTP
+				conventions de nommages/chemins pour FTP (là où S3 a des métadonnées/tags/events)
+				pas d'observabilité (là où S3 en propose)
+	KEYPOINTS :
+		Idempotence des requêtes de création
+		Expiration / lifecycle des fichiers encodés
+		Sécurité des URLs (signées, scope minimal)
+		Observabilité (durée, erreurs par codec, bitrate)
+	SOUS-QUESTION = comment le client est notifié que l'output est disponible ?
+		polling régulier sur une URL
+		webhook appelé par le serveur
+		(et plus généralement, toutes les solutions pour faire du server-sent : websocket, SSE, long-polling, etc.)
+	SOUS-QUESTION = une fois que le client sait que son job d'encoding est terminé, comment récupère-t-il le résultat = le nouveau fichier encodé ?
+		À ÉVITER = API applicative GET qui renvoie le contenu binaire :
+			--- charge CPU+réseau côté API
+			--- pas de CDN possible
+			--- pas de reprise sur erreur
+			etc.
+		URL de téléchargement auprès d'un CDN ou S3 ou ObjectStorage
+			+++ Scalable
+			+++ CDN‑friendly
+			+++ Pas de charge API
+			+++ Reprise native
+			--- Gestion des URLs (expiration, sécurité)
+			--- Dépendance à un stockage externe
+		le serveur push chez le client (e.g. le client fournit une URL de storage chez lui, ou bien un endpoint à appeler)
+	approche évènementielle ?
+		client dépose le media dans un ObjectStorage (e.g. S3) → un évènement est publié par le storage
+		un premier niveau de service reçoit cet event, valide le media, et analyse le travail à réaliser (son boulot est de dire "il y a eu un média, au boulot les encodeurs" -> event)
+		un deuxième niveau de service reçoit les évènements "il y a du travail", e.g. différents workers d'encoding -> quand les jobs sont fini, publication d'events "travail terminé"
+		un troisième niveau de service écoute les évènements "travail terminé", et sait quand tout le travail est terminé, il notifie le client
+		intérêts :
+			découplage naturel
+			scalabilité (on peut scaler indépendamment les différents niveaux de service)
+			résilience (rejouabilité)
+			observabilité naturelle
+		bonnes pratiques évènementielles :
+			Événements immutables
+			Versionnés ( type, version)
+			Auto‑suffisants (pas besoin d’aller requêter ailleurs)
+			Corrélation ( job_id, media_id)
+	si on expose une API de job asynchrone, comment le client envoie-t-il ses données ?
+		piste 1 = convention entre le client et le serveur sur "où mettre les données" :
+			s3://encoding-inputs/{client_id}/{media_id}.mp4
+			simple
+			peu de sécurité
+			collisions à gérer
+			multi-tenant difficile
+			TL;DR = simple mais fragile
+		piste 2 = le client demande où déposer le fichier, et l'API l'indique
+			plus sécurisé
+			nécessite un appel API en plus
+			TL;DR = bon compromis
+		piste 3 = le client stocke son média publiquement chez lui, et le server va le chercher
+			sécurité bof
+			TL;DR = modèle pull
+
+
+NOTES TECH> utilisation d'un BFF :
+	c'est quoi :
+		service qui s'intercale entre un client frontend (e.g. une application mobile) et les services backend
+	utilité :
+		AVANTAGE 1 = aggrégation :
+			si l'application mobile a besoin d'appeler 10 APIs métier, elle devra passer 10 appels
+			dans le cadre d'un réseau mobile, ça va introduire de la latence
+			le BFF permet de n'exécuter qu'un unique appel (et c'est le BFF, qui est déjà en backend, qui fait les 10 appels et les agrège)
+		AVANTAGE 2 = retravail des réponses :
+			les APIs métier exposent des réponses qui sont bien adaptées à exprimer leur métier, mais pas forcément bien adaptées à l'usage qui en est fait côté mobile
+			e.g. une API métier pourrait exposer 10 champs, là où le mobile n'en utilise que deux
+			ici aussi, c'est sous-efficace + peut être embêtant en réseau limité
+			le BFF permet de ne renvoyer que les champs réellement utiles
+			dans la même veine : si la réponse doit être différente pour un frontend mobile ou desktop, chaque type de frontend pourra avoir son BFF qui sélectionne les champs appropriés
+		AVANTAGE 3 = simplifier la logique d'orchestration côté front :
+			si l'orchestration des appels aux APIs backend est complexe, cette logique doit être portée par le front
+			le BFF permet de déporter cette logique d'orchestration dans un service back
+		AVANTAGE 4 = découpler le frontend des APIs métier :
+			sans BFF, les apps mobiles sont directement couplées aux APIs métier : si l'API métier évolue, l'app mobile doit évoluer...
+			avec BFF, les apps mobiles sont plus stables : si l'API métier évolue, le BFF pourra évoluer sans changer son contrat d'interface avec le mobile
+			(ça a un avantage organisationnel aussi : du coup les APIs métier peuvent évoluer plus librement, sans avoir s'astreindre aux contraintes de faire évoluer des apps mobiles)
+	ALTERNATIVES =
+		GraphQL (pour ne récupérer que ce dont on a besoin), mais a des avantages/inconvénients différents : plus complexes, nécessite d'avoir un unique endpoint, etc.
+		API Gateway (qui retraaille les réponses), mais a des avantages/inconvénients différents : normalement, l'API gateway est une couche infra, pas métier
+
+
+NOTES TECH> archi = scheduler aka comment exécuter une task à heure fixe ?
+	option 1 = intégrer le scheduling directement dans mon application :
+		c'est l'application qui est responsable de déclencher elle-même une action chez elle à une heure donnée
+		(e.g. avec un watcher thread, ou avec un outil comme https://crates.io/crates/tokio-cron-scheduler)
+	option 2 = avoir un scheduler externe qui déclenche la tâche :
+		cron = sur la machine du service
+			éventuellement, configuré avec ansible au déploiement du service
+			inconvénient = doit tourner sur le poste lui-même + comment on le paramètre ?
+			inconvénient = modifiable uniquement lorsqu'on configure le déploiemen du service
+		service externe :
+			Kubernetes CronJobs : inconvénient = doit tourner sur une stack k8s
+			utiliser le scheduler de la plate-forme Cloud utilisée (AWS, Azure, google, ...)
+			apache airflow = outil de pipeline (NDM> a priori, BEAUCOUP plus puissant que simplement du scheduling)
+			rundeck = outil d'orchestration (NDM> a priori, BEAUCOUP plus puissant que simplement du scheduling)
+			CUSTOM = avoir mon propre service pour ça (éventuellement qui utilise un tool ou une lib décrit dans l'option 2)
+	La bonne pratique pour les microservices est d'utiliser un scheduler externe
+	Attention si risque de multi-exécution (e.g. réplication) : il faut que la tâche soit idempotente, ou bien qu'il y ait élection d'un leader
+	Attention à l'observabilité du scheduling (logs, monitoring, alertes)
+	----------------------------------------
+	Face à une sollicitation, le rôle de l'archi est de SE POSER DES QUESTIONS :
+		les tasks doivent elles être paramétrables ?
+		si oui, quel est le cycle de vie de la configuration ?
+		quelles interactions utilisateurs ? (qui définit les tasks ?)
+		si on est avec des services stateless conteneurisés (et possiblement spawnés à la volée), avec un scheduling applicatif, on pourrait avoir deux composants qui se retrouveront à faire le même job, c'est ok ?
+		a-t-on un besoin de scheduling plutôt pour faire des exports ? (dans ce cas-là, peut-être utiliser un moteur de workflow de type airflow ?)
+		a-t-on un besoin de scheduling interne à l'application uniquement (dans ce cas-là, le scheduler sera peut-être plutôt l'app elle-même ?)
+	Attention : rester critique vis-à-vis de ce que demandent les gens :
+		p.ex. parfois les gens disent "je veux des interactions temps-réel" alors qu'en fait, 5 min de délais sont tout à fait acceptables
+	Derrière, choisir l'approche la moins engageante.
+
+
+NOTES TECH> sécurisation des accès à microsoft SqlServer :
+	COMMENT S'AUTHENTIFIER AUPRÈS DU SERVEUR :
+		À PROSCRIRE = utiliser le compte SA :
+			c'est quoi = le compte d'administration par défaut de SqlServer ; il dispose de tous les droits (équivalent de root sous unix)
+			recommandation de microsoft :
+				https://learn.microsoft.com/fr-fr/sql/database-engine/configure-windows/change-server-authentication-mode?view=sql-server-ver17&tabs=ssms
+				----------------------------------------
+				Le compte sa est un compte SQL Server bien connu qui est souvent la cible d’utilisateurs malveillants.
+				N’activez pas le compte sa à moins que votre application ne le nécessite.
+				Il est important d’utiliser un mot de passe fort pour la connexion sa.
+			bonnes pratiques :
+				Ne pas l’utiliser en production : le désactiver après installation
+				(si on n'a pas le choix et qu'on l'utilise quand même : le renommer + mettre un mot de passe fort)
+		RECOMMANDÉ = utiliser AD (= l'authentification windows) :
+			GUIDELINE = En entreprise, tout ce qui peut être AD doit être AD.
+			utiliser des comptes utilisateurs ou des comptes de service, Managed Service Accounts (gMSA) si possible
+			Avantages :
+				Pas de mot de passe stocké dans les applis
+				Politique MDP centralisée (rotation, complexité)
+				Kerberos possible (SSO, délégation)
+				Audit unifié AD + SQL
+		ALTERNATIVE = utiliser une authentification SQL :
+			GUIDELINE : à n'utiliser que si AD impossible
+			dans ce cas, discriminer les rôles : un usage = un login, auquel on attribue des rôles
+			séparer les logins applicatifs et les logins d'administration (ne pas utiliser sa)
+	BONNES PRATIQUES :
+		utiliser TLS :
+			sans TLS, le login+mot de passe transite en clair sur le réseau !
+			certificat serveur signé par une CA interne
+			forcer le chiffrement :
+				côté serveur :
+					Force Encryption = Yes
+				côté client :
+					Encrypt=True
+					TrustServerCertificate=False
+		gestion des droits : principe du moindre privilège
+			un utilisateur par base, avec des rôles personnalisés
+			les utilisateurs n'ont pas de droit direct sur les bases, ils ont plutôt des rôles
+			pas de partage des rôles
+			séparations des rôles :
+				exécution des PS
+				lecture
+				écriture
+				évolution du schéma
+				etc.
+		ne pas exposer publiquement le serveur :
+			idéalement, dans un réseau privé
+			ou filtrage par ip / filtrage des ports / etc.
+		auditer les logs et alerter :
+			e.g. détecter automatiquement + remonter les tentatives répétées de se connecter au compte SA
+		avoir un SqlServer à jour
+		ne pas utiliser xp_cmdshell / CLR
+	CAS PARTICULIER = sécuriser un SqlServer dans le cadre du MULTITENANT :
+		(note : c'est applicable aussi à un autre SGBD comme postgres)
+		3 modèles :
+			modèle n°1 = un DB par tenant     = isolation la plus forte, coûte cher + nécessite beaucoup plus de maintenance
+			modèle n°1 = un schéma par tenant = isolation forte, coûte assez cher et nécessite de la maintenance
+			modèle n°1 = un schéma partagé    = isolation moins forte, plus simple, mais attention à gérer correctement l'isolation
+		(ci-dessous, on s'intéresse à la sécurisation du modèle n°3, le plus problématique niveau sécurité, car le moins isolé)
+		principes :
+			Aucun accès direct aux tables
+			Filtrage du tenant au niveau SQL , pas dans l’application
+			Impossible de changer de tenant par simple paramètre dans une requête.
+			Le tenant courant est injecté à la connexion + stocké dans le contexte SQL (et non à chaque requête)
+			Utilisation systématique de Row‑Level Security (RLS) + SESSION_CONTEXT
+		concrètement :
+			les tables sont partagées entre les tenant
+			chaque table métier a un champ TenantId indiquant pour une ligne donnée à quel tenant elle appartient
+			à la connexion, l'application doit injecter le tenant d'une façon non-modifiable, dans la SESSION :
+				:EXEC sys.sp_set_session_context
+				:	@key = N'TenantId',
+				:	@value = '6F9619FF-8B86-D011-B42D-00C04FC964FF',
+				:	@read_only = 1;
+			conséquence = le TenantId ne vient jamais d'un paramètre de requête
+			RLS = RowLevelSecurity = paramétrer le serveur pour forcer la vérification du TenantId sur toutes les tables
+				côté serveur, RLS est un mécanisme natif de SqlServer
+				on le configure avec un hook vérifiant le tenant
+				il s'assurera de renvoyer des lignes vides si le TenantId n'est pas valide
+		NDM> différence entre passer une variable (ici TenantId) par paramètre de requête ou par session :
+			en paramètre de requête, la variable fait partie de la requête :
+				il faut ajouter une clause "WHERE TenantId = XXX" à chaque requête
+				c'est facile d'oublier même pour un dev bien intentionné
+				un attaquant peut choisir sciemment de ne pas faire cette vérification
+			en paramètre de session, la variable fait partie de la session :
+				une fois la connexion établie, le client dit au serveur "pour toute la durée de la session, considère que chaque requête s'accompagne du paramètre "TenantId = XXX"
+				on l'établit une fois pour toute après la connexion et avant chaque requête métier, et ensuite le paramètre accompagne forcément les requêtes
+			de plus on a paramétré le serveur pour que ce paramètre de session soit obligatoire (RLS) :
+				le développeur ne peut pas l'oublier
+				un attaquant ne pas l'omettre sciemment
+				si une requête est passée sans ce paramètre de session, RLS renverra 0 lignes
+		dégradation des performances ?
+			négligeables, si RLS est bien utilisé (avec un filtre simple p.ex. sur une variable TenantId, et des tables indexées sur le TenantId)
+
+
+NOTES TECH> procédures stockées et code métier dans la base de données :
+	inconvénients à avoir le métier sous forme de procédures stockées dans la base de données, requêtée par des services :
+		1 = couplage :
+			couplage entre le modèle de données, les règles métier, et le SGBD
+			le service ne contrôle plus son métier, il le délègue à la base
+		2 = testabilité :
+			tests unitaires difficiles ou inexistants + lents, non-déterministes
+			outillage limité par rapport aux langages modernes
+		3 = évolutivité :
+			évolutions plus risquées et difficiles à versionner
+			migration mélangent data + fonctionnel
+			les bonnes pratiques sont plus difficiles : CI/CD, déploiement progressifs, feature-toggling, canary-release, ...
+		4 = scalabilité :
+			point central (= la base)
+			scalabilité horizontale difficile, on est obligé de scaler verticalement
+		5 = sécurité :
+			les droits SQL deviennent des droits métier
+			la surface d’attaque est déplacée vers le SGBD
+	répartition des responsabilités dans un modèle sain :
+		BDD :
+			persistance
+			intégrité
+			cohérence locale
+		services clients de la BDD :
+			règles métiers
+			orchestration
+			décisions fonctionnelles
+	quand utiliser des procédures stockées est-il adapté :
+		la question pertinente est "où est la frontière du métier"
+		usecase 1 = PS adaptées si la logique (non-métier) s'y prête :
+			si la logique est :
+				déterministe
+				locale à la base
+				sans dépendance métier externe
+				sans décision fonctionnelle
+			exemples :
+				agrégations lourdes
+				projections complexes
+				calculs statistiques
+			GUIDELINE = La procédure ne DÉCIDE rien, elle CALCULE.
+		usecase 2 = PS adaptée pour optimiser les performances des queries :
+			requêtes très complexes :
+				plans d’exécution sensibles
+				besoins de hints
+				forte volumétrie
+			Avantages :
+				plan compilé
+				contrôle précis
+				moins de round-trips
+			GUIDELINE = la procédure est une optimisation, pas une API métier déguisée.
+		usecase 3 = PS adaptées pour garantir des opérations atomiques simples :
+			attention à ne pas faire de métier
+		usecase 4 = PS pertinente pour améliorer la sécurité :
+			les services appellent uniquement des procédures (aucun droit direct sur les tables + permissions minimales)
+			Objectif :
+				réduire la surface d’attaque
+				maîtriser les accès
+			Ici la procédure est un port d’accès sécurisé, pas un moteur métier.
+		usecase 5 = PS adaptée pour la maintenance de la base :
+			exemples : purge, archivage, migration de données
+			Ce sont des outils d’exploitation , pas des briques métier.
+	Ce qu'apportent les PS :
+		elles n'ont pas de super-pouvoir, ce sont juste des "requêtes préparées"
+		pour des transactions complexes (mais "calculatoires" et non métier) :
+			si elles sont côté service, la cohérence dépend du code applicatif et de la discipline des développeurs (e.g. ne pas oublier de protéger toutes les requêtes par une transaction)
+			si elles sont dans une PS : la transaction est encapsulée : impossible d’exécuter partiellement la logique (l’appel est atomique par construction)
+		les PS ne sont pas plus puissantes, elles sont juste plus difficile à mal utiliser
+
+
+NOTES TECH> en base de données, comment éviter des opérations concurrentes sur les mêmes données ?
+	PISTE 1 = verrou applicatif dans la base
+		table global lock
+			locked_at
+			locked_by
+			lock_name (PK)
+		l'application prend un verrou dans une transaction
+		+++ = simple
+		--- = transaction longue à gérer (le lock bloque toute la DB ?)
+		--- = précautions à prendre pour délocker même si l'application  crashe
+	PISTE 2 = verrou dans un service externe :
+		redis (qui joue le rôle de base...)
+		zookeeper
+		+++ = performant
+		+++ = pas de blocage de la DB / transaction longue
+		--- = complexité
+		--- = nécessite un service externe
+	PISTE 3 = sérialisation dans une queue :
+		les services ne modifient pas la DB, mais "passent des requêtes de modification" (qui sont enqueuées)
+		un unique worker dépile les requêtes, et les traite l'un après l'autre
+		+++ = pas de concurrence, by design
+		--- = complexité
+		--- = latence
+	PISTE 4 = optimistic locking :
+		principe :
+			regarder quelle est la version actuelle des données, disons "N"
+			préparer l'exécution des modifications, et leur associer la version N+1
+			au moment de pérenniser les modifications, on regarde si entretemps, les données ont été modifiées :
+				si la version des données est toujours N, alors personne n'a modifié les données entretemps, et je peux les remplacer par la version N+1
+				si la version des données est M (> N), alors quelqu'un a modifié les données entretemps, et je rejette ma modification des données
+		à utiliser quand les conflits sont RARES
+		+++ = pas de verrou bloquant
+		+++ = relativement simple
+		--- = il faut pouvoir pérenniser toutes les données d'un coup (tout ou rien)
+		--- = on ne sait qu'au dernier moment que le job va échouer
+	PISTE 5 = Verrou pessimiste au niveau des données métier :
+		c'est une piste proche de la piste 1 (ou 2), mais au lieu de verrouiller TOUTE la base, on ne verrouille qu'un objet métier racine, qui représente la transaction
+		+++ = précis
+		--- = complexe si plusieurs tables
+		--- = transaction longue à gérer
+	POUR CREUSER = comment éviter les verrous orphelins ?
+		Un verrou doit être automatiquement libéré par la base si le processus qui l’a pris disparaît.
+			Si ce n’est pas le cas, c’est que le verrou est mal conçu.
+		verrou transactionnel (verrou "pessimiste")
+			le verrou est lié à la session DB, pas au code applicatif
+			en cas de crash du client :
+				la connexion DB est coupée
+				la transaction est automatiquement rollbackée
+				tous les verrous sont libérés
+		Verrous natifs "advisory" (très recommandés)
+			pg_advisory_lock
+			pg_advisory_unlock
+			Le verrou est automatiquement libéré à la fermeture de la connexion.
+			(inconvénient = non-standard SQL : spécifique au SGBD)
+		piège à éviter = la piste 1 = table de verrou "manuel"
+			c'est l'app qui locke/unlocke
+			et ici, si l'applicaiton crashe, elle ne délocke jamais...
+			solution 1 = insérer le locking + traitement dans une même transaction (si l'app crashe, la transaction sera rollbackée, y compris le locking)
+			solution 2 = le verrou a une date d'expiration (s'il a été créé il y a plus de XXX temps, alors on peut forcer un délock)
+				complexe (bugs d'horloge...)
+				difficile de définir le seuil d'expiration
+		note : même pour les verrous sûrs/natifs, il faut configurer un timeout par précaution
+		le plus recommandé = verrous natifs "advisory" (à coupler avec transaction par précaution + timeout)
+
+
+NOTES TECH> architecture : monolithe modulaire vs. microservices vs. macroservices :
+	Le choix d'une architecture distribuée ou d'un monolithe modulaire dépend des contraintes architecturales, et du domaine !
+		e.g. faut-il scaler certains composants différemment d'autres ?
+		e.g. faut-il livrer et déployer tous les composants en même temps ?
+	Ce n'est donc pas un choix "selon les préférences de chacun"
+
+
+NOTES TECH> comment faire une API synchrone par dessus les mécanismes asynchrones de Qt :
+	(notes a posteriori : les difficultés étaient notamment liées à la question de savoir sur quel thread vivaient les QObject, et à quelle event-loop ils étaient rattachés)
+	laborieusement, j'ai réussi à avoir une API bloquante qui envoie un message et reçoit la réponse, basé sur les mécanismes asynchrones de Qt ; le combo gagnant est :
+		un QObject "Messenger" : c'est lui qui :
+			envoie effectivement les messages (appel de writeDatagram sur la QUdpSocket)
+			reçoit les réponses (a un slot onReadyRead appelé quand il y a une réponse)
+		un QObject "BlockingApi" : il expose une méthode synchrone "sendAndBlock" :
+			émet le signal d'envoi vers le messenger
+			a un slot pour recevoir le signal de réception émis par le messenger
+			à l'envoi : crée une promise liée à l'envoi du message et à la réception de la réponse, puis bloque sur la promise en attendant qu'elle soit débloqué
+			à la réception de la réponse : débloque la promise
+	question des threads :
+		ces deux QObject vivent sur le thread principal (ou en tout cas, sur un thread Qt) : ils ont besoin d'un mécanisme de signaux/slots pour fonctionner
+		en revanche, une référence vers la BlockingApi est passée à un thread détaché
+		ainsi, l'appel de méthodes bloquantes de la BlockingApi peut être effectué depuis le thread détaché, pour permettre à celui-ci d'attendre la réponse
+		et c'est le thread principal qui recevra (de façon asynchrone) la réponse, et c'est depuis le thread principal qu'on débloquera la promise qui bloquait le thread détaché
+		----------------------------------------
+		de même, c'est indispensable que le messenger envoie le message dans son thread à lui (et non dans un thread détaché)
+		en effet, l'utilisation de la socket Qt (méthode writeDatagram) nécessite apparemment de créer des QObject, ce qui ne peut se faire que dans le thread possédant la socket = celui du messenger
+	NOTE : ce thread séparé BLOQUERA (ce qui bloque aussi son event-loop), mais ce n'est pas un souci :
+		il communique avec l'extérieur pour être débloqué via un mécanisme AUTRE que les signal/slots de Qt (en l'occurence une promise/future)
+		pendant qu'il est bloqué (et donc que l'event-loop est bloquée), il n'a pas besoin d'utiliser les signal/slot pour communiquer : bloquer l'event-loop n'est pas gênant
+		ce thread n'a besoin de l'event-loop que :
+			au démarrage (pour émettre le signal d'envoi du message UDP vers le messenger)
+			à la fin (pour arrêter proprement le thread et détruire les objets)
+
+
+NOTES TECH> quelques explications sur les niveaux de test :
+	BAD = le modèle "glace" (= pyramide inversée) :
+		NIVEAU 1 = tout en bas      = très peu de tests unitaires
+		NIVEAU 2 = un peu plus haut = quelques tests de services
+		NIVEAU 3 = encore plus haut = beaucoup de tests IHM
+		NIVEAU 4 = tout en haut     = encore plus de tests manuels
+		----------------------------------------
+		qui a la responsabilité des tests :
+			NIVEAU 1/2   = devs> tests unitaires + un peu de tests de service
+			NIVEAU 2/3/4 = QA> un peu de tests de service + tests IHM + tests manuels
+	GOOD = le modèle "pyramide" :
+		NIVEAU 1 = tout en bas      = beaucoup de tests unitaires
+		NIVEAU 2 = un peu plus haut = pas mal de tests d'intégration/API
+		NIVEAU 3 = encore plus haut = quelques tests IHM/e2e/fonctionnels
+		NIVEAU 4 = tout en haut     = peu de tests sécurité, tests de charge, tests métiers
+		----------------------------------------
+		REPONSABILITÉS :
+			(au global : QA = stratégie de test globale + pilotage)
+			NIVEAUX 1/2/3 = devs+PO> tests unitaires + intégration/API + un bout des tests IHM/e2e/fonctionnels
+				le PO définit les tests
+				le dev les implémente
+			NIVEAU 3 = QA> tests IHM/e2e/fonctionnels
+				responsabilité QA, et implication PO
+			NIVEAU 4 = la question de savoir qui en est responsable dépend du contexte
+	RECOMMANDATIONS :
+		Sélectionner et prioriser différents types de tests à implémenter
+			(avec un exemple métier concret pour chacun) : TU / intégration / bout-en-bout, embarqué vs. central, etc.
+		Prioriser le choix des tests à implémenter en fonction de la criticité, des fonctionnalités qui évoluent le plus et des points durs (fonctionnalités qui produisent beaucoup de bugs)
+		Implémenter de manière incrémentale le pipeline de test (CI/CD) sur chacun des tests identifiés.
+		Objectif = le test est entièrement réalisé de manière autonome :
+			déclenchement (gitlab-CI ?)
+			déploiement de l’environnement
+			du code et des stubs
+			initialisation des données
+			exécution du test
+			vérification des résultats
+			reporting sur l’exécution
+
+
+NOTES TECH> faire du pub/sub entre un serveur web et un client web :
+	BESOIN = un site web veut s'abonner à une ou plusieurs publications de la part du serveur, et pouvoir modifier dynamiquement ces abonnements.
+	PRÉAMBULE = en sous-jacent, il faut une technique pour que le serveur pushe (là où habituellement, c'est le client qui pulle) :
+		polling
+		long-polling
+		sse
+		websockets
+	OVERVIEW :
+		APPROCHE 1 = simpliste = polling paramétré :
+			on polle régulièrement, en passant en paramètre la liste des subscriptions
+		APPROCHE 2 = SSE + canal de commande :
+			le SSE sert à envoyer les messages, et on lui adjoint une API REST pour définir les subscriptions
+		APPROCHE 3 = websockets + protocole custom pour pub/sub :
+			le canal websockets sert à la fois au serveur à pusher les messages, et au client à définir les subscriptions qui l'intéressent
+		APPROCHE 4 = websockets + bibliothèque pour faire du pub/sub (socket.io, mqtt, ...)
+			ici, on utilise une lib pour gérer le pubsub plutôt que de le faire manuellement
+			certains outils comme mqtt permettent de faire du pub/sub nativement...
+			...d'autres comme socket.io ne proposent pas du pub/sub natif, mais offrent des briques élémentaires permettant de l'implémenter facilement
+		NOTE = APPROCHE 5 = webhook = le client enregistre une URL de callback, que le serveur appelle lorsqu'il a des données à envoyer
+			ATTENTION : ceci n'est possible que pour qu'un serveur pousse des données à un AUTRE serveur (et non pour pousser des données à un client), vu qu'il faut une URL de callback publiquement accessible.
+		LOUP POSSIBLE = continuer d'envoyer les events même après une perte de connexion puis une reconnexion
+	quelles libs/outils pour faire du pub/sub ?
+		CATÉGORIE 1 = librairies d'échanges en RT, qui ont des features (comme les rooms de socket.io ou les groups de signalR) aidant à l'implémentation manuelle de pub/sub :
+			socket.io :
+				https://socket.io/
+				c'est une lib bas-niveau pour les échange temps-réel entre client et serveur
+				protocole client/serveur custom : les deux bouts doivent tous les deux utiliser socket.io, il existe des implémentations dans plusieurs langages :
+					https://socket.io/docs/v4/#server-implementations
+					https://socket.io/docs/v4/#client-implementations
+				features :
+					https://socket.io/docs/v4/#features
+					----------------------------------------
+					fallback sur du long-polling si on ne peut pas utiliser les websockets (initialement, la raison n°1 d'utiliser la lib)
+					gestion d'un heartbeat pour éviter les déconnexions silencieuses, et se reconnecter automatiquement
+					buffering en cas de déconnexion (à la reconnexionn, on envoie ce qui a été bufferisé pendant la déconnexion)
+					broadcast = envoyer un message à tous les clients
+					pub/sub faisable via les rooms (ça demande un chouïa plus de travail qu'avec une vraie lib de pub/sub, mais c'est possible)
+			signalR (équivalent de socket.io pour ASP.NET)
+				https://learn.microsoft.com/en-us/aspnet/core/signalr/introduction
+		CATÉGORIE 2 = protocoles pub/sub utilisables en web (où le pub/sub est natif) :
+			mqtt over websockets  = moderne, il y a des libs js pour ça, mais nécessite un broker
+			stomp over websockets = plus simple, moins moderne, et nécessite quand même un broker
+			graphql subscriptions = apparemment, graphql permet de s'abonner à des publications (https://graphql.org/learn/subscriptions/), pas de broker nécessaire, mais nécessite une API graphQL
+			mercure pubsub        = un tool de pubsub qui s'appuie sur SSE (il y a des implémentations dans plusieurs langages : https://mercure.rocks/docs/ecosystem/awesome#examples )
+		CATÉGORIE 3 = serveurs managés SAAS, il existe plusieurs solutions clés en main, p.ex. :
+			pusher channels = https://pusher.com/channels/
+			ably            = https://ably.com/pubsub
+			firebase        = https://firebase.google.com/docs/functions/pubsub-events
+
