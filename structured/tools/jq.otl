@@ -1,0 +1,126 @@
+NOTES JQ :
+	Références :
+		https://github.com/stedolan/jq/wiki/Cookbook#filter-objects-based-on-the-contents-of-a-key
+		https://stedolan.github.io/jq/manual/
+	HOWTO :
+		tout lister + formatter correctement :
+			jq '.'
+		lister toutes les clés de mon objet
+			jq 'keys'
+		lister toutes les clés d'un (sous-)champ :
+			jq '.field.subfield|keys'
+		compter les clés :
+			jq '.field.subfield|keys|length'
+		construire une liste de sous-champs :
+			jq '.field.subfield|keys|length'
+		ne garder que des sous-champs d'une liste d'objets :
+			jq '.mylist|.[].subfield'
+		construire un sous-objet avec seulement certains champs :
+			jq '.object| {subfield1,subfield2,subfield3}'
+		FILTRER UNE LISTE :
+			dans une liste, NE GARDER QUE les objets qui ont une certaine valeur pour un champ :
+				jq '.field.[] | select(.subfield == "myexactvalue"))'
+				jq '.index.[] | select(.subfield | IN("val1", "val2", "val3"))'
+			dans une liste, NE GARDER QUE les objets dont un champ contient une string :
+				jq '.field.[] | select(.subfield | contains("mystring"))'
+			dans une liste, EXCLURE les objets qui ont une certaine valeur pour un champ :
+				jq '.field.[] | select(.subfield | contains("mystring") | not)'
+		construire un objet en sortie :
+			jq "{summary: .fields.summary, name: .fields.assignee.displayName}"
+		construire une list en sortie :
+			jq "[.fields.summary, .fields.assignee.displayName, .fields.resolution.name]"
+	CONCEPTS :
+		filtres
+			un filtre est un "traitement"
+			e.g. .field est le filtre qui ne garde que ce qui concerne le champ "field"
+		fonctions
+			e.g. keys est la fonction qui permet de lister les clés
+			e.g. has(mykey) est la fonction qui renvoie vraie si l'objet a la clé "mykey"
+	Fonctions utiles :
+		keys   = liste les clés de l'input (retourne un "array")
+		length = calcule la taille de l'input (retourne un "number")
+		type   = renvoie le type de l'input (retourne un "string")
+		map    = applique le filtre à chaque élément de l'input (qui doit être un array), et construit un array en output
+		select = renvoie l'input inchangé si la condition est vraie, et ne produit pas de sortie sinon
+	Vrac :
+		à noter que les deux filtres suivants sont équivalents :
+			.field | .[]
+			.field[]
+		".[]" = itérer sur tous les champs de "." (qui doit être un array)
+		".subfield[]" = itérer sur tous les champs de .subfield
+		pour afficher des strings sans quotes (e.g. pour les piper et les donner à manger à autre chose) :
+			jq --raw-output (ou jq -r)
+		on peut mettre des choses entre parenthèses pour forcer la priorité des opérateurs. Les deux lignes ci-dessous sont équivalentes (cf. exemple 1 ci-dessous) :
+			jq "(.providers[0]).vehicles"
+			jq  ".providers[0].vehicles"
+		éventuellement en parenthésant pour la priorité, on peut mettre beaucoup de choses dans map(...), y compris d'autres appels à map ou des pipes | :
+			jq ".providers[0].vehicles | map({value: (.fuels|map(.id))})"
+	Array, opérateur ".[]", et map :
+		Ce que fait l'opérateur ".[]" :
+			Sa fonction de base c'est d'itérer sur un array, pour faire un filtre sur chaque objet :
+				jq '.mylist | .[] | type'        ->  affiche le type de chaque élément de la liste
+			Mais attention, l'opérateur ".[]" ne produit pas un array en sortie, mais simplement une "concaténation" d'objets.
+			(c'est comme si on concaténait N fichiers, chacun contenant un objet json analysé par jq)
+		Ce que fait l'opérateur "map" :
+			il prend une liste en entrée, applique un filtre, et fournit une liste en sortie
+			du coup, quand je veux filtrer une liste pour ne garder qu'une partie des éléments, il est tout indiqué
+			(à coup de map(select(. | CONDITION)))
+		Pour obtenir une liste (cf. exemples ci-dessous) :
+			FAÇON 1 d'obtenir une liste = wrapper la commande avec "[]"
+			FAÇON 2 d'obtenir une liste = utiliser "map"
+		Exemples :
+			objet de base :
+				{
+					"mylist":
+					[
+						"luke",
+						42,
+						"anakin"
+					]
+				}
+			l'opérateur ".[]" ne produit pas de liste, mais une concaténation d'objets :
+				jq '.mylist | .[] | type'
+					"string"
+					"number"
+					"string"
+				jq '.mylist | .[] | length
+					4
+					42
+					6
+			FAÇON 1 d'obtenir une liste = wrapper la commande avec "[]" :
+				jq '[.mylist | .[] | type]'
+					[
+					  "string",
+					  "number",
+					  "string"
+					]
+				jq '.mylist | map(type)'
+					[
+					  "string",
+					  "number",
+					  "string"
+					]
+			Si on a une liste de N-uplets, pour construire une liste de leurs premiers éléments :
+				jq ".mylist | map(nth(0))"
+	Exemples concrets ::
+		Exemple 1 pour construire un dict indexé par des labels :
+			jq ".providers[0].vehicles|map({key: .label, value: (.fuels|map(.id))}) | from_entries"
+				.providers[0].vehicles|map(   = on prend le premier item de providers, et on liste ses véhicules
+				{key: .label, value: (...)}   = on construit un objet avec deux champs "key" (le label du véhicule passé à map) et "value" (on y vient derrière)
+				value: (.fuels|map(.id))      = on est toujours dans le .vehicles|map(...), du coup ceci construit une liste avec l'id de chaque fuel d'un véhicule donné
+				(...) | from_entries          = enfin, à partir d'un objet à deux champs "key" et "value", on construit un dict de clé "key" et de valeur "value"
+			Exemple de sortie :
+				:{
+				:  "Petite voiture": [
+				:	"fuel1",
+				:	"fuel2",
+				:	"nofuel"
+				:  ],
+				:  "Voiture de taille moyenne": [
+				:	"fuel1",
+				:	"fuel2",
+				:	"nofuel"
+				:  ],
+				:  (...)
+				:}
+
