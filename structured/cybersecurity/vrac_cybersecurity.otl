@@ -1,0 +1,792 @@
+TLS :
+	Les 3 piliers de TLS :
+		PILIER 1 = authenticité des messages    = on est certains que les messages proviennent du serveur légitime et non de quelqu'un qui se fait passer pour lui.
+		PILIER 2 = confidentialité des messages = on est certains que les messages n'ont pas été lus par un MITM.
+		PILIER 3 = intégrité des messages       = on est certains que les messages n'ont pas été modifiés par un MITM.
+	TL;DR :
+		une fois un serveur authentifié, on peut utiliser un échange de clé Diffie-Helman pour sécuriser la communication avec une clé symétrique
+		le chiffrement asymétrique concerne surtout l'authentification (= le serveur prouve son identité, il prouve qu'il est bien qui il prétend être)
+		ça repose sur un certificat (carte d'identité infalsifiable) qui a été signé par une CA en qui le client a confiance
+		coté CLIENT, ça nécessite donc une confiance "préalable" en une CA
+		coté SERVER, ça nécessite d'obtenir un certificat signé par une CA en laquelle le client a confiance
+	PILIER 1 = comment TLS garantit l'authenticité du serveur :
+		POSITION DU PROBLÈME = l'objectif est qu'un serveur qui habite à un nom de domaine donné (example.com) puisse prouver qu'il est bien l'émetteur des messages
+		résumé de comment on fait ça :
+			préalable = le CLIENT a été configuré pour avoir confiance en une CA, dont il a la clé publique
+			un jour par le passé (préalablement aux échanges), un SERVEUR a demandé et obtenu un certificat de la part de la CA (= Certificate Authority)
+			ce certificat relie un nom de domaine (sous le contrôle du demandeur) à la clé publique du demandeur, et ce de façon signée par la CA (avec la clé privée de la CA)
+			lorsque le SERVEUR dit "je suis 'example.com'", il accompagne cette assertion de son certificat qui le prouve
+			le CLIENT sait que le certificat est valide et non-modifié  car il est signé avec la clé privée d'une CA, ce qu'il peut vérifier avec la clé publique de la CA
+			par ailleurs, le serveur envoie également la preuve qu'il détient la clé privée associée à la clé publique renseignée dans le certificat
+			CONCLUSION = via la confiance en la CA, le client sait que le serveur est bien qui il prétend être, et non un MITM qui se fait passer pour lui.
+		Lien entre certificat, authentification TLS, et cryptographie asymétrique :
+			PRINCIPE DE BASE = la clé publique est distribuée publiquement (elle n'est pas secrète), la clé privée doit rester ma propriété.
+			PRIMITIVE = prouver qu'on possède la clé privée associée à une clé publique :
+				POSITION DU PROBLÈME = quelqu'un a reçu une clé publique, et veut vérifier qu'il discute bien avec le détenteur de la clé privée correspondante.
+				SOLUTION = il peut lui envoyer un message en clair, et lui demander de le chiffrer avec la clé privée
+				le fait qu'il puisse retrouver son message initial en déchiffrant la réponse avec la clé publique prouve la possession de la clé privée par le pair
+				(dit autrement : un MITM ne peut pas se faire passer pour le détenteur de la clé privée)
+			PRIMITIVE = signer cryptographiquement un contenu chose :
+				POSITION DU PROBLÈME = je suis une CA reconnue par tous les matériels partout sur la planète, comment prouver qu'un contenu vient de moi (authenticité) et qu'il n'a pas été modifié (intégrité) ?
+					(précision : plus exactement, les clients font confiance à ma clé publique, qu'ils ont stockée localement)
+				SOLUTION = je peux chiffrer le hash du contenu avec ma clé privée, ce qui représente une signature cryptographique.
+				Lorsqu'un tiers veut vérifier si le contenu qu'il consulte est bien celui que j'ai signé :
+					hash1 = il calcule le hash du contenu de son côté
+					hash2 = il utilise ma clé publique pour déchiffrer la signature et obtenir le hash du message
+					il compare hash1 et hash2 : s'ils correspondent, c'est que le contenu qu'il consulte est bien celui que j'ai signé
+				exemple d'utilité = prouver qu'un certificat est bien celui que j'ai délivré : il est authentique et intègre
+			utilité pour TLS = prouver l'identité d'un pair avec un certificat :
+				préalable client = on a confiance dans une (root-)CA = on a stocké une clé publique quelque part localement, en disant "je fais confiance à ce qui est signé par le détenteur de cette clé publique"
+				préalable serveur = certificat : après avoir prouvé que le demandeur contrôlait un domaine, la CA délivre un message signé cryptographiquement qui dit "tel domaine est bien le détenteur de cette clé publique"
+				derrière, il suffit au serveur de prouver qu'il détient la clé privée associée à la clé publique dans le certificat, pour prouver qu'il contrôle le domaine
+		DETAILS ET PRÉCISIONS :
+			Chaîne de confiance :
+				le serveur envoie son certificat et les certificats intermédiaires (qui remontent jusqu'au root-certificat de la CA)
+			KEYPOINT = un détail crucial = le client et le serveur doivent "partager" quelque chose = la CA :
+				le serveur a obtenu son certificat de la part de la CA
+				le client accorde sa confiance à la CA
+				en pratique, des listes de CA de confiance sont installées sur les OS (trust-store) ou dans les navigateurs
+				à noter que ça déplace la question de la sécurité vers "comment distribuer les certificats autosignés des CA de confiance ?"
+			Demande de certification par une CA :
+				(soit de façon automatique avec Let's Encrypt, soit de façon "manuelle", comme à l'époque où on achetait des certificats auprès d'un prestataire comme gandi)
+				Le demandeur doit :
+					envoyer sa clé publique à la CA
+					prouver qu'il possède la clé privée associée à la clé publique
+					montrer à la CA qu'il contrôle le domaine
+				Lorsque la CA reçoit ces infos, en tant qu'autorité de certification il signe le certificat associant la clé publique du serveur au nom de domaine
+				challenge ACME = moyen standardisé et automatisable pour le demandeur de prouver à la CA qu'il contrôle le nom de domaine :
+					(note : ça n'est PAS une preuve d'identité, "juste" une preuve de contrôle du nom de domaine)
+					Le serveur ACME exige du demandeur qu'il effectue une action précise sur le nom de domaine associé à la demande :
+						HTTP = Place ce fichier précis à cette URL précise sur http://example.com/this-route
+						DNS  = Ajoute cet enregistrement DNS TXT sous _acme-challenge.example.com
+			Le serveur n'envoie pas "juste sa clé publique", il envoie son CERTIFICAT :
+				qui contient sa clé publique...
+				associée à un nom de domaine...
+				association signée par une autorité de confiance...
+				et le tout assorti d'une preuve que l'émetteur a bien la clé privée associée à la clé publique (en signant une partie du handshake avec sa clé privée)
+			NDM> l'utilité principale de l'autorité de confiance, c'est de signer un certificat avec sa propre clé privée.
+				ça permet à tout le monde qui fait confiance à cette autorité de confirmer que le certificat 1. émane bien de cette CA et 2. n'a pas été altéré
+				un certificat non-altéré permet au client d'associer de façon sûre un nom de domaine à une clé publique
+				cette clé publique permet au serveur de prouver qu'il est bien le détenteur de la clé privée correspondante
+			note : le couple clé publique/clé privée du serveur sert à prouver l'IDENTITÉ et non au CHIFFREMENT :
+				la clé publique/privée NE CHIFFRE JAMAIS RIEN : c'est une clé symétrique (échangée plus tard par Diffie-Helman) qui sert au chiffrement et à l'intégrité des messages
+				pour prouver son identité, pendant le handshake, le serveur signe une partie du handshake avec sa clé privée (associée à la clé publique du certificat)
+				le client peut donc être certain que l'émetteur est bien le détenteur de la clé privée associée à la clé publique du certificat...
+				... et comme la clé publique du certificat a été associée (par la CA) au nom de domaine, le serveur prouve qu'il est bien le détenteur légitime du certificat
+				(comme les certificats sont publics, si on sautait cette étape, rien n'empêcherait un MITM d'envoyer un certificat en prétendant que c'est le sien)
+	PILIER 2 + PILIER 3 = comment TLS garantit la confidentialité et l'intégrité des messages :
+		moyen "classique" mais non-utilisé par TLS = Signature d'un message par cryptographie asymétrique :
+			ATTENTION : ce n'est PAS ce qui est utilisé par TLS : TLS utilise plutôt la clé symétrique une fois qu'elle est établie
+				en revanche, la signature d'un message par cryptographie asymétrique est utilisé pendant le handshake TLS pour authentifier le serveur
+				j'explique quand même le principe :)
+			POSITION DU PROBLÈME = si un client sait que telle clé publique appartient à un serveur légitime, comment peut-il s'assurer de l'intégrité d'un message reçu de la part du serveur ?
+				SOLUTION = le serveur n'a qu'à chiffrer un hash du message avec sa clé privée
+				le client déchiffre le hash avec la clé publique du serveur
+				s'il y arrive et que le hash correspond au message reçu, il sait que le message provient du serveur légitime
+		Chiffrement + intégrité des messages en TLS :
+			En TLS, une fois la clé symétrique établie, elle est utilisée, et un attaquant ne pourra pas produire un message valide chiffré avec cette clé.
+				La capacité à produire un message valide prouve la possession du secret, donc l’origine du message.
+			Mais ça ne suffit pas pour garantif l'intégrité :
+				il reste possible (même si je suppose que ça doit être difficie) à un MITM de modifier quelques bits du message chiffré original tout en conservant la validité du message
+		Il faut donc un autre mécanisme pour garantir l'intégrité :
+			en ancien TLS (1.2), on utilise HMAC
+			en TLS moderne, on utilise AEAD (= Authenticated Encryption with Associated Data) :
+			Un algorithme AEAD fait en une seule primitive :
+				le chiffrement du message (confidentialité)
+				l’authentification du message (intégrité + origine)
+		Le TL;DR, c'est qu'il existe un mécanisme (reposant sur un algorithme AEAD) qui permet à un couple client+serveur partageant un secret (clé symétrique) de garantir :
+			l'intégrité = message non-modifié par un MITM
+			l'autenticité = le message a bien été émis par quelqu'un qui possédait le secret
+			(la cohérence avec des métadonnées qui accompagent le message)
+			(la protection contre le rejeu)
+	Zoom technique = comment fonctionne l'échange de clé Diffie-Helman pour choisir la clé symétrique :
+		PROBLÈME À RÉSOUDRE = on veut que le client et le serveur obtiennent le même secret :
+			sans l’envoyer sur le réseau
+			sans que quelqu’un qui écoute puisse le reconstruire
+			même si tout le trafic est public
+		----------------------------------------
+		En préambule, on suppose que grâce à l'authentification préalable, un atttaquant de type MITM ne peut pas MODIFIER les messages, il peut uniquement les consulter.
+			dit autrement : on s'intéresse ici à "comment un secret peut-il être partagé entre client et serveur"
+			on laisse de côté la question de la préservation de l'intégrité des messages, ou de l'authenticité du serveur
+		Ce qui suit repose sur le fait qu'on dispose d'une opération (notée ^) qui permet de combiner deux valeurs tel que :
+			(G^A)^B == (G^B)^A
+			cette opération ^ doit-être non-inversible pour un attaquant : même si un attaquant a accès à (G^A) et à G, il ne doit pas pouvoir retrouver A
+		STEP 1 = Les deux côtés (cient et serveur) s'accordent sur une valeur partagée G (à laquelle l'attaquant MITM a accès aussi).
+		STEP 2 = Chaque côté (client et serveur) choisit un secret :
+			CLIENT : c_secret
+			SERVEUR : s_secret
+		STEP 3 = le client et le serveur appliquent l'opération ^ à leur secret et à G, et envoient le résultat publiquement :
+			CLIENT reçoit (G^s_secret)
+			SERVEUR reçoit (G^c_secret)
+			À ce stade, l'attaquant MITM a lui aussi accès à ces valeurs échangées
+		STEP 4 = chaque côté (client et serveur) applique l'opération ^ à la fois à ce qu'il vient de recevoir, et à son propre secret :
+			CLIENT calcule (G^s_secret)^c_secret
+			SERVEUR calcule (G^c_secret)^s_secret
+		STEP 5 = grâce aux propriétés de l'opération ^, on sait que les résultats de ces opérations sont les mêmes :
+			ce résultat commun constitue le secret partagé, qui joue le rôle de clé symétrique
+	Que protège TLS ; l'URL est-elle chiffrée ?
+		ATTENTION : le nom de domaine est en clair (sauf à utiliser DoT = DNS over TLS)
+		Le reste est chiffré :
+			query-params dans l'URL
+			headers
+			body
+	Chaîne de confiance + certificats racine :
+		TL;DR = avec TLS, la confiance est préinstallée côté client = le client fait confiance à une liste de CA racines.
+		Quand le client reçoit le certificat serveur :
+			Il extrait la chaîne de certificats
+			Il tente de construire un chemin : serveur → CA intermédiaire → ... → CA intermédiaire → CA racine
+			Il vérifie chaque signature avec la clé publique du certificat parent
+			Il s’arrête uniquement sur une racine présente dans le trust store
+		Cas trivial (mais rare) = le certificat du serveur a été signé par une CA racine.
+			pas besoin de certificat intermédiaire
+		Cas le plus courant = le certificat du serveur a été signé par une unique CA intermédiaire :
+			lors du handshake TLS, le serveur a envoyé son certificat accompagné de tous les certificats intermédiaires (qu'il a reçu, je suppose, lorsqu'il a lui-même reçu son propre certificat, émis par une CA intermédiaire)
+			côté client, on commence par vérifier que la signature du certificat du serveur est valide grâce à la clé publique dans le certificat intermédiaire...
+			...puis on valide que la signature du certificat intermédiaire est valide grâce à la clé publique dans le certificat de la CA racine (que le serveur n'a pas eu besoin d'envoyer vu qu'il était déjà installé côté client)
+		(s'il y a plusieurs certificats intermédiaires, le client continue ce process jusqu'à atteindre un certificat racine)
+		Les certificats racine n'ont pas de parent : ils sont auto-signés (par définition).
+		(parfois, par simplicité, le client a stocké dans son trust-store non seulement des certificats racines, mais aussi quelques certificats intermédiaires)
+		Corrolaire :
+			si le client ne connaît pas le certificat racine, alors la connexion TLS échoue...
+			exemple réel = si le client est ancien (vieil OS non mis-à-jour) et que le serveur utilise un certificat signé par une CA récente
+			solution = mettre à jour le client
+		ATTENTION : la signature auto‑signée des certificats racine n’est pas une preuve !
+			la confiance vient du fait que le certificat est PRÉINSTALLÉ et explicitement approuvé
+		Où sont stockés les certificats racine ?
+			sous linux : dans /etc/ssl/certs ou le paquet ca-certificates (= un paquet contenant des certificats racines sous linux)
+			ou p.ex. dans le trust store interne (sous firefox)
+		BONUS = une bonne pratique pour les CA est de ne jamais signer avec le root certificate :
+			utiliser une root CA (gardé bien au chaud en offline, par sécurité), de très longue durée, p.ex. 10-20 ans
+			à la place, signer les certificats avec une intermediate CA de durée plus courte (2-5 ans)
+	CA privée :
+		Une CA privée est une CA dont le certificat racine n’est pas présent par défaut dans les OS/navigateurs.
+			les certificats qu’elle émet ne sont pas reconnus PAR DÉFAUT
+			côté client, il faut installer explicitement le certificat racine préalablement aux échanges qu'on souhaite voir sécurisés par cette CA
+		le process de vérification (et plus généralement, tout TLS) fonctionne exactement pareil, tout reste identique, ce qui change, c'est uniquement la source de confiance
+		le plus gros risque = si la clé privée de la CA privée fuit, tout s'effondre. D'où les bonnes pratiques :
+			CA racine hors-ligne (CA intermédiaire pour signer)
+			certificats courts + rotation automatiuqe
+			etc.
+		quand utiliser une CA privée = si on a la maîtrise du client et du serveur, utiliser une CA privée est possible/courant
+		Quel intérêt ? Pourquoi ne pas utiliser une CA publique pour tout ?
+			Une CA publique est un outil d’Internet ouvert, pas un mécanisme universel d’authentification.
+			Une CA publique est adaptée quand :
+				le service est accessible depuis Internet
+				les clients sont non maîtrisés (navigateurs, apps mobiles, partenaires)
+				l’identité à prouver est un nom DNS public
+			CA public ne peut pas certifier des NDD privés :
+				les CA publiques certifient une identité PUBLIQUE (e.g. un serveur publiquement accessible)
+				les CA privées peuvent certifier une identité privée (e.g. un NDD interne)
+			CA publique (Let's Encrypt, DigiCert, etc.) :
+				✅ Reconnaissance immédiate
+				✅ Aucun provisioning client
+				✅ Outillage mature
+				✅ Audits / conformité
+				❌ Dépendance à un tiers
+				❌ Renouvellement automatique à surveiller
+				❌ Pas de contrôle fin sur l’écosystème
+				❌ Inutile si clients maîtrisés
+				❌ Coût potentiel
+			CA privée (PKI interne) :
+				✅ Contrôle total
+				✅ Pas de dépendance externe
+				✅ Révocation immédiate
+				✅ Adapté aux environnements fermés (matériels, OT, IoT)
+				✅ Aligné avec zero trust interne
+				❌ Gestion de la PKI (clé root, rotation, CRL)
+				❌ Distribution du root certificate
+				❌ Discipline opérationnelle requise
+			Guideline de décision :
+				quand on a la maîtrise de ses matériels, on a plus besoin de stabilité que d'universalité -> utiliser une CA privée fait sens
+				on peut préférer une CA publique si on veut installer les matériels sans provisioning (en effet, utiliser une CA privée nécessite une configuration préalable chez le client)
+
+
+Sécurisation d'une API avec des tokens / OAuth / OIDC / keycloak :
+	CONTEXTE : je veux sécuriser une api = faire en sorte que seules les requêtes émanant de certains clients particuliers, qui ont été authentifiés, soient autorisées.
+	Explication générale d'OAuth et OIDC, type keycloak :
+		RAPPEL = l'objectif d'OAuth (OIDC) est que l'API puisse DÉLÉGUER le métier d'authentification à un composant externe (l'Auth Server)
+		Architecture générale :
+			:                    ┌─────────┐       ┌───────────────┐   OAuth / OIDC (SAML)   ┌─────────┐     LDAP     ┌──────────────────────────┐
+			:                    │   IAM   │◀─────▶│  Auth Server  │◀───────────────────────▶│   IdP   │◀────────────▶│ Annuaire/Identity Store  │
+			:                    └─────────┘       └───────────────┘    preuve d'identité    └─────────┘   user info  └──────────────────────────┘
+			:                                            │   ▲
+			:                                            │   │
+			:                                 login form │   │
+			:                                   ID token │   │ OAuth / OIDC
+			:                               access token │   │
+			:                                            │   │
+			:                                            │   │
+			:                                            ▼   │
+			:  ┌─────┐   ┌───────────────┐  token  ┌────────────────┐   utilise  ┌──────────┐
+			:  │ API │◀──│ reverse-proxy │◀────────│   App mobile   │◀───────────│   User   │
+			:  └─────┘   └───────────────┘         └────────────────┘            └──────────┘
+			----------------------------------------
+			les acteurs :
+				user             = un humain, utilisateur de l'app
+				app (mobile)     = utilisée par un utilisateur, c'est elle le client qui cherche à s'authentifier pour accéder à une ressource exposée par l'API
+				API              = expose une ressource dont l'accès est restreint, à laquelle le client veut accéder
+				reverse proxy    = placé en frontal de l'API, chargé de vérifier la validité des tokens ; c'est le portier qui choisit s'il laisse les requêtes passer ou s'il les rejette
+				AuthServer (AS)  = le composant qui délivre les tokens, requêté par l'application ; si l'utilisateur arrive à s'authentifier, délivre un token permettant à l'app d'accéder à l'API
+				IdP externe      = le composant qui authentifie l'utilisateur (lui permet de prouver qu'il est bien qui il prétend être), p.ex. il fournit le formulaire de login
+				annuaire externe = le détenteur de la base des utilisateurs
+				IAM externe       = le composant responsabl d'appliquer les policies (e.g. dire si tel utilisateur est administrateur)
+			le flow :
+				step 1 = l'app fait une requête OIDC vers l'AS (qui est son seul interlocuteur)
+				step 2 = l'AS redirige l'authentification vers l'IdP externe (fédération) : le formulaire est géré par l'IdP, même s'il est présenté à l'app par l'AS
+				step 3 = le user s'authentifie auprès de l'IdP (qui utilise pour ça l'annuaire)
+				step 4 = l'IdP envoie un ID token à l'AS
+				step 5 = l'AS fait sa tambouille (validation, mapping d'identité, etc.).
+				step 6 = éventuellement, l'AS échange avec un composant IAM pour que celui-ci applique les policies reliant user à rôle ou tenant
+				step 7 = l'AS émet alors ses propres tokens (Id token + access token + refresh) à destination de l'app
+				step 8 = l'app conserve l'éventuel Id token, et fait sa requête à l'API, en joignant l'access token en header à chaque requête :
+					Authorization: Bearer <access_token>
+				step 9 = le reverse-proxy laisse passer toutes les requêtes pourvues d'un token valide (e.g. signature, expiration, qui l'a émis, pour quelle API, etc.)
+			Protocoles utilisés :
+				app ↔ auth server :
+					OAuth (ou sa surcouche = OIDC)
+				auth server ↔ IdP
+					OAuth (ou sa surcouche = OIDC)
+				IdP ↔ annuaire
+					LDAP
+					ActiveDirecory
+					(SCIM)
+				app ↔ API :
+					access token (e.g. JWT)
+					PAS le refresh token NI l'id token (qui doivent rester stocké par l'app)
+			NOTES ADDITIONNELLES :
+				OAuth n'est pas un mécanisme d'authentification. C'est un mécanisme de DÉLÉGATION d'authentification.
+				L'API ne conserve donc aucune donnée de session (stateless)
+				L'API se concentre sur son métier fonctionnel, en ayant délégué la gestion de la sécurité aux autres composants (reverse-proxy, AS, ...)
+				Le reverse-proxy n'est pas obligatoire (mais très courant dans des architectures modernes) : l'API peut aussi faire les vérifications elle-même.
+				C'est l'identité d'un UTILISATEUR (quelqu'un qui s'est authentifié) et non de l'APPLICATION ou du MATÉRIEL, qu'on authentifie.
+					notamment, l'application est considérée comme non-fiable (e.g. si on hardcode une clé d'API dans l'application, celle-ci pourra être récupéré en décompilant l'application)
+					plus précisément, le reverse-proxy autorise tout client qui est détenteur d'un token valide, émis par un auth server de confiance, avec les droits suffisants
+					le token ne garantit PAS que la requête vient de l'app officielle ou d'une app non-modifiée, ou que le device n'est pas compromis
+					(je laisse de côté pour le moment les solutions de type mTLS/attestations matérielles permettant d'authentifier un matériel)
+				Une fois un token émis, ce n'est plus un utilisateur que le reverse-proxy laisse entrer, mais "une requête pourvue d'un token valide signé"
+					conséquence = si un attaquant vole l'access token, il gagne l'accès à l'API
+					(d'où le fait que l'access token a une durée de vie courte = 5 à 15 min)
+				L'API fait confiance à un émetteur de token précis = l'auth-server à utiliser pour accéder à cette API.
+				Un Auth Server ne "connaît" pas des utilisateurs par magie. Il s'appuie sur une source d'identités (Identity Store).
+				Où vit la base utilisateurs ?
+					Si Keycloak est utilisé comme IdP maître, alors l'équipe IAM gère la base utilisateurs via la base interne de Keycloak (rare)
+					Dans un SI réel, Keycloak est presque toujours fédéré à un annuaire existant, et n'est pas la source d'identité.
+				Conséquences archi :
+					l'application n'est pas considérée comme fiable, et ça n'est pas elle qu'on authentifie : c'est une identité (humain ou service) qu'on authentifie
+					le reverse-proxy doit avoir été préalablement configuré pour faire confiance à un auth-server donné
+					un keycloak est le moyen par lequel les utilisateurs de l'app s'authentifient (les apps ne connaissent que keycloak, et d'ailleurs, l'app n'a pas de formulaire de login : elle redirige vers celui de keycloak)
+					la base de référence des utilisateurs (et de leurs moyens d'authentification) est externe à keycloak
+					keycloak va piocher dedans pour authentifier l'utilisateur (plus exactement, il délègue la vérification d'identité et reçoit une preuve d'identité)
+					d'ailleurs, keycloack fait un mapping d'identité entre celle dans l'identity store (utilisée pour s'authentifier) et celle pour le SI (utilisée p.ex. pour associer des rôles et des autorisations)
+					note : ça permet p.ex. de changer d'identity-store sans que l'application ne le voie, vu que la couche keycloak découple les deux
+				C'est certes via keycloak que les utilisateurs s'authentifient (p.ex. en utilisant un formulaire keycloak : les apps ne "voient" que le formulaire keycloak)...
+				... mais ça n'est pas la base interne d'utilisateurs dans keycloak qui est la source de référence pour la liste des utilisateurs (et leurs moyens de se connecter)
+				p.ex., lorsqu'il valide le login d'un utilisateur, keycloak utilise en sous-main (et de façon invisible pour l'app client) des données externes, qui proviennent d'un Identity Store externe.
+		Les différents rôles et leurs responsabilités :
+			Annuaire/Identity Store = base de données des identités, jamais exposée à l'app :
+				pas de tokens
+				pas de droits d'accès
+				pas d'OAuth ni d'OIDC
+			IdP = composant responsable de l'authentification :
+				authentifie l'utilisateur en appliquant les politiques d'authentification (e.g. MFA)
+				retourne une assertion d'identité (e.g. Id token)
+			Auth Server (AS) = façade pour l'application (du point de vue de l'app, c'est l'IdP) + délivre les tokens :
+				émet des tokens d'accès pour des clients et des APIs.
+				peut déléguer l'authentification à un IdP externe (fédération)
+			IAM = attribuer des rôles ou des caractéristiques d'authorization à un user
+				sait si tel utilisateur est un administrateur ou non
+				dans le cas du multitenant, sait à quel tenant appartient un user
+		Là où c'est compliqué, c'est que certains produits ont plusieurs rôles :
+			l'AS et l'IdP sont souvent le même composant (sauf s'il y a délégation à un IdP externe)
+			keycloak ou microsoft Entra peuvent jouer les 4 rôles :
+				annuaire = base utilisateur
+				IdP = effectue l'authentification
+				IAM = attribue les propriétés d'authorization
+				AS = émet les tokens
+		Les différents protocoles OAuth, OIDC (SAML), LDAP/AD...
+			OAuth :
+				OAuth2 standardise :
+					Comment un client obtient un access token auprès de l'auth-server
+					Comment un client utilise cet access token pour accéder à une API
+				OAuth2 ne standardise pas :
+					la façon dont le client s'authentifie auprès de l'auth server
+					le format du token
+					le contenu métier du token (e.g. la définition des permissions du Bearer)
+			OIDC (= OpenId Connect) = une surcouche à OAuth :
+				OIDC standardise :
+					le process
+					les claims utilisateur (sub, email, name)
+					un Id token
+					le endpoints (/authorize, /token, /userinfo)
+					la découverte : /.well-known/openid-configuration
+				OIDC ne standardise pas (et laisse sous la responsabilité de l'IdP) :
+					Mot de passe ?
+					MFA ?
+					Biométrie ?
+					Certificat ?
+					Smartcard ?
+				Alternatives = autres protocoles pour l'authentification :
+					SAML (XML, répandu en SSO entreprise ; encore très présent, mais moins moderne ; plutôt dédié aux serveurs web, là où OIDC est dédié à l'app)
+					Kerberos / NTLM (Environnements Windows, Intranet, très spécifique)
+					LDAP / Active Directory (Annuaire ; pas un protocole d'auth "web", souvent derrière un IdP)
+					Certificats (X.509)
+			OAuth vs. OIDC :
+				OAuth standardise un token offrant à un client l'accès à une API
+				OIDC standardise un token indiquant à l'app cliente qui est son utilisateur
+			LDAP / AD :
+				protocole pour exposer un annuaire (= une simple base utilisateurs, qui ne fait pas l'authentification, et encore moins l'émission de tokens)
+			Standardisation des "moyens" d'authentification ? e.g. d'un formulaire de login ?
+				"comment l'utilisateur s'authentifie" est beaucoup moins standardisé que le "comment on échange une identité"
+				TL;DR = c'est l'IdP qui décide de la façon dont l'utilisateur s'authentifie.
+				Ce qui est standardisé = MFA / facteurs :
+					Standard         | Usage
+					=================|===========================
+					TOTP (RFC 6238)  | Codes temporaires
+					HOTP (RFC 4226)  | OTP
+					FIDO2 / WebAuthn | Clés, biométrie    <------- standard moderne fort
+					U2F              | Ancien FIDO
+					SMS OTP          | Déconseillé mais courant
+				Ce qui n'est PAS standardisé (chaque IdP décide)
+					UX d'authentification
+					Choix des facteurs
+					Politique MFA
+					Séquences exactes (step‑up, fallback)
+		COMMENTAIRES :
+			intérêts d'utiliser un Auth Server :
+				intérêt pricnipal = on découple le métier d'authentification et le métier de l'API : l'API n'a plus à savoir comment authentifier un utilisateur
+				gouvernance centralisée = toutes les policies passent par l'AS
+				facile de faire du multi-IdP
+			OIDC/OAuth est utilisé deux fois de façon INDÉPENDANTE :
+				utilisation 1 = entre l'app (client OIDC) et l'auth server (qui joue le rôle d'IdP du point de vue de l'app)
+				utilisation 2 = entre l'auth server (client OIDC) et l'IdP
+			OIDC/OAuth est le protocole exposé au client (utilisé entre l'app et l'Auth Server), peu importe le protocole utilisé en backend (qui peut p.ex. être SAML)
+				l'app cliente ne parle qu'avec l'auth server (elle ne sait pas si l'IdP est externe ou non)
+			Lorsque OIDC est utilisé, le client récupère DEUX tokens :
+				ID token (à destination du client), qui dit "cet utilisateur s'est authentifié", qui permet à l'app client de savoir qui est son utilisateur
+				access token (à destination de l'API), qui dit "laisse entrer le porteur de ce token, avec tels droits"
+			l'ID token envoyé par l'IdP à l'AS est privé : le client ne le verra jamais (et encore moins l'API)
+				l'auth server émet son propre Id Token, qui est a priori différent de celui qu'il reçoit de la part de l'IdP externe
+				en effet, même si l'AS délègue l'authentification à un IdP externe, il ne se contente pas de faire passe-plat, et ajoute sa tambouille :
+					validation
+					mapping d'identité
+					transformation
+					etc.
+			détail = apparemment, l'AS ne renvoie pas immédiatement un access token, il renvoie un authorization code qui permet à l'app de requêter un access-token
+				(je ne creuse pas, ça semble être pour éviter que l'access token ne circule trop)
+			précision = le formulaire de login présenté à l'utilisateur appartient à l'IdP :
+				L'utilisateur se connecte toujours là où l'identité est vérifiée (IdP), pas là où le token est émis (AuthServer).
+				typiquement, sur un client web desktop, l'utilisateur est redirigé vers une URL qui appartient à l'IdP
+				(et ça n'est que si l'Auth Server joue aussi le rôle d'IdP que le formulaire de login appartient à l'auth server)
+				dans la même veine : le formulaire de login n'appartient pas à l'app ou à l'API (sinon l'app deviendrait un IdP, or l'objectif d'OAuth/OIDC est justement de déporter l'authentification ailleurs)
+				C'est précisément ce que OAuth / OIDC cherchent à éviter.
+			SUBQUESTION = différence entre l'annuaire et l'IAM :
+				TL;DR = l'annuaire est une simple base utilisateurs, l'IAM va plus loin, et sait notamment attribuer des rôles lié à la sécurité.
+				L'annuaire ne contient pas les policies à appliquer (e.g. la règle métier qui dit qu'il existe des utilisateurs administrateurs, et d'autres non)
+				De plus, parmi les entités IAM, on retrouve p.ex. des services backends, qui ne sont pas des users de l'annuaire.
+				----------------------------------------
+				✅ Ce que l'annuaire fait bien
+					Authentifier un utilisateur
+					Fournir une identité (user_id)
+					Stocker des attributs de profil
+				❌ Ce que l'annuaire ne fait pas
+					Décider ce à quoi l'utilisateur a accès
+					Définir des règles métier
+					Gérer les droits applicatifs fins
+					Connaître les APIs
+			SUBQUESTION = comment faire parler un produit standard (e.g. keycloak) qui serait à la fois IdP et AS, avec une base de données d'utilisateurs custom (qui joue le rôle d'annuaire) ?
+				possibilité 1 = faire une surcouche à ma BDD qui sait parler le LDAP
+				possibilité 2 = faire un plugin keycloak spécifique pour parler à ma base
+					dans keycloak, SPI = Service Provider Interface = un contrat (interfaces + lifecycle) que Keycloak expose pour pouvoir brancher sa propre implémentation.
+					(SPI n'est pas un terme spécifique à keycloak, c'est très utilisé, notamment en java)
+	Qu'apporte OAuth ? Quelle différence conceptuelle entre utiliser BasicAuth ou utiliser OAuth pour une API ?
+		TL;DR = OAuth permet de faire de la DÉLÉGATION d'identité : ce n'est plus l'API qui authentifie l'utilisateur, c'est un service tiers.
+		POSITION DU PROBLÈME = mon questionnement :
+			si on prend un raccourci est que le composant qui authentifie l'utilisateur (+ délivre les tokens) est l'API elle-même
+			alors je ne vois pas vraiment de différence conceptuelle importante entre utiliser Basic Auth et utiliser OAuth ou un token JWT
+			le seul point qui change, c'est qu'avec OAuth ça se fait en deux étapes : au lieu d'accéder directement à l'API, le client :
+				commence par faire une première requête pour récupérer un token
+				puis fait une seconde requête (ou plusieurs) où il joint le token
+			Certes, c'est un peu mieux car le login+password ne circule qu'une fois + le token est valable moins longtemps...
+			...mais du point de vue de la difficulté d'accès, ou des infos à transmettre à un client extérieur qui veut requêter notre API, j'ai l'impression que ça ne change rien
+			en effet, dans les deux cas :
+				1. il faut qu'on configure notre API pour qu'elle ait connaissance du fait que le couple login+password est autorisé à accéder à l'API
+				2. il faut qu'on communique le couple login+password au partenaire extérieur (au client) afin qu'il l'utilise pour requêter notre API
+				3. si on veut révoquer ses droits d'accès, il faut reconfigurer notre API pour interdire l'accès à ce couple login+password
+		NDM : le point clé d'OAuth, c'est de pouvoir DÉLÉGUER l'authentification = la faire faire par quelqu'un d'autre.
+			donc aucun intérêt si c'est aussi l'API qui vérifie l'identité : c'est normal que je voie peu l'intérêt dans mon questionnement
+			la clé, c'est que le client s'authentifie auprès d'un AUTRE composant (= un auth-server)
+			(OAuth n'est PAS un protocole d'AUTHENTIFICATION)
+		OAuth a donc de l'intérêt si l'authentification est faite par un auth-server séparé, ça apporte des choses que BasicAuth ne peut pas faire :
+			séparer identité et accès = l'API peut ne connaître que l'accès (JWT), sans avoir à connaître l'identité (le login+password sert à prouver l'identité à l'auth-server)
+			scopes et permissions     = là où BasicAuth est booléen (full accès ou aucun accès), le token JWT peut être porteur d'authorizations fines
+			délégation / fédération   = délégation de l'authentification à un tiers, IdP externe, etc.
+			révocation partielle      = si un token a été volé, on révoque CE token, sans avoir besoin de toucher au secret principal (avec BasicAuth, il faut changer le secret   = le password)
+			audit et traçabilité      = tokens identifiables, scopes, expiration vs. basic auth                                                                                    = même login partout et peu de contexte
+		Pour plusieurs de ces points, OAuth n'est pas indispensable, on pourrait envisager les implémenter "manuellement" côté API, face à un client qui s'authentifie avec login+password :
+			scopes et permissions (e.g. l'API définit des scopes fins en fonctions du login, qui peuvent évoluer de façon dynamique)
+			délégation / fédération (e.g. l'API ne vérifie pas elle-même que le password est le bon, mais le délègue à un IdP)
+			audit et traçabilité (e.g. l'API logge les requêtes associées au login+password)
+		Du coup, qu'apporte OAuth ?
+			principalement = un moyen standard de faire de la délégation d'identité : il devient POSSIBLE qu'un service tiers (un auth-server) gère l'authentification, pour que ce ne soit pas l'API qui le fasse
+			également = OAuth autorise à sortir ce travail dans un composant dédié, et à transmettre le résultat (authentifiation passée avec succès, autorisations fines, etc.) à l'API via le token JWT
+			dit autrement : Oauth rend industrialisable, sécurisé et interopérable ce qui serait pénible et risqué à refaire partout.
+		Conséquence positives :
+			découplage technique des responsabilités : l'API ne gère plus rien lié à la sécurité : elle n'a pas à communiquer avec IdP + n'a pas à connaître quoi que ce soit lié à authentification (e.g. elle ne connaît PAS login/password : surface d'attaque plus réduite)
+			découplage organisationnel : l'API peut être gérer par une équipe métier, et l'auth server par une équipe sécu/IAM
+			avec OAuth, l'identité est vérifiable par l'API sans travail de sa part + sans appel réseau vers un IdP ; dit autrement, le token matérialise le RÉSULTAT de l'authentification qui n'est plus à faire
+				(par contraste, dans le cadre de BasicAuth, il faut refaire la vérification pour chaque appel API ; si celle-ci nécessite de communiquer avec un IdP externe, il faut faire un appel réseau pour chaque appel API)
+			processus standardisé (si on bricole, on fait de l'OAuth maison)
+	Comment réserver l'utilisation d'une API backend à quelques matériels en particulier (e.g. certains smartphones) ?
+		(précision : on veut restreindre l'accès à un MATÉRIEL donné et non à un UTILISATEUR donné, ce qui pourrait se gérer par de l'authentification)
+			sont donc exclues les solutions à base d'auth-server (keycloak, OAuth2) qui permettent d'identifier un UTILISATEUR, pas un matériel ou une app
+		QUESTION = Est-il possible d'adopter une approche où le backend maintient une whitelist des adresses MAC autorisées, et rejette toutes les requêtes qui n'ont pas la bonne adresse MAC ?
+			RÉPONSE = non : les adresses MAC ne traversent pas Internet : elles ne sont visibles que sur le lien local (LAN / Wi‑Fi / cellulaire) :
+				Smartphone → Box → Routeur FAI → ... → Load balancer → Serveur API
+				À chaque saut, l’en-tête Ethernet (donc la MAC source/destination) est réécrit.
+				Le serveur ne verra jamais la MAC du smartphone.
+				----------------------------------------
+				et même si c'était possible, c'est nul d'un point de vue sécurité :
+					Une MAC est trivialement usurpable
+					Les OS mobiles permettent le MAC randomization
+					Sur mobile (4G/5G), la MAC change régulièrement
+		de meilleurs alternatives (à creuser le cas échéant) permettent de restreindre l'utilisation d'une API à un matériel en particulier :
+			mTLS = le client prouve qu'il est lui-même avec un certificat
+			attestation matérielle = grâce à un matériel cryptographique sur le smartphone, un tiers de confiance peut prouver que "cette requête provient d’une application légitime, s’exécutant sur un appareil physique non compromis"
+			clé API propre au matériel = lors de l'install de l'app sur le matériel, on génère une clé API liée au matériel, et on configure alors le backend pour whitelister cette clé API
+	BasicAuth :
+		BasicAuth est juste une façon de passer un login+password dans une requête
+		en l'occurence, dans un header HTTP :
+			Authorization: Basic <credentials>
+			where <credentials> is the Base64 encoding of ID and password joined by a single colon `:`
+		ATTENTION : en soi, ça n'est pas sécurisé (car le mot-de-passe est en clair) : il faut HTTPS pour que ça soit sécurisé.
+		derrière, l'applicatif (ou un reverse-proxy en frontal) peuvent analyser le header pour autoriser ou rejeter la requête
+		(ça ne règle pas la question de savoir comment l'API ou le reverse-proxy ont connaissance des utilisateurs autorisés)
+	Token "statique" et différence avec un token JWT/OAuth :
+		TL;DR :
+			un token statique (typiquement, une api_key) est une info qui doit être partagée préalablement entre l'application et l'API (e.g. api_key hardcodée dans l'application ou récupérée dynamiquement)
+			un token OAuth/JWT est la matérialisation d'une opération d'authentification "dynamique" (sans que l'application n'ait de connaissance préalable ou de secret partagé)
+			le point crucial, c'est qu'avec un token statique, l'app et l'API partagent le secret d'authentification
+			alors qu'avec un token OAuth, on a pu déléguer l'authentification ailleurs, t utilisr la "matérialisation" pour requêter l'API, sans que l'API ait eu à connaître le secret d'authentification
+		Typiquement, une api_key est un token statique :
+			c'est un secret que le reponsable de l'API doit PARTAGER avec l'application cliente, et il est LONG-LIVED
+				l'app inclut le token statique dans sa requête
+				l'API compare avec ce qu'elle connaît, et si ça matche, autorise l'accès
+			Exemple via HTTP header :
+				GET /api/orders
+				Authorization: ApiKey abcdef123456
+			Exemple via query-param :
+				GET /api/orders?api_key=abcdef123456
+		Peut-être de façon un peu contre-intuitive, faire du BasicAuth est AUSSI considéré comme un token statique :
+			le password est un secret partagé entre l'API et l'app cliente
+			et surtout, ce qui range BasicAuth plutôt dans les tokens statiques, c'est que l'authentification n'est pas faite auprès d'un auth-server séparé :
+				l'authentification est faite auprès de l'API qui doit donc avoir connaissance du password (mélange des responsabilités)
+				le secret (= le password) est envoyé à chaque requête (au lieu d'une unique fois avec un auth-server)
+			ici aussi, il y a PARTAGE (passowrd partagé entre l'API et l'app) + le secret est LONG-LIVED
+			Conséquences :
+				surface d'attaque importante
+				risque de logger le secret par inadvertance
+				rotation difficile (NDM : ou plutôt, à implémenter "manuellement" soi-même)
+				pas de révocation fine (NDM : ou plutôt, à implémenter "manuellement" soi-même)
+				pas de scopes (NDM : ou plutôt, à implémenter "manuellement" soi-même)
+		SOUS-SUJET : token != identité :
+			Celui qui possède le token peut l'utiliser, quelle que soit son identité.
+				ce qui prouve l'identité, ce n'est pas le JWT, c'est le fait que l'Auth Server (qui a vérifié l'identité) l'ait émis ; le JWT n'est que la matérialisation de cette vérification
+			QUESTION = c'est pareil pour le mot de passe non ? Celui qui possède le couple login+mot de passe peut l'utiliser, quelle que soit son identité ?
+			✅ Ce que l'API peut affirmer
+				Ce token correspond à une identité authentifiée par mon Auth Server à telle date, avec tels droits.
+			❌ Ce qu'elle ne peut PAS affirmer
+				Ce token m'a été envoyé par le client légitime qui s'est authentifié auprès de l'auth-server (NDM : d'où l'importance de ne pas se faire voler ses JWT)
+		TABLEAU COMPARATIF :
+			TOKEN STATIQUE        |  TOKEN JWT
+			----------------------|-----------
+			Partagé statiquement  |  Émis dynamiquement
+			Long‑lived            |  Court‑lived
+			Non traçable          |  Traçable
+			Pas d'autorité        |  Autorité centrale
+			Pas de contexte       |  Claims
+			Révocation difficile  |  Révocation (indirecte)
+	Dans la mesure où être bearer d'un token JWT n'est pas une preuve d'identité, comment lier le token au client ?
+		RAPPEL : OAuth / JWT transforme un secret partagé (token statique) en une délégation d'identité (token dynamique émis après avoir vérifié l'identité), mais pas en une preuve cryptographique du porteur.
+			Un access token prouve qu'il a été émis, pas qu'il est utilisé par son détenteur légitime : quiconque possède le token (y compris un attaquant qui l'a volé) peut l'utiliser.
+				vol en mémoire
+				vol via MITM
+				vol via logs
+				replay
+			➡️ L'API ne sait pas qui utilise réellement le token.
+		principe du token binding / proof‑of‑possession (PoP) = pouvoir associer un token au client pour lequel il a été émis
+			tous les moyens ci-dessous consistent donc à faire en sorte que l'API puisse vérifier que le client qui le requête via le token JWT est bien celui qui s'est authentifié auprès de l'auth-server pour obtenir ledit token JWT
+			en résumé, même si le token est volé, l'API pourra vérifier qu'il ne provient pas de son propriétaire légitime
+		moyens :
+			DPoP (Demonstration of Proof‑of‑Possession)
+				Lors de la demande de token, le client envoie une clé publique, et l'auth-server émet un token *pour cette clé*
+				À chaque requête API, le client signe la requête (ce qui prouve que la requête a été émise par le détenteur de la clé publique = celui qui s'est authentifié auprès de l'auth server)
+			TLS Token Binding = apparemment quasi-abandonné
+				le token émis est lié à la session TLS
+				le client prouve la possession de la clé TLS
+			Attestation device / app
+				Le client prouve qu'il tourne sur un device / app “intègre”.
+				Le device génère une preuve cryptographique signée par google ou apple
+				L'API (ou l'Auth Server) vérifie l'attestation
+				NDM : en gros, le matériel (ou l'OS ?) fournit un moyen non-falsifiable de prouver l'identité du device, qu'on peut communiquer à l'auth-server, qui peut donc l'inclure dans le token JWT.
+			IP binding :
+				Le token n'est accepté par l'API que depuis certaines IPs.
+				(très fragile)
+	SOUS-SUJET = qui a la responsabilités des policies ?
+		POSITION DU PROBLÈME :
+			supposons que sur un site de blogging, j'aie déjà deux rôles "administrateur" et "reader"
+			supposons que je veuille ajouter un rôle "éditeur", je l'ajoute où en premier :
+				dans l'API (qui vérifie le rôle) ?
+				dans l'IAM (qui attribue les rôles aux users) ?
+		Conceptuellement, on commence plutôt dans l'API, puis on met l'IAM en conformité.
+		Les policies sont partagées entre API et IAM (mais au final, c'est l'API qui décidera qui elle laisse entrer)
+		Qui décide de quoi :
+			Signification métier d’un rôle = API
+			Existence d’un rôle            = IAM
+			Attribution d’un rôle          = IAM
+			Effet d’un rôle sur une route  = API
+	SOUS-SUJET = qui est responsable de savoir que tel utilisateur est administrateur et tel autre ne l'est pas ?
+		réponse = "ça dépend"...
+		si ce caractère "admin" fait partie de l'identité d'une personne, ça va dans l'annuaire :
+			e.g. les membres de l'équipe IT
+			ça a du sens côté RH
+			ça peut être commun à plusieurs applications
+		si ce caractère "admin" est défini au sens fonctionnel (e.g. admin sur un blog) et peut être mis ou enlevé à une personne, ça va dans l'IAM :
+			n'a pas de sens au niveau RH
+			spécifique à une application
+	SOUS-SUJET = les façons pour l'AS de déléguer l'IAM + les protocoles qui vont avec :
+		Approche 1 — Autorisation au moment de l’émission du token ; Principe = L’Auth Server Authentifie l’utilisateur (via IdP) Appelle un service IAM externe
+			Récupère :
+				rôles
+				groupes
+				permissions
+			Les injecte dans le token
+			----------------------------------------
+			avantage = simple et stateless
+			inconvénient = les droits sont figés pendant la durée de vie du token
+			----------------------------------------
+			STANDARD ? A priori, il n'existe pas de standard pour la communication entre l'auth server et l'IAM externe.
+		Approche 2 — Autorisation au moment de l’accès à l’API ; Principe (PDP / PEP)
+			L’API devient Policy Enforcement Point (PEP)
+			L’IAM est un Policy Decision Point (PDP)
+			À chaque requête sensible : l’API demande :
+				“Cet utilisateur a‑t‑il le droit ?”
+			----------------------------------------
+			avantage = droits dyamiques + révocation immédiate
+			inconvénient = un appel réseau supplémentaire
+			----------------------------------------
+			STANDARD ? oui :
+				XACML (historique, lourd)
+				OPA / Rego (moderne, très utilisé)
+				ALFA / Cedar / maison
+		Approche 3 la plus fréquente :
+			Autorisation grossière dans le token, fine à l’API
+			Token contient :
+				rôles
+				tenant (NDM : dans un contexte multitenant, l'API doit récupérer le tenant depuis le token signé de l'auth server, sans faire confiance au client)
+			L’API applique :
+				règles contextuelles
+				règles métier
+	SOUS-SUJET = scopes vs. rôles
+		SCOPE :
+			Un scope décrit ce que le token est autorisé à faire sur une API.
+				Défini par l’API
+				Accordé par l’Auth Server
+				Exprimé comme une capacité
+			Exemples :
+				orders:read
+				orders:write
+				users:admin
+		RÔLE :
+			Un rôle décrit ce qu’est une identité dans ton modèle métier.
+				Défini par le métier
+				Attaché à un utilisateur ou un service
+				Stable dans le temps
+			Exemples :
+				ADMIN
+				DRIVER
+				BILLING_SERVICE
+		GUIDELINE = les rôles servent à calculer des scopes, pas à les remplacer.
+			Les rôles décrivent qui tu es.
+			Les scopes décrivent ce que tu peux faire ici.
+		Tableau récapitulatif :
+			Axe             | Scope           | Rôle
+			================|=================|=====================
+			Nature          | Technique       | Métier
+			Portée          | API / ressource | Domaine fonctionnel
+			Granularité     | Fine            | Plus grossière
+			Qui le définit  | API             | Métier
+			Volatilité      | Évolue souvent  | Évolue lentement
+			Usage principal | Autorisation    | Modélisation
+		Qui est source de vérité sur scopes et rôles ?
+			rôle = stockés dans l'IAM, avec les appartenance (tel user a tel rôle)
+			scopes = appliqués par l'auth server selon les infos contenues dans l'IAM
+		Dit autrement, c'est l'auth server qui attribue les scopes dans le token JWT, mais en allant lire les infos dans l'IAM.
+	SOUS-SUJET = PDP vs. PEP :
+		PDP = Policy Decision Point
+			Le PEP est le composant qui intercepte une requête et applique la décision d’autorisation.
+			Il bloque ou laisse passer
+			Il est au plus près de la ressource
+			Il n’invente pas les règles , il les applique
+		PEP = Policy Enforcement Point :
+			Le PDP est le composant qui décide si l’accès est autorisé ou non, selon des politiques.
+			Il évalue des règles
+			Il retourne une décision = Permit / Deny / NotApplicable / Indeterminate
+		Le PEP sera l'API gateway ou le middleware de sécurité.
+		Le PDP est soit intégré au PEP (pour les archis simples), soit un composant indépendant si les règles sont complexes à exprimer :
+			OPA (Open Policy Agent)
+			Keycloak Authorization Services
+			Auth0 Fine‑Grained Authorization
+		Exemple : Le PDP reçoit :
+			l’identité (JWT claims)
+			la ressource ( /orders/123)
+			l’action ( READ, WRITE)
+			le contexte (tenant, heure, IP)
+		Il applique des règles comme :
+			permit if user.role == "ADMIN" and resource.tenant == user.tenant and time < 18:00
+	SOUS-SUJET = Cedar :
+		TL;DR = c'est un outil qui permt d'implémntr les vérifications côté API.
+		CEDAR est un langage de politiques d’autorisation (policy language), conçu pour exprimer et évaluer des règles d’accès.
+			Déclaratif.
+			Indépendant du code applicatif.
+		Sans CEDAR :
+			if (user.role == ADMIN && order.owner == user.id) { ... }
+		Avec CEDAR :
+			permit (
+			  principal == User::"user-123",
+			  action == Action::"ReadOrder",
+			  resource == Order::"order-456"
+			)
+			when {
+			  resource.tenant == principal.tenant
+			};
+
+
+FTPS :
+	FTPES :
+		Connexion FTP en clair (port 21)
+		Commande "AUTH TLS"
+		Handshake TLS
+		FTP continue dans un tunnel TLS
+	Cas standard (le plus courant)
+		Le serveur présente son certificat
+		Le client ne présente rien
+		Authentification FTP = login / mot de passe
+	Cas avec authentification mutuelle TLS (mTLS)
+		pendant le handshake TLS, le serveur demande : « Client, prouve ton identité avec un certificat »
+	Pourquoi utiliser un certificat dans un client FTP ?
+		99% du temps, un serveur FTP a un login+password
+		mais parfois, on a un serveur FTP sans login+password, et qui n'accepte que des connexions avec un certificat
+		typiquement la politique d'accès sera :
+			“Tout appareil ayant un certificat signé par notre CA peut déposer des fichiers.”
+		IMPORTANT = ce certificat et cette clé ne servent PAS à chiffrer la communication avec FTP (ce qui est fait plus classiquement avec la connexion TLS) :
+			elle sert à prouver l'identité du client !
+	----------------------------------------
+	FTPS vs. SFTP
+		FTPS = FTP over TLS
+			FTPES = explicite (le plus courant aujourd'hui, vs. implicite)
+		SFTP = SSH FileTransferProtocole
+			aucun lien avec FTP, c'est un sous-protocole de SSH
+
+
+Zero Trust :
+	TL;DR :
+		Aucune requête, aucun utilisateur, aucun service n’est implicitement digne de confiance, même s’il est “à l’intérieur” du système .
+	chaque requête est suspecte
+	chaque accès est vérifié
+	chaque autorisation est minimale
+	chaque action est traçable
+	----------------------------------------
+	5 piliers :
+		L’identité devient le nouveau périmètre de sécurité
+			Authentification forte
+			Tokens courts
+			Identités vérifiables
+		La confiance n’est jamais acquise définitivement
+			token à chaque requête
+			expiration rapide
+			re‑évaluation permanente
+		Principe du moindre privilège
+			scopes / rôles / autorisations contextuelles
+			Pas d’accès global
+			Pas d’accès implicite
+		Micro-segmentation :
+			chaque service a ses propres règles
+			pas de “réseau plat”
+			pas de déplacement latéral facile
+		Observabilité et réponse
+			logs
+			audit
+			détection d’anomalies
+			révocation rapide
+	Ce que ça implique pour une API
+		Aucune requête sans authentification
+		Aucun accès basé sur l’IP ou le réseau
+		Token obligatoire à chaque appel
+		Vérification stricte ( iss, aud, scope)
+		Pas de session serveur
+		Pas de confiance implicite entre services
+		(modèle OAuth2 + JWT est déjà un modèle ZeroTrust)
+	Zero Trust, c’est concevoir un système comme s’il était déjà compromis, et vérifier chaque accès comme s’il pouvait être malveillant.
+
+
+Quelques définitions :
+	IAM = Identity and Access Management
+	Format PEM :
+		format permettant de stocker des certificats textuellement
+		couramment utilisé côté serveur, mais ça n'est pas sous cette forme que circulent les certificats lors des échanges TLS
+	Certificat électronique :
+		Un certificat électronique (aussi appelé certificat numérique ou certificat de clé publique) peut être vu comme une carte d'identité numérique.
+		Il est utilisé principalement pour identifier et authentifier une personne physique ou morale.
+		Il est signé par un tiers de confiance qui atteste du lien entre l'identité physique et l'entité numérique (virtuelle).
+	CSR = Certificate Signing Request :
+		Ce qu'on envoie à une CA, ça n'est pas sa clé publique brute, c'est une CSR = Certificate Signing Request
+		C'est une façon de demander "Madame la CA, veux-tu bien signer mon certificat ?"
+	PKI (éventuellement privée) :
+		TL;DR = c'est une infrastructure interne qui permet de délivrer des certificats.
+		PKI : Public Key Infrastructure
+		Une PKI est l’ensemble des composants techniques, humains et procéduraux permettant de gérer des clés publiques et des certificats numériques, à grande échelle et de manière fiable.
+			CA (Certificate Authority)  → Signe les certificats
+			RA (Registration Authority) → Vérifie l’identité des demandeurs
+			Certificats X.509           → Lient identité ↔ clé publique
+			Clés privées                → Preuve de possession
+			CRL / OCSP                  → Révocation
+			Politiques (CP / CPS)       → Règles de sécurité
+			Outils                      → Génération, rotation, audit
+		PKI publiques :
+			Let's Encrypt
+			DigiCert
+			GlobalSign
+		Une PKI privée/interne est une PKI dont les CA ne sont reconnues que dans un périmètre contrôlé.
+			la différence, c'est que le client doit installer la CA racine (vu qu'elle est privée)
+	HSM — Hardware Security Module
+		POSITION DU PROBLÈME = un fichier .pem sur disque n’est pas une protection suffisante.
+		Un HSM est un coffre‑fort cryptographique : il empêche l’exposition des clés privées tout en permettant leur usage contrôlé (signature, chiffrement).
+		Un HSM est un composant matériel (ou quasi‑matériel) dédié à la protection et à l’usage sécurisé des clés cryptographiques.
+			c’est l’endroit où vivent les clés privées que tu ne dois jamais perdre ni exposer.
+		Le HSM protège contre :
+			vol disque
+			dump mémoire
+			compromission OS
+	KMS = Key Management Service
+		Un KMS (Key Management Service) est un service dédié à la gestion des clés cryptographiques .
+		Son rôle est de créer, stocker, protéger et utiliser des clés sans jamais les exposer directement aux applications.
+		----------------------------------------
+		Un KMS permet de :
+			générer des clés (RSA, EC, AES…)
+			stocker les clés de façon sécurisée
+			restreindre l’usage des clés (signer, chiffrer, déchiffrer)
+			faire des opérations crypto sans exposer la clé
+			faire de la rotation automatique
+			auditer l’usage des clés
+		👉 En clair : c’est le coffre‑fort cryptographique de ton système.
+		différence HSM / KMS :
+			HSM = Hardware Security Module :
+				Boîtier matériel
+				Sécurité maximale
+				Coûteux
+				Très utilisé en banque
+			KMS cloud
+				Service managé
+				Plus simple à opérer
+				S’appuie souvent sur des HSM internes
+
