@@ -12,6 +12,8 @@
 * [Définir des hooks custom](#définir-des-hooks-custom)
 * [Ignorer les commits de formattage lorsqu'on git blame](#ignorer-les-commits-de-formattage-lorsquon-git-blame)
 * [Configuration git blame](#configuration-git-blame)
+* [Initialiser les submodules en réécrivant récursivement l'URL de HTTPS vers SSH](#initialiser-les-submodules-en-réécrivant-récursivement-lurl-de-https-vers-ssh)
+
 
 
 # Utiliser rebase --onto
@@ -275,4 +277,19 @@ git config blame.ignoreRevsFile the_commits_to_ignore_with_git_blame
 
 (à l'intérieur, une liste des ids sha ; les commentaires sont ignorés)
 
+
+# Initialiser les submodules en réécrivant récursivement l'URL de HTTPS vers SSH
+
+Mon besoin :
+
+- je veux initializer un repo qui a des submodules
+- les submodules sont récursifs : ces submodules ont eux-mêmes des submodules, etc.
+- tous les submodules (ceux de niveaux 1, comme ceux de niveaux plus profonds) ont leur URL configurée en HTTPS : par défaut le clone aura lieu avec HTTPS
+- ce que je veux = cloner tous les submodules en SSH
+
+Solution = réécrire à la volée l'URL lors de l'init des submodules :
+
+```sh
+git -c url."git@gitlab.com:".insteadOf="https://gitlab.com/" submodule update --init --recursive
+```
 
