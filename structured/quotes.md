@@ -28,3 +28,5 @@ The design of the database is far more important than the design of the software
 ([source](https://www.ben-morris.com/enterprise-architecture-anti-patterns/))
 
 
+For each desired change, make the change easy (warning: this may be hard), then make the easy change. _Kent BECK_ ([source](https://x.com/KentBeck/status/250733358307500032))
+
