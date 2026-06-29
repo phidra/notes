@@ -22,6 +22,8 @@ Comme player, j'utilise `pw-play`, dispo via pipewire :
 
 ```
 sudo apt install pipewire
+sudo apt install wireplumber
+systemctl --user restart wireplumber
 ```
 
 Derrière, je créé un plugin `~/.config/opencode/plugins/sound.js` :
