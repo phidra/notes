@@ -15,6 +15,14 @@ curl -fsSL https://opencode.ai/install | bash
 ~/.config/opencode/opencode.jsonc  # json avec commentaires
 ```
 
+## Débugger la config
+
+Pour afficher la configuration effectivement utilisée (qui résulte du merge du fichier de conf, des plugins, des envvars, etc.) :
+
+```sh
+opencode debug config
+```
+
 ## Afficher les lignes copiées dans le prompt
 
 Ajouter ceci au fichier de config :
@@ -26,6 +34,38 @@ Ajouter ceci au fichier de config :
   }
 }
 ```
+
+# Choix des modèles
+
+## Connaître les modèles disponibles
+
+La clé à renseigner dans le fichier de conf est donnée par :
+
+```sh
+# lister tous les modèles :
+opencode models
+
+# lister les modèles d'un provider en particulier :
+opencode models opencode-go
+```
+
+
+## Configurer les modèles des agents primaires
+
+Dans le fichier de config :
+
+```json
+"agent": {
+  "plan": {
+    "model": "opencode-go/glm-5.2"
+  },
+  "build": {
+    "model": "opencode-go/deepseek-v4-pro"
+  }
+}
+
+```
+
 
 # Plugins
 
