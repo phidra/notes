@@ -6,6 +6,27 @@ J'ai suivi la doc : https://opencode.ai/docs/en/
 curl -fsSL https://opencode.ai/install | bash
 ```
 
+# Config
+
+## Fichier de config
+
+```sh
+~/.config/opencode/opencode.json   # json classique
+~/.config/opencode/opencode.jsonc  # json avec commentaires
+```
+
+## Afficher les lignes copiées dans le prompt
+
+Ajouter ceci au fichier de config :
+
+```json
+{
+  "experimental": {
+    "disable_paste_summary": true
+  }
+}
+```
+
 # Plugins
 
 **Créer un plugin** = il suffit de dropper un fichier javascript `myplugin.js` (ou `myplugin.ts` en typescript) dans un de ces répertoires :
