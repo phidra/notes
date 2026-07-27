@@ -740,3 +740,51 @@ NOTES TECH> DevOps SRE vs. DevOps CRE :
 		en ligne à 99,99 % → bon score SRE
 		mais avec des temps de réponse très lents sur le parcours de paiement → mauvais score CRE
 
+
+NOTES TECH> définition d'un cloud :
+	QUESTION : "si dans mes locaux, j'ai un cluster VMWare avec un hyperviseur qui gère des VM, ai-je un cloud privé ?"
+		réponse = non, pas forcément
+		"cloud", c'est surtout le fait d'accéder aux ressources "à la demande" plutôt que "où sont les ressources"
+		si pour disposer d'une VM sur le cluster VMWare, une équipe doit ouvrir un ticket à l'équipe infra, qui lui créera sa machine manuellement -> PAS UN CLOUD PRIVÉ ("juste" de la virtualiation)
+		si pour disposer d'une VM, une équipe peut créer elle-même la VM via une API -> CLOUD PRIVÉ
+	NIST definition of cloud computing :
+		https://csrc.nist.gov/pubs/sp/800/145/final
+		----------------------------------------
+		On-demand self-service = pouvoir acheter des ressources à la demande (e.g. du storage, du CPU) sans passer par un humain
+		Broad network access   = accès par des APIs réseau classiques, sans contraintes sur le client (aussi bien phone, tablette, laptop, workstation)
+		Resource pooling       = logique multi-tenant intrinsèque (les mêmes ressources du fournisseur de cloud sont partagées parmi ses clients)
+		Rapid elasticity       = ressources ajoutées/supprimées rapidement (voire : automatiquement), pour s'adapter dynamiquement à la demande
+		Measured service       = métriques et monitoring sur l'utilisation des ressources et services.
+	autres définitions connexes :
+		on-prem bare-metal = mon app s'exécute sur mon serveur
+		on-prem virtualisé = mon app s'exécute sur une VM qui tourne sur mon hyperviseur sur mon serveur
+
+
+NOTES TECH> les différents XaaS :
+	IAAS (Infrastructure AAS) = le fournisseur me donne une VM
+		note qu'il ne fait rien d'autre : p.ex. c'est à moins d'installer et de gérer l'OS
+	CAAS (Container AAS) = le fournisseur me permet de lancer un (ou plusieurs) containers
+		je peux déployer des images de conteneurs
+		ça peut être simpliste (juste lancer des conteneurs) ou aller jusqu'à du kubernetes managé, en proposant aussi orchestrateur, observabilité, secrets, etc.
+	PAAS (Platform AAS) = le fournisseur me donne accès à un environnement d'exécution (e.g. environnement python ou C#), c.à.d un runtime pour exécuter un artefact applicatif
+		exemple = il me fournit de quoi lancer un serveur fastAPI python
+		je gère mon application, mais pas l'OS et le runtime
+		typiquement, je peux installer une lib python (via pyproject.toml), mais pas un paquet debian
+		(les DB et les MQ sont souvent considérées comme des PAAS plutôt que des SAAS : DBaaS et MQaaS)
+	SAAS (Software AAS) = le fournisseur me donne accès à un logiciel qu'il administre lui-même :
+		Exemples : jira, slack, github, ...
+		c'est une "application managée"
+		J'ai tout de même des choses à gérées : les utilisateurs, le paramétrage fonctionnel, etc.
+		Adapté si mon besoin d'app est standard, et me différencie peu par rapport à mes concurrents.
+	FAAS (Function AAS) = le fournisseur me donne permet d'exécuter une fonction dans un environnement d'exécution éphémère :
+		NOTE : la fonction peut avoir des effets de bord (écrire en base, publier un message, appeler une API)
+		En revanche, elle doit être stateless et idempotente :
+			stateless car l'environnement peut être détruit/recréé à tout moment
+			idempotente car l'exécution est souvent at-least-once, et peut être rejouée
+		ce que je peux vouloir "persister" :
+			configuration/contexte = injecté en envvar
+			données variables nécessaires à l'exécution = stockées dans un système externe (qui, lui, est durable, e.g une BDD)
+			logging = typiquement, on écrit sur stdout, et le runtime d'exécution de la fonction donne accès à ces logs
+		cas d'usage = exécuter un traitement schedulé ou sur événement, avec des pics courts et imprévisibles, sans maintenir un serveur allumé en permanence
+
+
