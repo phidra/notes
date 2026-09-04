@@ -142,7 +142,7 @@ Sinon :
 
 `/undo` et `/redo` = annuler/restaurer le dernier prompt (ou d'autres)
 
-`/fork` pour forker la session à partir d'une de mes questions passées (tout se passe comme si je venais d'entrer la question dans le prompt, sans l'avoir envoyée).
+`/fork` pour forker la session à partir d'une de mes questions passées (tout se passe comme si je venais d'entrer la question dans le prompt, sans l'avoir envoyée : si besoin, `Ctrl+c` pour vider le prompt).
 
 `/sessions` pour ouvrir la vue des sessions
 
