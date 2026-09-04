@@ -110,17 +110,21 @@ export const SoundPlugin = async ({ $ }) => {
 
 Tout est configurable : https://opencode.ai/docs/en/keybinds/
 
-Beaucoup de commandes repose sur un **leader** (par défaut, `CTRL-x`) :
+Beaucoup de commandes repose sur un **leader** (par défaut, `CTRL-x`).
+
+Aide = `LEADER-p(` (pour voir les commandes accessibles)
+
+Shortcuts utiles :
 
 - `LEADER-down` pour voir les agents
     - `Up` (sans LEADER) pour revenir à la vue normale
-- `LEADER-p` pour voir les commandes accessibles
 - `LEADER-b` pour toggle la sidebar
     - utile pour copier-coller des lignes dans le terminal (mais dsi c'est pour le dernier message, `LEADER-y` est mieux !)
 - `LEADER-y` copier dans le presse-papiers le dernier message du LLM
 - `LEADER-x` exporter dans un fichier l'ensemble de la session
 - `LEADER-e` ouvrir un éditeur sur un fichier temporaire
     - possiblement utile pour crafter un prompt (même si je préfère faire ça dans une autre fenêtre
+- `LEADER-l` ouvrir la vue des sessions (depuis laquelle on peut en supprimer avec `Ctrl-d` et en renommer avec `Ctrl+r`)
 
 Sinon :
 
@@ -137,6 +141,20 @@ Sinon :
 # Commandes utiles
 
 `/undo` et `/redo` = annuler/restaurer le dernier prompt (ou d'autres)
+
+`/fork` pour forker la session à partir d'une de mes questions passées (tout se passe comme si je venais d'entrer la question dans le prompt, sans l'avoir envoyée).
+
+`/sessions` pour ouvrir la vue des sessions
+
+# Tips
+
+## Ouvrir une session "temporaire"
+
+Le plus simple est de forker puis supprimer le fork :
+
+- forker toute la session : `/fork` → choisir "Full session"
+- entrer mes questions "temporaires", et échanger librement
+- quand j'ai fini, ouvrir l'éditeur de sessions (`/sessions` ou `LEADER-l`), sélectionner la session forkée (suffixée `(fork #1)`), et la supprimer avec `Ctrl-d` deux fois, puis revenir à la session d'avant
 
 # MCP
 
