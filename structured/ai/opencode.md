@@ -150,7 +150,11 @@ Sinon :
 
 ## Ouvrir une session "temporaire"
 
-Le plus simple est de forker puis supprimer le fork :
+Il n'existe pas de session temporaire.
+
+Pour une unique question (ou peu nombreux), le plus simple est d'entrer la question, et d'utiliser `/undo` une fois la réponse reçue.
+
+Sinon, le plus simple est de forker puis supprimer le fork :
 
 - forker toute la session : `/fork` → choisir "Full session"
 - entrer mes questions "temporaires", et échanger librement
