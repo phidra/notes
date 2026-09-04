@@ -1,3 +1,4 @@
+
 * [imagemagick pour calculer la différence entre deux images](#imagemagick-pour-calculer-la-différence-entre-deux-images)
 * [imagemagick pour splitter un PDF](#imagemagick-pour-splitter-un-pdf)
 * [imagemagick pour concaténer plusieurs images en un PDF](#imagemagick-pour-concaténer-plusieurs-images-en-un-pdf)
@@ -19,7 +20,7 @@
 * [vider le cache bash](#vider-le-cache-bash)
 * [sommer une colonne d'un fichier CSV](#sommer-une-colonne-dun-fichier-csv)
 * [partager des fichiers en HTTP avec python](#partager-des-fichiers-en-http-avec-python)
-
+* [copier le contenu de la sessionStorage du browser dans le presse-papier](#copier-le-contenu-de-la-sessionstorage-du-browser-dans-le-presse-papier)
 
 
 # imagemagick pour calculer la différence entre deux images
@@ -336,4 +337,15 @@ NOTE : cf. aussi [le partage de fichiers avec rclone](./tools/rclone.md).
 ```sh
 # depuis le répertoire à partager :
 python3 -m http.server 5555
+```
+
+# copier le contenu de la sessionStorage du browser dans le presse-papier
+
+**tags** : web, chrome, firefox
+
+Ouvrir la consule du navigateur :
+
+
+```sh
+copy(JSON.stringify(sessionStorage, null, 2))
 ```
