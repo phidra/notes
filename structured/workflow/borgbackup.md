@@ -71,6 +71,15 @@ La compression par défaut est la plus rapide/moins efficace = `lz4` ; pour conn
 borg help compression
 ```
 
+### repokey
+
+Mes repos sont en repokey : la clé de chiffrement des données est stockée (chiffrée) dans le repo, et la passphrase sert à la déchiffrer.
+
+Dans ce cas, pourquoi borg suggère tout de même de stocker la clé de chiffrement, sachant que de toutes façons, elle est intégrée au repo ?
+
+Réponse = pour pouvoir tout de même accéder aux données en cas de corruption du HDD qui invaliderait la clé.
+
+
 ## remote repository
 
 Le repo borg peut-être un répertoire local ou un remote repository accessible par SSH :
