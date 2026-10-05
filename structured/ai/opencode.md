@@ -136,6 +136,7 @@ Sinon :
 - `CTRL+e` = déplacer le curseur à la FIN de la ligne
 - `CTRL+k` = effacer depuis le curseur jusqu'à la FIN de la ligne
 - `CTRL+u` = équivalent de `CTRL+k` mais vers le DÉBUT de la ligne : effacer la ligne depuis le curseur jusqu'au DÉBUT.
+- `CTRL+w` = équivalent de `CTRL+BackSpace` = supprimer le dernier mot
 
 
 # Commandes utiles
