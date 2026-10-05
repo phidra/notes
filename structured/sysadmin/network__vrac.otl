@@ -293,7 +293,7 @@ COMMANDES UTILES :
 RÉSEAU LOCAL, MATÉRIEL, ET ROUTAGE :
 	Différence latency/bandwidth :
 		https://hpbn.co/primer-on-latency-and-bandwidth/
-		Latency = temps entre l'envoi d'un paquet et sa réception.
+		Latency   = temps entre l'envoi d'un paquet et sa réception.
 		Bandwidth = débit maximal d'un lien de communication.
 	sous-réseau :
 		Un sous-réseau (ou subnet) est une subdivision d'un réseau IP plus large.
