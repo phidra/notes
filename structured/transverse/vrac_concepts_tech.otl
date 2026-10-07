@@ -485,6 +485,7 @@ NOTES TECH> Voie série / port série / RS-232 / RS-485 :
 
 
 NOTES TECH> Artifactory :
+	Édité par JFrog, sur la plateforme JFrog (dont le produit phare est Arfitactory, mais qui propose aussi xray, p.ex.)
 	quel métier ?
 		il existe deux flux d'artefacts pour une chaîne de build logiciel, qui posent des soucis :
 			flux entrants = les dépendances de mon code (e.g. librairies)
@@ -526,7 +527,8 @@ NOTES TECH> Artifactory :
 			Release Lifecycle formalise ce processus de promotion dans Artifactory : c'est toujours le même binaire qui avance d'étape en étape, avec une trace complète à chaque passage.
 			Release Bundle = groupe d'artefacts versionnés et signés cryptographiquement, qui représente une version immuable et livrable de votre logiciel
 			À chaque étape de promotion, Artifactory enregistre qui a promu, quand, et depuis quel état — c'est l'audit trail complet.
-	xray (intégré nativement à artifactory) scanne transitivement les vulnérabilités sur les artefacts stockés (en comparant avec des bases de vulnérabilités)
+	L'autre produit phare de JFrog est xray, intégré nativement à Artifactory :
+		scanne transitivement les vulnérabilités sur les artefacts stockés (en comparant avec des bases de vulnérabilités)
 
 
 NOTES TECH> websockets :
