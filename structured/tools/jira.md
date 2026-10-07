@@ -50,7 +50,7 @@ project = MyProject AND labels = externallyCreated AND statusCategory != Done OR
     ```
     (labels != POUET OR labels IS EMPTY)
     ```
-- ne garder que les tickets créés il y a moins de 30j :
+- créés il y a moins de 30j :
     ```
     created >= -30d
     ```
@@ -62,10 +62,14 @@ project = MyProject AND labels = externallyCreated AND statusCategory != Done OR
     ```
     textfields ~ "POUET"
     ```
-- ne garder que les tickets qui me sont assignés / qui ne sont pas assignés :
+- qui me sont assignés / qui ne sont pas assignés :
     ```
     assignee = currentUser()
     assignee IS EMPTY
+    ```
+- tous les tickets qui descendent (directement ou indirectement) d'un ticket donné :
+    ```
+    issue in portfolioChildIssuesOf("TICKET-KEY")
     ```
 
 ## trier les tickets retenus
