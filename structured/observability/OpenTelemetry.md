@@ -71,11 +71,17 @@ https://opentelemetry.io/docs/what-is-opentelemetry/
 - **Metrics** = une métrique est "l'enregistrement d'une valeur numérique à un moment donné" (je vois ça comme un "log particulier", dans le sens où le contenu loggé est une valeur chiffrée)
     - typiquement, une métrique pourra stocker l'état de la machine à un instant T : RAM, CPU, etc.
     - mais ça n'est PAS limité à l'état de la machine : toute valeur numérique peut être enregistrée
-    - notamment on peut stocker des métriques métier : req/s, nombre d'utilisateurs actuellement connectés, nombre d'appels à telle API, valeur moyenne d'un panier sur la dernière minute, etc.
+    - cette valeur numérique n'est pas obligatoirement une simple mesure, une métrique peut être :
+        - une mesure (e.g. valeur de la température)
+        - un compteur (e.g. nombre de requêtes depuis le début de la journée)
+        - une valeur agrégée, p.ex. un histogramme de valeurs (e.g. distribution des temps de réponses sur les 5 dernières minutes)
+    - on peut notamment stocker des métriques _métier_ : req/s, nombre d'utilisateurs actuellement connectés, nombre d'appels à telle API, valeur moyenne d'un panier sur la dernière minute, etc.
 - **Traces** = enchaînement d'actions, séquence d'évènements (je reçois telle requête, j'appelle telle fonction, je passe par tel code)
+    - il faut voir une trace comme un flamegraph : un évènement "racine" s'étend sur telle période temporelle, et se subdivise en tels et tels sous-spans, eux-même se subdivisant en d'autres sous-spans, etc.
+    - note qu'une trace n'est pas forcément cross-service : le flamegraph peut se dérouler intégralement à l'intérieur d'un unique service
 - **Logs** = un poil plus flou, c'est un simple "record de quelque chose" :
     - un log est simplement "une information timestampée"
-    - une trace est un log particulier, associé à un évènement utilisateur + à des infos permettant de la corréler à d'autres logs/traces.
+    - enregistrer une trace revient à enregistrer un log particulier, associé à un évènement utilisateur + à des infos permettant de la corréler à d'autres logs/traces.
 
 ----
 
