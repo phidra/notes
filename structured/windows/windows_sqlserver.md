@@ -1,5 +1,6 @@
 **Contexte** = début 2025, je dois travailler avec SqlServer.
 
+
 * [Lancer SqlServer via docker](#lancer-sqlserver-via-docker)
 * [sqlcmd](#sqlcmd)
    * [installation](#installation)
@@ -8,9 +9,9 @@
    * [utiliser un port différent](#utiliser-un-port-différent)
    * [utiliser un résultat dans un script](#utiliser-un-résultat-dans-un-script)
    * [boucler sur les tables](#boucler-sur-les-tables)
+* [bcp](#bcp)
 * [Transact-SQL aka t-sql](#transact-sql-aka-t-sql)
    * [Procédures stockées](#procédures-stockées)
-
 
 
 # Lancer SqlServer via docker
@@ -25,7 +26,9 @@ docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=toto999+" -p 1433:1433  mcr.
 
 # sqlcmd
 
-Ça semble être le client approprié côté linux pour requêter une base SqlServer.
+Ça semble être le client approprié côté linux pour requêter une base SqlServer : exécuter des commandes et voir le résultat.
+
+(pour exporter des lignes d'un serveur SqlServer vers un fichier, utiliser plutôt `bcp` ; les deux font partie de la même suite d'outils sur Microsoft SqlServer)
 
 
 
@@ -108,6 +111,10 @@ done | sort -r -n > /tmp/count_procedures.csv
 ```
 
 (ça permet d'éviter d'avoir à créer une table temporaire, ou de faire des queries complexes ; au prix de N requêtes au lieu d'une)
+
+# bcp
+
+Ça semble être le client approprié côté linux pour requêter une base SqlServer : exporter des lignes d'un serveur SqlServer vers un fichier.
 
 # Transact-SQL aka t-sql
 
