@@ -1,3 +1,18 @@
+* [boards](#boards)
+   * [visibilité par d'autres personnes](#visibilité-par-dautres-personnes)
+* [jql](#jql)
+   * [inclure / exclure des tickets](#inclure--exclure-des-tickets)
+   * [trier les tickets retenus](#trier-les-tickets-retenus)
+
+
+# boards
+
+## visibilité par d'autres personnes
+
+Pour que le board soit visible par les personnes à qui je veux le partager, il faut que le filtre utilisé pour construire le board soit lui-même visible par ces personnes.
+
+
+# jql
 
 Cheatsheet [jql](https://www.atlassian.com/software/jira/guides/jql/cheat-sheet) :
 
@@ -7,7 +22,7 @@ Cheatsheet [jql](https://www.atlassian.com/software/jira/guides/jql/cheat-sheet)
 project = MyProject AND labels = externallyCreated AND statusCategory != Done ORDER BY updated DESC
 ```
 
-# inclure / exclure des tickets
+## inclure / exclure des tickets
 
 - ne garder que les tickets d'un projet donné :
     ```
@@ -53,7 +68,7 @@ project = MyProject AND labels = externallyCreated AND statusCategory != Done OR
     assignee IS EMPTY
     ```
 
-# trier les tickets retenus
+## trier les tickets retenus
 
 ```
 ORDER BY updated DESC
