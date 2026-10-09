@@ -1,4 +1,26 @@
-#Installation
+* [Installation](#installation)
+* [Config](#config)
+   * [Fichier de config](#fichier-de-config)
+   * [Débugger la config](#débugger-la-config)
+   * [Afficher les lignes copiées dans le prompt](#afficher-les-lignes-copiées-dans-le-prompt)
+   * [Activer les raccourcis pour naviguer entre les messages avec Alt+up / Alt+down](#activer-les-raccourcis-pour-naviguer-entre-les-messages-avec-altup--altdown)
+* [Choix des modèles](#choix-des-modèles)
+   * [Connaître les modèles disponibles](#connaître-les-modèles-disponibles)
+   * [Configurer les modèles des agents primaires](#configurer-les-modèles-des-agents-primaires)
+* [Plugins](#plugins)
+   * [Jouer un son quand mon intervention est requise](#jouer-un-son-quand-mon-intervention-est-requise)
+* [Shortcuts utiles](#shortcuts-utiles)
+* [Commandes utiles](#commandes-utiles)
+* [Tips](#tips)
+   * [Ouvrir une session "temporaire"](#ouvrir-une-session-temporaire)
+* [MCP](#mcp)
+   * [Configuration](#configuration)
+   * [Authentication](#authentication)
+   * [Utilisation](#utilisation)
+* [Consulter les logs](#consulter-les-logs)
+
+
+# Installation
 
 J'ai suivi la doc : https://opencode.ai/docs/en/
 
@@ -31,6 +53,19 @@ Ajouter ceci au fichier de config :
 {
   "experimental": {
     "disable_paste_summary": true
+  }
+}
+```
+
+## Activer les raccourcis pour naviguer entre les messages avec Alt+up / Alt+down
+
+Éditer `~/.config/opencode/tui.json` :
+
+```json
+{
+  "keybinds": {
+    "messages_previous": "alt+up",
+    "messages_next": "alt+down"
   }
 }
 ```
