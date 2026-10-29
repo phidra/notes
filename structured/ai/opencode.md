@@ -8,7 +8,8 @@
    * [Connaître les modèles disponibles](#connaître-les-modèles-disponibles)
    * [Configurer les modèles des agents primaires](#configurer-les-modèles-des-agents-primaires)
 * [Plugins](#plugins)
-   * [Jouer un son quand mon intervention est requise](#jouer-un-son-quand-mon-intervention-est-requise)
+   * [jouer un son quand mon intervention est requise](#jouer-un-son-quand-mon-intervention-est-requise)
+   * [DEPRECATED car opencode V1 = jouer un son quand mon intervention est requise](#deprecated-car-opencode-v1--jouer-un-son-quand-mon-intervention-est-requise)
 * [Shortcuts utiles](#shortcuts-utiles)
 * [Commandes utiles](#commandes-utiles)
 * [Tips](#tips)
@@ -111,8 +112,28 @@ Dans le fichier de config :
 
 Derrière, inutile d'activer le plugin ou de le déclarer, ça fonctionne automatiquement.
 
+## jouer un son quand mon intervention est requise
 
-## Jouer un son quand mon intervention est requise
+Éditer `~/.config/opencode/cli.json` :
+
+```json
+{
+  "$schema": "https://opencode.ai/v2/cli.json",
+  "animations": true,
+  "attention": {
+    "notifications": true,
+    "sound": true,
+    "volume": 0.8,
+    "sounds": {
+      "done": "/usr/share/sounds/freedesktop/stereo/complete.oga",
+      "permission": "/usr/share/sounds/freedesktop/stereo/window-attention.oga",
+      "question": "/usr/share/sounds/freedesktop/stereo/window-attention.oga"
+    }
+  }
+}
+```
+
+## DEPRECATED car opencode V1 = jouer un son quand mon intervention est requise
 
 Comme player, j'utilise `pw-play`, dispo via pipewire :
 
