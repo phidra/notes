@@ -1,0 +1,127 @@
+DATE DE PRISE DE NOTES = samedi 7 novembre 2026
+
+
+SUJET = Origin / CORS (= Cross-Origin Resource Sharing) / SOP (= Same Origin Policy) :
+	TL;DR :
+		Same-Origin Policy (= SOP), par défaut, un code js qui s'exécute dans un navigateur ne peut requêter que des ressources vers la même origine que lui
+			plus exactement : ce qui est restreint, c'est la lecture de la réponse (la requête, elle, pourra être émise, voire traitée par le serveur)
+		CORS permet au SERVEUR (et non au navigateur client) de setter des headers permettant d'assouplir cette règle
+		dit autrement : une page web ne peut pas lire de réponses fetch/XHR vers une origine différente de celle depuis laquelle elle a été chargée ... sauf si le serveur ciblé l'autorise !
+		sans la SOP, il suffirait de charger par erreur une page vérolée pour que la page puisse passer des requêtes vers d'autres sites (avec les cookies de l'utilisateur !), et consulter les réponses
+	MODÈLE MENTAL :
+		le SERVEUR décide, le CLIENT applique :
+			je le redis parce que je trouvais ça contre-intuitif : c'est le SERVEUR qui décide quelles pages ont le droit de le requêter (en plus de ses propres pages)
+			le client (le navigateur web) applique la politique décidée par le serveur
+			c'est contre-intuitif en première approche, c'est le NAVIGATEUR qui bloque, mais c'est le SERVEUR qui peut "désactiver" la Same-Origin Policy appliquée par le NAVIGATEUR
+				par "désactiver", j'entends que c'ets le SERVEUR de l'API qui dit au NAVIGATEUR : "t'inquiète, c'est bon : cette requête cross-origin, tu peux l'autoriser"
+			CORS est le mécanisme par lequel le serveur de destination indique au navigateur quelles pages (i.e. les pages en pronvenance de quelles origines) sont autorisées à lire ses réponses.
+		NOTE : il s'agit des requêtes qu'une page js effectue elle-même, donc les requêtes XHR/FETCH, typiquement pour appeler une API :
+			la requête principale (la navigation) n'est pas concernée
+			les sous-requêtes pour charger les ressources de la page (e.g. img ou css) ne sont pas concernées non plus
+		ATTENTION : CORS est un mécanisme des NAVIGATEURS :
+			le serveur ne bloque rien : quand on dit "telle page n'a pas le droit d'accéder à telle API", c'est bien le CLIENT NAVIGATEUR  qui empêche cet accès depuis cette page web
+				(et le point contre-intuitif, c'est que c'est côté serveur qu'on autorise ou non l'accès à tel client externe particulier)
+			typiquement, d'autres clients qui ne sont pas des browser (e.g. curl) pourraient sans souci effectuer la même requête
+			notamment, si un SERVEUR appelle un autre serveur, la Same-Origin Policy ne s'applique pas (c'est un moyen de contourner le bloquage pour un outil local)
+				c'est le cas de la plupart des APIs, qui sont appelées par un serveur back (pas de restriction SOP/CORS de serveur à serveur)
+				la SOP/CORS concerne les appels APIs effectués côté front, par la page de mon client, vers mon API, par exemple :
+					API qui sert des tuiles cartos
+					forumlaire de paiement par CB
+					widget de chat
+			typiquement, la Same-Origin Policy ne protège pas contre les appels non-autorisés : en effet, n'importe quel curl peut requêter
+	Origin
+		une ORIGIN identifie d'où provient la page courante
+		c'est le triplet (schema + hostname + port)
+			il suffit qu'un seul de ces éléments change pour que l'origine soit considérée comme différente
+			à ne pas confondre avec le "Site", qui est le couple schema + domaine enregistrable
+		exemple 1 = si le HTML est servi par un petit serveur local :
+			origin = http://localhost:8080
+		exemple 2 = si le HTML est servi par un serveur google hébergé à "google.com" :
+			origin = https://google.com:80
+		exemple 3 = si on a double cliqué sur un fichier HTML, deux possibilités :
+			origin = null
+			origin = file://
+		NOTE : de façon un peu contre-intuitive, ça veut dire que les deux sites suivant ont la même origine (en revanche, leur Path diffère) :
+			https://my.example.com/site1/
+			https://my.example.com/site2/
+	SOP = Same-Origin Policy
+		RAISON D'ÊTRE :
+			si on n'avait pas de Same-Origin Policy, il suffirait à l'utilisateur d'ouvrir une page malveillante pour que celle-ci puisse lire les réponses de requêtes où elle veut :
+				non seulement les requêtes partent avec les cookies de l'utilisateur (e.g. consultation des comptes bancaires, ou des mails de l'entreprise)...
+				... mais également : la page malveillante aura alors accès à tous les réseaux (possiblement, protégés) auquel l'utilisateur a accès
+			avec la Same-Origin Policy, la page malveillante peut certes faire des requêtes (et encore), mais elle ne peut lire les réponses que des requêtes envoyées vers le serveur qui l'a servie
+				ça protège contre les fuites de données : une page malveillante ne peut pas "consulter" librement les pages auxquelles l'utilisateur a accès
+				à noter que ça ne suffit pas (notamment : ça ne protège pas contre XSS ou CSRF), car la requête part quand même, c'est la RÉPONSE qui n'est pas consultable
+			une page web peut-elle choisir de désactiver la SOP ?
+				typiquement, pour qu'un outil de dev local que je maîtrise ait le droit d'accéder à des APIs externes ?
+				réponse : NON ! si ceci était possible, n'importe quelle page malveillante pourrait contourner la Same-Origin Policy
+		EXEMPLE = outil web local :
+			si je veux un petit outil web local (e.g. un simple fichier HTML double-cliqué, ou un petit site servi par un serveur python local)
+			sans précaution, cet outil local ne pourra pas faire des requêtes vers une API externe à cause de la Same-Origin Policy
+			si le serveur de l'API externe veut autoriser cet usage, il doit autoriser "localhost" comme Origin :
+				Access-Control-Allow-Credentials: true            # si besoin, pour autoriser l'utilsiation de cookies
+				Access-Control-Allow-Origin: http://localhost     # apparemment, si le port est 80, on doit le laisser implicite
+			ceci revient à dire : "j'autorise un outil de l'utilisateur sur son poste à requêter mon API"
+		Comment ça marche :
+			lorsqu'une page sur le navigateur fait une requête, il envoie un header indiquant son origine :
+				Origin: https://app.example.com
+			si l'origine de la page émettrice n'est pas l'origine de la ressource requêtée, le serveur doit répondre avec un header autorisant explicitement l'origine de la page émettrice :
+				Access-Control-Allow-Origin: https://app.example.com
+			si le header est absent ou incompatible, le navigateur ne transmet pas la réponse reçue au code javascript
+			ATTENTION : la requête part réellement du navigateur, elle est traitée côté serveur, et le client reçoit la réponse !
+				(typiquement si la requête a des effets de bord, ils pourront être appliqués, même si ce n'est pas systématique à cause du "preflight")
+				en revanche, le moteur javascript du navigateur ne verra pas la réponse : le navigateur fait échouer le "fetch"
+	ZOOM> comment fixer/contourner la SOP :
+		ce qui est faisable si on a la main sur le serveur qui sert l'API :
+			ajouter des headers autorisant mon origine
+				pas possible si mon origine est "un outil local"
+			servir l'outil local par le même serveur que l'API ? (même origine)
+				pas possible pour un outil local indépendant de l'API
+			servir le frontal par un serveur externe, et autoriser ce serveur externe côté serveur
+				nécessite de servir mon outil "local" par un serveur externe (l'outil n'est plus local)
+			setter un header permissif = `Access-Control-Allow-Origin: *` :
+				ce header désactive la Same-Origin Policy, donc à éviter par défaut
+				c'est éventuellement ok pour des APIs accessibles publiquement : toutes les origines peuvent légitimement lire l'API
+				c'est éventuellement ok dans un contexte de dev
+				mais ça n'est PAS à utiliser globalement en prod
+		lancer le browser avec les vérifications CORS désactivées
+			possible, mais pas recommandé, car revient à bypasser la mesure de sécurité
+		utiliser une extension du navigateur qui désactive les vérifications CORS
+			idem
+		CONTOURNEMENT PRINCIPAL = utiliser un proxy :
+			pour un outil local, s'il est servi par un serveur loal, celui-ci peut faire proxy vers les appels API
+			concrètement :
+				la page frontend de l'outil est servie par un SERVEUR LOCAL
+				elle effectue ses appels API non pas vers la vraie API EXTERNE...
+				...mais vers le même SERVEUR LOCAL (qui fait passe-plat vers l'API)
+				comme les réponses APIs proviennent de la même origine (= le SERVEUR LOCAL), le navigateur les autorise
+			en pratique, le SERVEUR LOCAL se contente de les forwarder à la vraie API EXTERNE
+				en effet, la Same-Origin Policy concerne les navigateurs, pas les requêtes de serveur à serveur
+			soit on fait un petit serveur python pour ça, soit on utilise des outils pour ça (e.g. local-cors-proxy ou cors-anywhere)
+			NOTE : si l'appel API doit inclure des credentials, c'est plus compliqué :
+				en effet, les cookies pour l'API ne sont pas envoyés par le navigateur au proxy
+				(mais je laisse ça de côté ici)
+	ZOOM> comment autoriser l'usage de mon API à plusieurs clients ?
+		CONTEXTE = je cherche à vendre mon API, et à ce qu'elle soit utilisée par mes clients, quel lien avec SOP/CORS ?
+			Comment éviter d'avoir à ouvrir mon API à tout le monde avec le joker `*` ?
+		Dans ce cas, une façon de faire sans utiliser de joker `*` est de renvoyer des headers CORS définis dynamiquement :
+			le client de mon API enregistre les domaines qu'il va utiliser pour l'appeler
+			de mon côté, j'associe sa clé API à ces domaines
+			quand plus tard je reçois des requêtes avec cette clé API, j'autorise dynamiquement dans les headers CORS les domaines qui ont été enregistrés
+			ainsi, si je reçois des requêtes depuis des domaines légitimes, CORS les autorisera ; sinon, CORS les interdira
+	ZOOM> Fonctionnement de la requête preflight :
+		Pour certaines requêtes — par exemple un POST avec Content-Type: application/json ou un en-tête personnalisé — le navigateur commence par une requête OPTIONS:
+			OPTIONS /ressource HTTP/1.1
+			Origin: https://app.exemple.fr
+			Access-Control-Request-Method: POST
+			Access-Control-Request-Headers: content-type
+		L’API peut autoriser la suite avec :
+			HTTP/1.1 204 No Content
+			Access-Control-Allow-Origin: https://app.exemple.fr
+			Access-Control-Allow-Credentials: true
+			Access-Control-Allow-Methods: POST
+			Access-Control-Allow-Headers: Content-Type
+			Vary: Origin
+		Si le preflight réussit, le navigateur envoie ensuite le POST réel. La réponse au POST doit elle aussi comporter les en-têtes CORS nécessaires.
+		Le preflight lui-même est normalement envoyé sans les cookies de l’utilisateur: il ne faut donc pas exiger une session authentifiée pour répondre à ce OPTIONS.
+

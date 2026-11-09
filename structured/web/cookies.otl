@@ -1,0 +1,207 @@
+DATE DE PRISE DE NOTES = samedi 7 novembre 2026
+
+
+SUJET = fonctionnement général des cookies
+	un cookie est une info déposée par le serveur chez le client (via un un header Set-Cookie dans la réponse)
+		du code js peut aussi créer un cookie (mais seul un serveur peut créer/consulter/modifier un cookie HttpOnly)
+	côté client, le cookie est associé à plusieurs attributs choisis par le serveur, notamment à un Domain et un Path
+	c'est le navigateur qui choisit automatiquement s'il joint des cookies à une requête ou non
+		p.ex. si le navigateur fait une requête vers un Domain+Path compatible, il envoie automatiquement le cookie en header de la requête
+	confusion à ne pas faire : le navigateur sélectionne les cookies à envoyer en fonction de l'URL de *DESTINATION* (et non de la page principale = celle qui fait la requête)
+		e.g. si une page app.site.com doit faire une requête vers api.provider.net
+			en simplifiant un chouïa, ce sont les cookies déposés par api.provider.net qui seront ou non joint à cette requête
+			ici, il n'est JAMAIS question d'envoyer un cookie déposé par app.site.com
+		(note mineure : sachant que les cookies avec l'attribut Domain sont partagés entre toutes les origines du domaine, une page app.site.com pourra envoyer "son" cookie à api.site.com)
+		(note mineure : avec les cookies partitionnés, ce qui précède reste vrai, en revanche la VALEUR du cookie, elle, peut dépendre de la page principale)
+	d'autres attributs influent sur "si le cookie est envoyé ou non" :
+		Expires et Max-Age :
+			sans aucun des deux, c'est un COOKIE DE SESSION (il sera supprimé dès que la page sera fermée)
+			avec l'un des deux, c'est un COOKIE PERSISTANT (il sera conservé même après fermeture de la page)
+		Domain vs. Host-only :
+			si l'attribut Domain est setté, le cookie sera envoyé pour toute requête vers ce domaine et ses fils
+				un cookie avec Domain=example.com sera envoyé à base.example.com et api.example.com
+			s'il n'est pas setté, le cookie est dit "Host-only", il ne sera envoyé que pour le FQDN précis de la page qui l'a setté :
+				un cookie setté par base.example.com ne sera PAS envoyé à api.example.com
+			Pour un cookie de session, le mode host-only est préférable.
+		Secure = ne sera envoyé qu'avec des requêtes émises en HTTPS
+		HttpOnly = inaccessible aux scripts javascript : seul le moteur de cookie du navigateur peut l'envoyer
+		...
+		SameSite = attribut important, je zoome dessus plus bas
+		Partitioned = attribut qui n'influe pas sur "à qui on envoie le cookie", mais sur "quelle valeur on envoie" :
+			https://developer.mozilla.org/en-US/docs/Web/Privacy/Guides/Third-party_cookies/Partitioned_cookies
+			un cookie partitionné peut avoir une valeur différente en fonction du site principal depuis lequel il est utilisé
+				e.g. pour permettre à une API frontend d'être utilisée par plusieurs sites
+			cookie CHIPS = Cookies Having Independent Partitioned State
+
+
+SUJET = SameSite :
+	ZOOM> comment fonctionne SameSite ?
+		Le contexte est celui où une page donnée fait une requête vers un autre site, p.ex. une API frontend
+		SameSite influe sur la question suivante : le navigateur doit-il autoriser la page à joindre le cookie à sa requête ?
+			si le serveur a setté SameSite=Strict/Lax, alors seules ses propres pages peuvent envoyer le cookie
+				cf. ci-dessous pour Lax
+			si le serveur a setté SameSite=None, alors il autorise d'autres pages que les siennes à envoyer son cookie
+				SameSite=None n'est pas automatiquement dangereux
+				p.ex. si je vends des API utilisées en frontend (e.g. maps), il FAUT SameSite=None pour permettre à une page externe d'utiliser mon API !
+		REMARQUE : celui qui décide (qui donne la valeur de SameSite), c'est le SERVEUR qui sette le cookie !
+			c'est lui qui choisit si son cookie a vocation à être envoyé par d'autres pages que les siennes
+			le CLIENT (le navigateur) applique la politique décidée par le SERVEUR
+		REMARQUE : SameSite=None ne garantit pas que le cookie sera obligatoirement envoyé, les autres règles s'appliquent
+			p.ex. pour une requête fetch, il faut aussi `credentials: "include"`
+		valeurs possibles :
+			Strict = le cookie n'est envoyé que si la page qui fait la requête est SameSite avec le site auquel est associé le cookie
+			None   = le cookie peut être envoyé par une page qui n'est pas SameSite avec le site auquel est associé le cookie
+			Lax    = version un peu moins restrictive de Strict = le cookie peut aussi être envoyé pour certaines requêtes "safe" (e.g. un GET émis depuis la page principale — par opposition à un script)
+				conséquence importante en terme de design API = un endpoint GET ne doit pas réaliser une opération sensible avec effet de bord !
+		ZOOM> SameSite=Lax :
+			Lax est très proche de Strict (dans l'esprit)
+			pour comprendre son intérêt, il faut savoir que de façon contre-intuitive, certaines requêtes assez naturelles sont considérées comme provenant de sites différents.
+			p.ex. les navigations suivantes sont toutes supposées comme faisant une navigation cross-site (même si la cible va devenir la nouvelle page principale) :
+				Clic sur un lien qui fait naviguer la page principale vers B
+				JavaScript faisant window.location = "https://B/..."
+				Formulaire method="GET" faisant naviguer la page principale vers B
+				----------------------------------------
+				CONSÉQUENCE : si je suis sur siteA et que je clique sur un lien vers siteB, les cookies ne sont pas envoyés si SameSite=Strict !
+			Avec SameSite=Lax, ces requêtes envoient les cookies
+			(ça adoucit l'UX, en permettant de se voir comme connecté, pour ces requêtes)
+		ZOOM> c'est quoi le "site" :
+			c'est quoi :
+				c'est le couple :
+					le protocole
+					le domaine enregistrable (a.k.a eTLD+1 pour "effective TLD + 1 label")
+				c'est donc proche de l'origine sur le principe, MAIS ATTENTION c'est une description moins précise que l'origine :
+					pas de notion de port
+					le hostname est ramené au domaine enregistrable (= eTLD+1)
+				CONSÉQUENCE : certaines requêtes cross-origin peuvent joindre des cookies même avec SameSite=Strict
+					e.g. si app.example.com requête api.example.com, alors un cookie de api.example.com pourra être joint, même s'il est SameSite=Strict
+			le "domaine enregistrable" ne correspond pas forcément aux deux derniers labels de l'hostname :
+				DEUX DERNIERS en .fr :
+					www.exemple.fr
+					│   │       └─ suffixe public : fr
+					│   └───────── domaine enregistrable : exemple.fr
+					└───────────── sous-domaine
+				TROIS DERNIERS en .co.uk :
+					www.exemple.co.uk
+					│   │       └─── suffixe public : co.uk
+					│   └─────────── domaine enregistrable : exemple.co.uk
+					└─────────────── sous-domaine
+				(et il y a des exceptions pour le .fr, e.g. suffixe public .asso.fr)
+				C'est pour ça qu'il existe la Public Suffix List (PSL), à partir de laquelle on peut connaître le eTLD+1
+					https://publicsuffix.org/
+			NOTE : savoir si deux origines sont SameSite ou non peut se déduire de l'origine :.
+				le port est ignoré par SameSite
+				les protocoles peuvent être comparés car ils sont présents dans les origines
+				le eTLD+1 peut être extrait du hostname de l'origine, en utilisant la PSL
+		ZOOM> un serveur peut-il "adoucir" SameSite ? Et par exemple déposer un cookie SameSite=Strict, mais autoriser les requêtes cross-site depuis certains sites ?
+			TL;DR = non... on est "coincés" avec deux comportements, sans intermédiaire :
+				Strict/Lax = le cookie n'est envoyé que si la page principale est du même site que celui qui a déposé le cookie
+				None = n'importe qui peut envoyer le cookie
+			On peut biaiser un peu, mais pas avec SameSite :
+				déposer un cookie SameSite=None, mais partitionné (la valeur est propre au site émetteur)
+				déposer un cookie SameSite=None, mais configurer CORS pour interdire tout le monde sauf certains sites émetteurs
+
+
+SUJET = risques cyber liés aux cookies de session :
+	TL;DR (voir mes autres notes un plus détaillées sur cookies + token pour maintenir une connexion avec le serveur) :
+		à la base, HTTP est un protocole stateless pur : chaque page est indépendante
+		cookies = initialement un moyen d'introduire de la continuité dans les requêtes client->serveur (qui sinon seraient toutes indépendantes les unes des autres)
+		lorsque l'utilisateur s'authentifie (e.g. il entre login+password sur un formulaire), le serveur créée une session dans sa BDD, et renvoie l'identifiant de session en cookie
+		toute requête postérieure à l'authentification joindra le cookie contenant l'id de session : le serveur retrouve la session, et sait de qui la requête provient
+		NOTE : les cookies de session sont toujours utilisés dans le web moderne (les tokens, transmis dans les headers, sont plutôt utilisés pour des appels APIs de serveur à serveur)
+	vol de cookie de session :
+		comme le cookie est le moyen de transmettre au serveur son identité, voler le cookie revient à voler la session d'un utilisateur connecté !
+		il existe plusieurs bonnes pratiques pour éviter ça :
+			attribut `Secure` : pour éviter qu'il soit transmis en clair
+			attribut `HttpOnly` : pour éviter qu'il soit utilisé par javascript (XSS)
+			token CSRF
+			limiter la durée côté serveur
+			limiter le scope du cookie (Domain/Path)
+	faille XSS = Cross-Site Scripting :
+		lorsqu'une page web réutilise une user-provided data sans précaution, cette data peut contenir un code javascript qui sera exécuté par la page
+		exemple concret :
+			si ma page affiche dans une balise <p> le contenu d'un formulaire, et qu'un attaquant a envoyé ce qui suit dans le formulaire, ma page va exécuter un script de l'attaquat !
+				<script>alert("coucou")</script>
+			exemple de conséquence : l'attaquant peut passer des requêtes vers une API, ces requêtes auront comme origine (et comme cookies) ma page légitime
+			exemple de conséquence : l'attaquant peut lire (et exporter vers un serveur qu'il contrôle) les infos accessibles dans le localStorage
+		pour s'en protéger : escaper correctement les data user-provided
+		NOTE : la SOP/CORS ne protège pas contre les XSS !
+			En effet, le script est exécuté depuis une origine légitime, possiblement trustée par le serveur
+	faille CSRF = Cross-Site Request Forgery :
+		Le principe :
+			prérequis = l'utilisateur est déjà authentifié p.ex. auprès de sa banque (il a un cookie de session, toute requête vers sa banque sera considérée comme émanant de l'utilisateur)
+			prérequis = l'attaquant a la possibilité d'exécuter du javascript sur une page légitime
+			alors l'attaquant peut faire une requête vers la banque (e.g. "vire-moi 1000€") qui sera vue par la banque comme émanant de l'utilisateur légitime
+		NOTE : la SOP/CORS ne protège pas contre les XSS !
+			En effet, la SOP empêche certes la page de consulter la réponse, mais la requête part quand même (et la banque fera le virement)
+		Pour s'en protéger = token CSRF :
+			TL;DR = pour autoriser une requête, le serveur a besoin d'un token qu'il a lui-même émis, et il l'émet dans un formulaire légitime
+			le serveur associe chaque action possible à une valeur arbitraire = le token CSRF (lié à l'action, et à la session)
+			pour qu'une action en provenance d'un utilisateur soit acceptée, elle doit joindre le token CSRF
+			ainsi, une requête arbitraire "vire-moi 1000€" sera refusée par défaut, même en provenance d'un utilisateur loggé
+			pour qu'elle soit acceptée, il faut que la requête joigne le token CSRF émis par le serveur, ce qui prouve que l'utilisateur a consulté la page d'émission du virement
+
+
+ZOOM> faire une requête fetch qui joint les cookies ?
+	TL;DR = plusieurs mécanismes se cumulent (en plus des règles habituelles de validité des cookies, e.g. Domain/Path) :
+		CÔTÉ SERVEUR> SameSite = le serveur définit qui a le droit d'utiliser les cookies qu'il dépose :
+			juste ses propres pages (Strict ou Lax)
+			les pages des autres sites (None)
+		CÔTÉ SERVEUR> CORS headers = le serveur indique qui a le droit de le requêter :
+			juste ses propres pages (pas de Access-Control-Allow-Origin)
+			les pages des autres sites (header Access-Control-Allow-Origin autorisant l'autre site)
+		CÔTÉ CLIENT> credentials: "include" : le code client indique s'il veut ou non joindre les cookies à une requête XHR/fetch
+			NOTE : dans ce cas, le serveur doit explicitement autoriser les requêtes cross-origin avec credentials, en renvoyant le header Access-Control-Allow-Credentials
+			credentials: "omit" = on force la requête à être anonyme (du point de vue des cookies), même si l'utilisateur était loggé
+	ZOOM> envoi des "credentials" (notamment : des cookies) avec une requête fetch/XHR cross-origin :
+		RAPPEL : requête cross-origin = requête passée vers une autre origine que celle de la page
+			supposons une page été service par "monsite.exemple.com"
+			si le code de la page fait un appel API vers "api.exemple.com", alors c'est un appel cross-origin
+		ATTENTION : qu'est-ce que les standards appellent "credentials" :
+			point contre-intuitif : TOUS les cookies envoyés par une page cliente au serveur sont appelés "credentials" (même s'ils concernent la langue ou la couleur de fond, p.ex.)
+			les "credentials" couvrent D'AUTRES choses que les cookies (p.ex. un certificat client mTLS)
+		SUJET 1 = option "credentials" de l'API fetch (et option "WithCredentials" de XMLHttpRequest/Axios, qui fonctionne de façon similaire) :
+			cette option contrôle l'envoi des cookies (et autres "credentials") au destinataire de la requête
+			p.ex. avec fetch, par défaut, les cookies ne sont envoyés que vers l'origine de la page
+				(et les cookies associés à l'origine de l'API ne sont pas émis, même s'ils seraient envoyés en temps normal)
+			À RETENIR : pour qu'une requête cross-origin joignent les cookies de cette origine, il faut l'option `credentials: "include"` à l'API fetch (ou WithCredentials pour axios/XMLHttpRequest)
+			NOTE : cette option "credentials" est une surcouche potentiellement plus restrictive que le fonctionnement normal du navigateur, jamais moins :
+				mais quoi qu'il arrive, les restrictions habituelles du navigateur s'appliquent
+				(e.g. si le cookie a l'attribut Secure, il ne sera jamais envoyé sur HTTP sans TLS)
+				une autre façon de voir les choses : `credentials: "include"` est une façon de dire :
+					pour cette requête, n'ajoute aucune restriction supplémentaire
+					laisse les règles habituelles des cookies s'appliquer à la requête, tout comme si celle-ci émanait du navigateur
+		SUJET 2 = header Access-Control-Allow-Credentials dans la réponse du serveur :	
+			c'est l'un des headers CORS que le serveur de l'API (le destinataire de la requête cross-origin) peut joindre à sa réponse
+			ce header contrôle l'utilisation de la réponse de l'API par le navigateur client
+			si le client a émis une requête avec `credentials: "include"`, alors le navigateur n'autorisera la page à lire la réponse du serveur QUE si celle-ci comporte le header Access-Control-Allow-Credentials
+			NOTE : le serveur choisit de placer ce header "à l'aveugle" (sans savoir s'il a été requêté avec `credentials: "include"`)
+			à quoi ça sert ?
+				en gros, ça permet au serveur de l'API de dire s'il veut que son API soit consultée par une origine donnée :
+					en tant qu'utilisateur connecté ou
+					en tant qu'utilisateur public
+				s'il sette "Access-Control-Allow-Credentials: true" :
+					alors l'API autorise cette origine à la consulter en tant qu'utilisateur connecté
+				s'il sette "Access-Control-Allow-Credentials: false" (ou que le header est absent) :
+					alors l'API n'autorise PAS cette origine à la consulter en tant qu'utilisateur connecté (mais autorise cette origine à la consulter en tant qu'utilisateur anonyme)
+			question connexe = est-ce que autoriser l'origine ne suffit pas ? Pourquoi voudrait-on autoriser une requête en provenance d'une origine en interdisant ou non un utilisateur connecté ?
+				l'exemple concret donné par le LLM était le suivant
+					un fournisseur a :
+						un site de e-commerce  = site.example.com
+						une API                = api.example.com
+						un comparateur de prix = compare.example.com
+					les clients peuvent ou non avoir un cookie de session vers l'API (i.e. ils peuvent ou non être connectés à l'API)
+					le site de e-commerce doit afficher des prix particuliers pour les utilisateurs connectés (discount clients)
+					à l'inverse, le comparateur de prix ne doit jamais utiliser autre chose que les prix publics
+				avec ce setup, les requêtes cross-origin peuvent provenir de deux pages :
+					le site de e-commerce qui requête l'API
+					le comparateur de prix qui requête l'API
+				pourquoi autoriser l'origine ne suffit pas :
+					Access-Control-Allow-Origin: https://site.example.com
+					Access-Control-Allow-Origin: https://compare.example.com
+					parce que dans les DEUX cas, on veut autoriser la requête cross-origin (vu qu'elle est légitime dans les deux cas, et que l'absence de ce header empêchera l'API d'être requêtée)
+				mais la question "requête cross-origin en tant qu'utilisateur connecté ?" a deux réponses différentes :
+					le site de e-commerce doit afficher les prix de l'utilisateur connecté
+						on veut donc Access-Control-Allow-Credentials: true
+					le comparateur de prix ne doit PAS afficher les prix de l'utilisateur connecté, même s'il est connecté
+						on veut donc Access-Control-Allow-Credentials: false
+
