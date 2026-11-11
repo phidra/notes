@@ -1,0 +1,37 @@
+
+RÉSUMÉ DU FONCTIONNEMENT DE DNS :
+	zone :
+		avec les mains = un nom de domaine "parent" que le serveur DNS va gérer, avec ses enfants
+		plus formellement = une portion de l'espace DNS dont un serveur est authoritative (un nom de domaine parent peut être géré en plusieurs sous-zones)
+		exemple = parent.mondomaine.fr
+		à ce stade, on ne parle pas encore de résolution (i.e. faire correspondre une IP à ce ou ces noms de domaines)
+	record = une association entre un nom de domaine et une information (e.g. une IP)
+		une zone contient des records : des noms de domaines enfants du nom de domaine "parent", auxquels on associe une information
+	différents types de records :
+		A = associe une IPV4 à un nom de domaine
+		AAAA = associe une IPV6 à un nom de domaine
+		CNAME = indique que le nom de domaine est un alias d'un autre nom de domaine
+		MX = serveur de messagerie
+		TXT = information textuelle diverse
+	zone primaire vs. secondaire :
+		zone primaire = le serveur DNS gère directement la zone : c'est lui qui possède les records de cette zone, et peut les modifier
+		zone secondaire = le serveur DNS possède aussi toutes les informations de cette zone, mais c'est une copie en lecture seule d'une zone gérée directement par un AUTRE serveur DNS
+		dans les deux cas, le serveur DNS sait répondre lui-même directement aux requêtes concernant cette zone
+		chaque zone DNS possède un record particulier (SOA) qui indique notamment qui est le serveur principal de la zone, un versioning des infos, et des paramètres de synchronisation
+	résolution des requêtes inconnues :
+		situation = mon serveur reçoit une requête pour un NDD qui n'est géré par aucune zone (primaire ou secondaire) dont il a connaissance
+		recursive resolver = c'est le serveur DNS qui requête les différents autres serveurs DNS pour trouver la réponse
+		forwarder          = le serveur DNS délègue la requête à un autre serveur DNS
+		différence entre les deux = la question est de savoir qui effectue les *multiples* requêtes :
+			la requête porte sur www.google.fr
+			requête 1 = root DNS = quel serveur DNS gère le domaine ".fr" ?
+			requête 2 = DNS de .fr = quel serveur DNS gère le domaine "google.fr" ?
+			requête 3 = DNS de google.fr = quelle est l'IP de "www.google.fr" ?
+		dans le cas du recursive resolver, c'est mon serveur DNS qui effectue toutes ces requêtes
+		dans le cas du fowarder, c'est un autre serveur DNS qui effectue toutes ces requêtes
+		dans les deux cas, mon serveur DNS peut mettre la réponse en cache pendant un certain TTL
+	serveur authoritative :
+		Un serveur est authoritative sur une zone si cette zone est une de ses zones primaires ou secondaires.
+		Sinon, le serveur est recursive resolver ou un forwarder
+
+
